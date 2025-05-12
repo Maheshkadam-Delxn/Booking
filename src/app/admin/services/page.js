@@ -19,7 +19,8 @@ const ServicesPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const { userData } = useDashboard();
+  const { userData, isLoading } = useDashboard();
+  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const CATEGORIES = [
     'all',
@@ -62,7 +63,7 @@ const ServicesPage = () => {
 
     try {
       setDeleteLoading(true);
-      await axios.delete(`http://localhost:5000/api/v1/services/${id}`, {
+      await axios.delete(`${API_URL}/services/${id}`, {
         headers: {
           Authorization: `Bearer ${userData?.token}`,
         },
@@ -176,7 +177,7 @@ const ServicesPage = () => {
                   <tr key={service._id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {service.image ? (
-                        <img src={service.image} alt={service.name} className="h-10 w-10 rounded-full" />
+                        <img src={service.image?.url} alt={service.name} className="h-10 w-10 rounded-full" />
                       ) : (
                         <div className="h-10 w-10 bg-gray-200 rounded-full" />
                       )}

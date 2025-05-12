@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import Button from '../../../components/ui/Button';
-import useStore from '../../../lib/store';
+import { useDashboard } from '@/contexts/DashboardContext';
 
 // Status badge component with appropriate colors
 const StatusBadge = ({ status }) => {
@@ -47,14 +48,101 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+
+
+
 const AppointmentsPage = () => {
-  const { appointments, services } = useStore();
+  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
+  const [appointments, setAppointments] = useState([]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [sortField, setSortField] = useState('date');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [viewType, setViewType] = useState('list'); // 'list' or 'calendar'
+  const [viewType, setViewType] = useState('list');
+  const {userData, isLoading} = useDashboard();
+
+
+
+
+
+  useEffect(() => {
+    if (!userData?.token) return; // Ensure the token is available before making requests
+
+    const fetchData = async () => {
+      try {
+        // Fetch appointments
+        const appointmentsRes = await axios.get(`${API_URL}/appointments`, {
+          headers: { Authorization: `Bearer ${userData.token}` },
+        });
+
+        console.log("appointmentsRes.data:", appointmentsRes.data);
+
+        const appointments =
+          Array.isArray(appointmentsRes?.data?.data) &&
+          appointmentsRes.data.data.length > 0
+            ? appointmentsRes.data.data
+            : [];
+
+        // Transform appointment data to match frontend structure
+        const transformedAppointments = appointments.map((app) => {
+          const addressObj = app.customer?.address;
+          const address = addressObj
+            ? [
+                addressObj?.street,
+                addressObj?.city,
+                addressObj?.state,
+                addressObj?.zip
+              ].filter(Boolean).join(', ')
+            : 'N/A';
+        
+          return {
+            id: app._id,
+            customerName: app.customer?.user?.name || "N/A",
+            customerPhone: app.customer?.user?.phone || "N/A",
+            address,
+            serviceName: app.service?.name || "N/A",
+            serviceId: app.service?._id || "",
+            date: app.date,
+            startTime: app.timeSlot?.startTime || 'N/A',
+            endTime: app.timeSlot?.endTime || 'N/A',
+            status: app.status,
+            frequency: app.frequency || app.recurringType || 'N/A',
+          };
+        });
+        
+        setAppointments(transformedAppointments);
+        
+
+        // Fetch services
+        const servicesRes = await axios.get(`${API_URL}/services`, {
+          headers: { Authorization: `Bearer ${userData.token}` },
+        });
+
+        const services =
+          Array.isArray(servicesRes?.data) && servicesRes.data.length > 0
+            ? servicesRes.data
+            : [];
+
+        setServices(services);
+
+        setError(null); // Reset error state if the fetch is successful
+      } catch (err) {
+        setError(err.response?.data?.message || err.message);
+      } finally {
+        setLoading(false); // Set loading to false once fetching is complete
+      }
+    };
+
+    fetchData();
+  }, [userData]); // Dependency array to re-run when userData changes
+
+
+
+
 
   // Handle search
   const handleSearch = (e) => {
@@ -111,6 +199,44 @@ const AppointmentsPage = () => {
 
   // List of unique statuses for the filter
   const statuses = ['all', ...new Set(appointments.map(a => a.status))];
+
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="text-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading appointments...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="text-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading appointments...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="p-4 bg-red-50 text-red-700 rounded-lg">
+          <p className="font-medium">Error loading appointments:</p>
+          <p>{error}</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
 
   return (
     <AdminLayout>
@@ -330,6 +456,7 @@ const AppointmentsPage = () => {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{appointment.customerName}</div>
                             <div className="text-sm text-gray-500">{appointment.customerEmail}</div>
+                            
                           </div>
                         </div>
                       </td>
@@ -341,8 +468,8 @@ const AppointmentsPage = () => {
                         {new Date(appointment.date).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {appointment.timeSlot}
-                      </td>
+  {appointment.startTime} - {appointment.endTime}
+</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={appointment.status} />
                       </td>
