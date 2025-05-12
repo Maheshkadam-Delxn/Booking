@@ -1,26 +1,17 @@
+// DateTimeSelection.jsx
 "use client";
 
 import React, { useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import useStore from '../../lib/store';
+import TimeSlotPicker from '../ui/TimeSlotPicker';
 
 const DateTimeSelection = ({ onNext, onBack }) => {
   const { currentBooking, updateCurrentBooking } = useStore();
   const [selectedDate, setSelectedDate] = useState(currentBooking.date || '');
-  const [selectedTime, setSelectedTime] = useState(currentBooking.timeSlot || '');
   const [selectedFrequency, setSelectedFrequency] = useState(currentBooking.frequency || 'one-time');
-  const [errorMessage, setErrorMessage] = useState('');
-
-  // Mock available times
-  const availableTimes = [
-    '9:00 AM - 11:00 AM',
-    '11:00 AM - 1:00 PM',
-    '1:00 PM - 3:00 PM',
-    '3:00 PM - 5:00 PM'
-  ];
-
-  // Mock available frequencies
+  
   const frequencies = [
     { id: 'one-time', label: 'One-Time Service' },
     { id: 'weekly', label: 'Weekly' },
@@ -28,45 +19,21 @@ const DateTimeSelection = ({ onNext, onBack }) => {
     { id: 'monthly', label: 'Monthly' }
   ];
 
-  const handleSubmit = async (e) => {
+  const handleTimeSelect = (startTime, endTime) => {
+    updateCurrentBooking({ 
+      startTime,
+      endTime,
+      timeSlot: `${startTime} - ${endTime}`
+    });
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setErrorMessage('');
-
-    const [startTime, endTime] = selectedTime.split(' - ');
-
-    try {
-      const response = await fetch('http://localhost:5000/api/v1/appointments/check-availability', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          date: selectedDate,
-          startTime,
-          endTime
-        })
-      });
-
-      const data = await response.json();
-
-      if (!data.success || !data.available) {
-        setErrorMessage(data.message || 'Selected time slot is not available. Please choose another.');
-        return;
-      }
-
-      // Update the store with the new booking details
-      updateCurrentBooking({
-        appointmentDate: selectedDate,
-        startTime,
-        endTime,
-        frequency: selectedFrequency
-      });
-
-      onNext(); // Move to the next step
-    } catch (error) {
-      console.error('Error checking availability:', error);
-      setErrorMessage('An error occurred while checking availability. Please try again.');
-    }
+    updateCurrentBooking({
+      appointmentDate: selectedDate,
+      frequency: selectedFrequency
+    });
+    onNext();
   };
 
   return (
@@ -96,7 +63,7 @@ const DateTimeSelection = ({ onNext, onBack }) => {
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   required
-                  min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                  min={new Date().toISOString().split('T')[0]}
                 />
               </div>
 
@@ -129,27 +96,12 @@ const DateTimeSelection = ({ onNext, onBack }) => {
           <div>
             <h3 className="text-lg font-medium mb-4">Select a Time Slot</h3>
             <Card className="p-4">
-              <div className="space-y-2">
-                {availableTimes.map((time) => (
-                  <label
-                    key={time}
-                    className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${
-                      selectedTime === time ? 'bg-green-50 border-green-200' : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="timeSlot"
-                      value={time}
-                      checked={selectedTime === time}
-                      onChange={() => setSelectedTime(time)}
-                      className="h-4 w-4 text-green-600 focus:ring-green-500 mr-3"
-                      required
-                    />
-                    <span>{time}</span>
-                  </label>
-                ))}
-              </div>
+            <TimeSlotPicker 
+  selectedDate={selectedDate}
+  onTimeSelect={handleTimeSelect}
+  selectedSlot={currentBooking.timeSlot}
+  serviceId={currentBooking.serviceId}
+/>
             </Card>
           </div>
         </div>
