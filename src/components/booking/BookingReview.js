@@ -5,38 +5,70 @@ import Button from "../ui/Button";
 import Card from "../ui/Card";
 import useStore from "../../lib/store";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useDashboard } from "../../contexts/DashboardContext";
 
 const BookingReview = ({ onBack }) => {
   const router = useRouter();
-  const { currentBooking, services, createAppointment, resetCurrentBooking } =
-    useStore();
+  const { userData, isLoading } = useDashboard();
+  const { currentBooking, resetCurrentBooking } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // Find the selected service
-  const selectedService =
-    services.find((service) => service.id === currentBooking.serviceId) || {};
+  if (!userData || isLoading) {
+    return null;
+  }
 
-  const handleSubmit = () => {
+  const selectedService = currentBooking.selectedService;
+
+  const handleSubmit = async () => {
     setIsSubmitting(true);
+    setError(null);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      // Create the appointment in our store
-      createAppointment({
-        ...currentBooking,
-        serviceName: selectedService.name,
-        status: "pending-estimate",
-      });
+    try {
+      // Update customer details
+      await axios.put(
+        `${API_URL}/customers/me`,
+        {
+          address: currentBooking.address,
+          propertyDetails: currentBooking.propertyDetails,
+          notificationPreferences: currentBooking.notificationPreferences,
+        },
+        {
+          headers: { Authorization: `Bearer ${userData.token}` },
+        }
+      );
 
-      // Reset current booking data
-      resetCurrentBooking();
+      // Create appointment
+      const appointmentData = {
+        service: currentBooking.serviceId,
+        date: currentBooking.appointmentDate,
+        timeSlot: {
+          startTime: currentBooking.startTime,
+          endTime: currentBooking.endTime,
+        },
+        notes: currentBooking.notes,
+        frequency: currentBooking.frequency,
+      };
 
-      // Redirect to confirmation page
-      // In a real app this would redirect to a confirmation page with the booking ID
-      router.push("/booking/confirmation");
+      const response = await axios.post(
+        `${API_URL}/appointments`,
+        appointmentData,
+        {
+          headers: { Authorization: `Bearer ${userData.token}` },
+        }
+      );
 
+      if (response.status === 201) {
+        router.push(`/booking/confirmation/${response.data.data._id}`);
+        resetCurrentBooking();
+      }
+    } catch (error) {
+      setError(error.response?.data?.error || "Failed to create appointment");
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -57,23 +89,23 @@ const BookingReview = ({ onBack }) => {
               <ul className="space-y-2 text-gray-600">
                 <li>
                   <span className="font-medium">Service:</span>{" "}
-                  {selectedService.name}
+                  {selectedService?.name || "N/A"}
                 </li>
                 <li>
                   <span className="font-medium">Date:</span>{" "}
-                  {currentBooking.date}
+                  {currentBooking?.appointmentDate}
                 </li>
                 <li>
                   <span className="font-medium">Time:</span>{" "}
-                  {currentBooking.timeSlot}
+                  {currentBooking?.startTime} - {currentBooking?.endTime}
                 </li>
                 <li>
                   <span className="font-medium">Frequency:</span>{" "}
-                  {currentBooking.frequency}
+                  {currentBooking?.frequency}
                 </li>
                 <li>
                   <span className="font-medium">Estimated Price:</span> $
-                  {selectedService.price}
+                  {selectedService?.price || "0.00"}
                 </li>
               </ul>
             </div>
@@ -85,29 +117,29 @@ const BookingReview = ({ onBack }) => {
               <ul className="space-y-2 text-gray-600">
                 <li>
                   <span className="font-medium">Name:</span>{" "}
-                  {currentBooking.customerName}
+                  {currentBooking?.customerName}
                 </li>
                 <li>
                   <span className="font-medium">Email:</span>{" "}
-                  {currentBooking.customerEmail}
+                  {currentBooking?.customerEmail}
                 </li>
                 <li>
                   <span className="font-medium">Phone:</span>{" "}
-                  {currentBooking.customerPhone}
+                  {currentBooking?.customerPhone}
                 </li>
                 <li>
                   <span className="font-medium">Address:</span>{" "}
-                  {currentBooking.address?.street},{" "}
-                  {currentBooking.address?.city},{" "}
-                  {currentBooking.address?.state}{" "}
-                  {currentBooking.address?.zipCode},{" "}
-                  {currentBooking.address?.country}
+                  {currentBooking?.address?.street},{" "}
+                  {currentBooking?.address?.city},{" "}
+                  {currentBooking?.address?.state}{" "}
+                  {currentBooking?.address?.zipCode},{" "}
+                  {currentBooking?.address?.country}
                 </li>
               </ul>
             </div>
           </div>
 
-          {currentBooking.notes && (
+          {currentBooking?.notes && (
             <div className="mt-6">
               <h4 className="font-medium text-gray-900 mb-2">
                 Special Instructions
@@ -128,6 +160,12 @@ const BookingReview = ({ onBack }) => {
           appointment and provide pricing details.
         </p>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">
+          {error}
+        </div>
+      )}
 
       <div className="flex justify-between">
         <Button type="button" variant="outline" onClick={onBack}>
