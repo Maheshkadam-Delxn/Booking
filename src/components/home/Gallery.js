@@ -12,7 +12,7 @@
 //             transformations we've created for our clients.
 //           </p>
 //         </div>
-        
+
 //         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 //           {/* Using local images from the public folder */}
 //           <div key="1" className="overflow-hidden rounded-lg shadow-md">
@@ -43,8 +43,8 @@
 //               </div>
 //             </div>
 
-            
-            
+
+
 //           </div>
 
 
@@ -76,8 +76,8 @@
 //               </div>
 //             </div>
 
-            
-            
+
+
 //           </div>
 
 
@@ -116,8 +116,8 @@
 
 
 
-        
-        
+
+
 //         <div className="mt-10 text-center">
 //           <button className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-md font-medium text-gray-700 bg-white hover:bg-gray-50">
 //             View All Projects
@@ -196,14 +196,14 @@ const Gallery = () => {
             your own outdoor transformation.
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {projects.map((project) => (
-            
+
             <div key={project.id} className="bg-white rounded-lg overflow-hidden shadow-md">
               <div className="relative">
-                <img 
-                  src={project.image} 
+                <img
+                  src={project.image}
                   alt={project.title}
                   className="w-full h-64 object-cover"
                 />
@@ -213,13 +213,11 @@ const Gallery = () => {
                     {/* <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors duration-300">
                       View Project
                     </button> */}
-<Link href={`/portfolio/modern-backyard-retreat`}>
-  <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors duration-300">
-    View Project
-  </button>
-</Link>
-
-
+                    <Link href={`/portfolio/modern-backyard-retreat`}>
+                      <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors duration-300">
+                        View Project
+                      </button>
+                    </Link>
 
                   </div>
                 </div>
@@ -231,14 +229,14 @@ const Gallery = () => {
             </div>
           ))}
         </div>
-        
+
         <div className="mt-10 text-center">
-        <Link href="/gallery">
-  <span className="inline-block bg-white border border-green-600 text-green-600 px-6 py-3 rounded-md font-medium hover:bg-green-600 hover:text-white transition-colors duration-300">
-    View All Projects
-  </span>
-</Link>
-</div>
+          <Link href="/gallery">
+            <span className="inline-block bg-white border border-green-600 text-green-600 px-6 py-3 rounded-md font-medium hover:bg-green-600 hover:text-white transition-colors duration-300">
+              View All Projects
+            </span>
+          </Link>
+        </div>
 
       </Container>
     </section>

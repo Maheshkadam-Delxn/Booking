@@ -54,7 +54,7 @@
 //       >
 //         {/* Dark overlay for better text contrast */}
 //         <div className="absolute inset-0 bg-black/30"></div>
-        
+
 //         {/* Glass effect container */}
 //         <div className="absolute inset-0 flex items-center">
 //           <div 
@@ -94,7 +94,7 @@
 //           </div>
 //         </div>
 
-       
+
 //       </div>
 //     </section>
 //   );
@@ -126,12 +126,12 @@ const Hero = () => {
   useEffect(() => {
     const token = userData?.token || null;
     setIsLoggedIn(!!token);
-    
+
     // Rotate through features
     const interval = setInterval(() => {
       setActiveFeature((prev) => (prev + 1) % features.length);
     }, 4000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -141,11 +141,11 @@ const Hero = () => {
       router.push("/login");
       return;
     }
-    
+
     try {
       const decoded = jwtDecode(token);
       const role = decoded.role;
-      
+
       if (role === "customer") {
         router.push("/booking");
       } else {
@@ -172,7 +172,7 @@ const Hero = () => {
           >
             <source src="/videos/landscaping-video.mp4" type="video/mp4" />
           </video> */}
-          
+
           {/* Image option with modern parallax effect */}
           <div
             className="absolute inset-0 bg-cover bg-center h-full w-full transform scale-110"
@@ -181,53 +181,56 @@ const Hero = () => {
               animation: 'subtle-zoom 20s infinite alternate',
             }}
           ></div>
-          
+
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
         </div>
       </div>
-      
+
       {/* Content area */}
       <div className="relative z-10 h-full flex flex-col justify-center">
         <div className="container mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 items-center">
           {/* Left side - Text content */}
           <div className="text-white space-y-8 max-w-xl">
-            
-            
+
+
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
               Transform Your <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-green-500">
                 Outdoor Space
               </span>
             </h1>
-            
+
             <p className="text-xl text-white/80 leading-relaxed">
               Professional landscaping and lawn care services customized to your needs.
               From regular maintenance to complete redesigns, we'll keep your yard
               looking its best all year round.
             </p>
-            
+
             {/* Animated features */}
             <div className="">
-            <div className="flex items-center space-x-4 overflow-hidden h-20">
-  {features.map((feature, index) => (
-    <div 
-      key={index}
-      className={`flex items-center space-x-3 bg-green-50 px-4 py-2 rounded-lg border-2 border-green-200 transition-all duration-500 transform ${
-        index === activeFeature ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      } absolute`}
-      style={{ left: '0', display: index === activeFeature ? 'flex' : 'none' }}
-    >
-      <div className="text-green-600">{feature.icon}</div>
-      <div>
-        <h3 className="font-medium text-green-800">{feature.title}</h3>
-        <p className="text-sm text-green-600">{feature.description}</p>
-      </div>
-    </div>
-  ))}
-</div>
+              <div className="flex items-center space-x-4 overflow-hidden h-20">
+                {features.map((feature, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center space-x-3 bg-white px-4 py-2 rounded-lg border-2 border-green-200 transition-all duration-500 transform ${index === activeFeature ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                      } absolute w-64`}  // Added w-64 for fixed width (16rem or 256px)
+                    style={{
+                      left: '0',
+                      display: index === activeFeature ? 'flex' : 'none',
+                      // width: '256px'
+                    }}
+                  >
+                    <div className="text-green-600">{feature.icon}</div>
+                    <div className="flex-1 min-w-0">  {/* Added flex-1 and min-w-0 to prevent text overflow */}
+                      <h3 className="font-medium text-green-800 truncate">{feature.title}</h3>
+                      <p className="text-sm text-green-600 line-clamp-2">{feature.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            
+
             {/* CTA buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Button
@@ -235,13 +238,13 @@ const Hero = () => {
                 className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 group">
                 Book Now
               </Button>
-              <Link 
-              href=
-              // "/"
-               "/admin/create-estimate"
+              <Link
+                href=
+                // "/"
+                "/admin/create-estimate"
               >
-                <Button 
-                  variant="secondary" 
+                <Button
+                  variant="secondary"
                   size="lg"
                   className="hover:scale-105 transition-transform bg-white px-8 py-4"
                 >
@@ -250,62 +253,62 @@ const Hero = () => {
               </Link>
             </div>
           </div>
-          
+
           {/* Right side - Visual element */}
           <div className="hidden md:block">
-  <div className="relative">
-    {/* Decorative elements */}
-    <div className="absolute -top-20 -right-20 w-64 h-64 bg-green-500 rounded-full opacity-20 blur-3xl"></div>
-    <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-green-300 rounded-full opacity-20 blur-2xl"></div>
-    
-    {/* Card element - changed to light green background with border */}
-    <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-8 shadow-xl relative overflow-hidden">
-      <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-green-400/20 rounded-full blur-xl"></div>
-      
-      {/* Sample content - replace with relevant info */}
-      <div className="space-y-6">
-        <h3 className="text-2xl font-semibold text-green-800">Ready for a beautiful yard?</h3>
-        
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100">
-            <div className="bg-green-100 p-2 rounded-full text-green-600">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-green-800 font-medium">Fast Scheduling</h4>
-              <p className="text-sm text-green-600">Book your service in just minutes</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100">
-            <div className="bg-green-100 p-2 rounded-full text-green-600">
-              <Star className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-green-800 font-medium">Top-Rated Service</h4>
-              <p className="text-sm text-green-600">Trusted by homeowners across the region</p>
+            <div className="relative">
+              {/* Decorative elements */}
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-green-500 rounded-full opacity-20 blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-green-300 rounded-full opacity-20 blur-2xl"></div>
+
+              {/* Card element - changed to light green background with border */}
+              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-8 shadow-xl relative overflow-hidden">
+                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-green-400/20 rounded-full blur-xl"></div>
+
+                {/* Sample content - replace with relevant info */}
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-semibold text-green-800">Ready for a beautiful yard?</h3>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100">
+                      <div className="bg-green-100 p-2 rounded-full text-green-600">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-green-800 font-medium">Fast Scheduling</h4>
+                        <p className="text-sm text-green-600">Book your service in just minutes</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100">
+                      <div className="bg-green-100 p-2 rounded-full text-green-600">
+                        <Star className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-green-800 font-medium">Top-Rated Service</h4>
+                        <p className="text-sm text-green-600">Trusted by homeowners across the region</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={goToBookingDetail}
+                    className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors duration-300"
+                  >
+                    Schedule Consultation
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <button 
-          onClick={goToBookingDetail}
-          className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors duration-300"
-        >
-          Schedule Consultation
-        </button>
       </div>
-    </div>
-  </div>
-</div>
-        </div>
-      </div>
-      
+
       {/* Scroll indicator */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 animate-bounce">
         <ChevronDown className="w-8 h-8 text-white/50" />
       </div>
-      
+
       {/* Add custom keyframes animation */}
       <style jsx>{`
         @keyframes subtle-zoom {

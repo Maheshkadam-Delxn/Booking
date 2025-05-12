@@ -7,7 +7,7 @@ export default function AboutPage() {
     {
       name: 'John Smith',
       position: 'Founder & CEO',
-      bio: "With over 20 years in landscaping, John founded Green Gardens with a vision to transform outdoor spaces while respecting nature.",
+      bio: "With over 20 years in landscaping, John founded Gildordo Rochin with a vision to transform outdoor spaces while respecting nature.",
       image: 'https://cdn.pixabay.com/photo/2023/06/09/08/25/ai-generated-8051238_1280.jpg'
     },
     {
@@ -33,7 +33,7 @@ export default function AboutPage() {
   return (
     <>
       <PageHeader 
-        title="About Green Gardens"
+        title="About Gildordo Rochin"
         description="Our story, our values, our team"
         backgroundImage="/images/about-header.jpg"
       />
@@ -45,7 +45,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div>
               <p className="text-gray-700 mb-4">
-                Green Gardens Landscaping began in 2005 with a simple mission: to create beautiful, 
+                Gildordo Rochin Landscaping began in 2005 with a simple mission: to create beautiful, 
                 sustainable outdoor spaces that enhance the lives of our clients while respecting the environment.
               </p>
               <p className="text-gray-700 mb-4">
@@ -59,8 +59,7 @@ export default function AboutPage() {
             </div>
             <div className="rounded-lg overflow-hidden shadow-lg">
               <img 
-                src="/images/about.jpg" 
-                alt="Green Gardens founder working on an early project" 
+                src="Gildordo Rochin founder working on an early project" 
                 className="w-full h-auto"
               />
             </div>

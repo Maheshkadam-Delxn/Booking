@@ -419,7 +419,7 @@ setIsSubmitting(false);
               required
               className={`w-full px-3 py-2 border ${
                 formErrors.name ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-green-500`}
             />
             {formErrors.name && (
               <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
@@ -438,7 +438,7 @@ setIsSubmitting(false);
               required
               className={`w-full px-3 py-2 border ${
                 formErrors.category ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-green-500`}
             >
               <option value="">Select Category</option>
               <option value="Lawn Maintenance">Lawn Maintenance</option>
@@ -468,7 +468,7 @@ setIsSubmitting(false);
               required
               className={`w-full px-3 py-2 border ${
                 formErrors.duration ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-green-500`}
             />
             {formErrors.duration && (
               <p className="mt-1 text-sm text-red-600">{formErrors.duration}</p>
@@ -494,7 +494,7 @@ setIsSubmitting(false);
                 required
                 className={`w-full pl-8 pr-3 py-2 border ${
                   formErrors.basePrice ? "border-red-500" : "border-gray-300"
-                } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-green-500`}
               />
             </div>
             {formErrors.basePrice && (
@@ -511,7 +511,7 @@ setIsSubmitting(false);
               name="priceUnit"
               value={formData.priceUnit}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="hourly">Hourly</option>
               <option value="flat">Flat Rate</option>
@@ -526,7 +526,7 @@ setIsSubmitting(false);
               name="isActive"
               checked={formData.isActive}
               onChange={handleChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
             <label className="ml-2 block text-sm text-gray-700">
               Active Service
@@ -550,7 +550,7 @@ setIsSubmitting(false);
               />
               <label
                 htmlFor="fileInput"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-green-600 text-white rounded-md cursor-pointer hover:bg-green-700 transition-colors"
               >
                 Choose File
               </label>
@@ -587,7 +587,7 @@ setIsSubmitting(false);
             rows="4"
             className={`w-full px-3 py-2 border ${
               formErrors.description ? "border-red-500" : "border-gray-300"
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-green-500`}
           />
           {formErrors.description && (
             <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
@@ -601,7 +601,7 @@ setIsSubmitting(false);
               type="checkbox"
               checked={formData.recurringOptions.isRecurring}
               onChange={handleRecurringToggle}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
             <label className="ml-2 block text-sm font-medium text-gray-700">
               Recurring Service
@@ -618,7 +618,7 @@ setIsSubmitting(false);
                   multiple
                   value={formData.recurringOptions.frequencies}
                   onChange={handleFrequencyChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="One-time">One-time</option>
                   <option value="Weekly">Weekly</option>
@@ -646,7 +646,7 @@ setIsSubmitting(false);
                         max="100"
                         value={formData.recurringOptions.discounts[freq] || 0}
                         onChange={(e) => handleDiscountChange(freq, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
                       <span className="text-sm text-gray-500">% discount</span>
                     </div>
@@ -681,7 +681,7 @@ setIsSubmitting(false);
                     }
                     rows="2"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
 
@@ -698,7 +698,7 @@ setIsSubmitting(false);
                       handlePackageChange(index, "priceMultiplier", e.target.value)
                     }
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Must be 1.0 or greater (1.0 = base price, 2.0 = double the base price)
@@ -713,7 +713,7 @@ setIsSubmitting(false);
                     <button
                       type="button"
                       onClick={() => addFeatureField(index)}
-                      className="text-xs text-blue-600 hover:text-blue-800"
+                      className="text-xs text-green-600 hover:text-green-800"
                     >
                       + Add Feature
                     </button>
@@ -727,7 +727,7 @@ setIsSubmitting(false);
                             handleFeatureChange(index, featIndex, e.target.value)
                           }
                           required
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
                         {pkg.additionalFeatures.length > 1 && (
                           <button
@@ -751,7 +751,7 @@ setIsSubmitting(false);
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <span className="flex items-center">

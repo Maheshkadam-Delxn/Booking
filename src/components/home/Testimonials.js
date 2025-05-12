@@ -11,7 +11,7 @@ const Testimonials = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Clients Say</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Don't just take our word for it - hear from our satisfied customers about 
-            their experience with Green Gardens.
+            their experience with Gildordo Rochin.
           </p>
         </div>
         

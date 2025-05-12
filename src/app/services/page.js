@@ -349,7 +349,7 @@ const dummyServices = [
   },
   {
     id: 6,
-    name: 'Patio Installation',
+    name: 'Paver block landscaping',
     description: 'Custom stone or paver patio construction',
     image: 'https://img.freepik.com/free-photo/construction-worker-sanding-down-wood-piece_23-2148748861.jpg',
     price: 2500,

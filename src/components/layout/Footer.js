@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand and Social Icons */}
           <div>
-            <h3 className="text-2xl font-bold mb-4 text-green-600 hover:text-green-500 transition-colors duration-300">Green Gardens</h3>
+            <h3 className="text-2xl font-bold mb-4 text-green-600 hover:text-green-500 transition-colors duration-300">Gildordo Rochin</h3>
             <p className="text-gray-400 mb-6 hover:text-green-100 transition-colors duration-300">
               Professional landscaping services to transform your outdoor space into a beautiful and functional environment.
             </p>
@@ -121,7 +121,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start group">
                 <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
-                  123 Landscape Lane<br />Greenville, GA 30303
+                  Office Address: 9719 E Clinton St<br/> Scottsdale, AZ 85260.
                 </span>
               </li>
               <li className="flex items-center group">
@@ -153,7 +153,7 @@ const Footer = () => {
       <div className="bg-gray-950 py-4">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-500 text-sm mb-4 md:mb-0 hover:text-green-500 transition-colors duration-300">
-            © {new Date().getFullYear()} Green Gardens. All rights reserved.
+            © {new Date().getFullYear()} Gildordo Rochin. All rights reserved.
           </p>
           <div className="flex space-x-6">
             <Link href="/privacy-policy" className="text-gray-500 hover:text-green-500 text-sm transition-colors duration-300">
