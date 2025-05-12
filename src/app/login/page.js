@@ -158,7 +158,7 @@ export default function LoginPage() {
   return (
     <AuthFormContainer 
       title="Log in to your account" 
-      subtitle="Welcome back to Green Gardens"
+      subtitle="Welcome back to Gildordo Rochin"
     >
       {showSuccess && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">

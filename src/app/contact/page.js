@@ -66,23 +66,39 @@ export default function ContactPage() {
               </div>
               
               <div>
-                <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-1">
-                  Service Interested In
-                </label>
-                <select
-                  id="service"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">Select a service</option>
-                  <option value="landscape-design">Landscape Design</option>
-                  <option value="lawn-maintenance">Lawn Maintenance</option>
-                  <option value="hardscaping">Hardscaping</option>
-                  <option value="irrigation">Irrigation Systems</option>
-                  <option value="tree-care">Tree & Shrub Care</option>
-                  <option value="outdoor-lighting">Outdoor Lighting</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
+  <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-1">
+    Service Interested In
+  </label>
+  <select
+    id="service"
+    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+  >
+    <option value="">Select a service</option>
+    <option value="landscape-design">Landscape Design</option>
+    <option value="lawn-maintenance">Lawn Maintenance</option>
+    <option value="hardscaping">Hardscaping</option>
+    <option value="irrigation">Irrigation Systems</option>
+    <option value="tree-care">Tree & Shrub Care</option>
+    <option value="outdoor-lighting">Outdoor Lighting</option>
+    <option value="Sprinkler-system">Sprinkler system installation and repair</option>
+    <option value="other">Other</option>
+  </select>
+</div>
+
+<div className="mt-4">
+  <label htmlFor="frequency" className="block text-sm font-medium text-gray-700 mb-1">
+    Service Frequency
+  </label>
+  <select
+    id="frequency"
+    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+  >
+    <option value="">Select frequency</option>
+    <option value="weekly">Weekly</option>
+    <option value="biweekly">Biweekly</option>
+    <option value="monthly">Monthly</option>
+  </select>
+</div>
               
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
@@ -138,9 +154,7 @@ export default function ContactPage() {
                 <div className="ml-3">
                   <h3 className="text-lg font-semibold text-gray-900">Office Address</h3>
                   <p className="mt-1 text-gray-700">
-                    123 Green Avenue<br />
-                    Suite 456<br />
-                    Anytown, ST 12345
+                    9719 E Clinton St,<br/> Scottsdale, AZ 85260
                   </p>
                 </div>
               </div>

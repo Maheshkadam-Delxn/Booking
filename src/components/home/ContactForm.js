@@ -79,8 +79,8 @@ const ContactForm = () => {
                   <div>
                     <p className="font-semibold">Address</p>
                     <address className="not-italic text-green-100">
-                      123 Landscape Lane<br />
-                      Greenville, GA 30303
+                     9719 E Clinton St,<br/> 
+                     Scottsdale, AZ 85260.
                     </address>
                   </div>
                 </div>
@@ -174,6 +174,7 @@ const ContactForm = () => {
                     <option value="paver-grass">Paver Grass</option>
                     <option value="landscape-design">Landscape Design</option>
                     <option value="irrigation-systems">Irrigation Systems</option>
+                    {/* <option value="irrigation-systems">Sprinkler system installation and repair</option> */}
                   </select>
                 </div>
                 
