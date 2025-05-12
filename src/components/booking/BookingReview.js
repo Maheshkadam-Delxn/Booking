@@ -57,7 +57,7 @@ const BookingReview = ({ onBack }) => {
               <ul className="space-y-2 text-gray-600">
                 <li>
                   <span className="font-medium">Service:</span>{" "}
-                  {selectedService.name}
+                  {selectedService.service}
                 </li>
                 <li>
                   <span className="font-medium">Date:</span>{" "}

@@ -1,6 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Mail, User, Star, ChevronRight, CreditCard, CalendarPlus, MessageSquare, FileText, MessageCircle, Settings } from 'lucide-react';
 import axios from 'axios';
+import Link from 'next/link';
+
 import { useDashboard } from '@/contexts/DashboardContext';
 
 export default function ProfilePage() {
@@ -8,7 +11,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-   const [nextService, setNextService] = useState(null);
+   const [nextAppointment, setNextAppointment] = useState(null);
+   const [pastAppointments, setPastAppointments] = useState([]);
+   
+
+
   const { userData, isLoading: contextLoading } = useDashboard();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   
@@ -41,30 +48,85 @@ export default function ProfilePage() {
   });
 
 
+
+  // Define the calculateDuration function
+function calculateDuration(startTime, endTime) {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const duration = (end - start) / 1000 / 60; // Duration in minutes
+  return duration;
+}
+
+
 useEffect(() => {
-  const fetchAndFilterServices = async () => {
+  const fetchAndFilterAppointment = async () => {
     try {
-      const response = await axios.get(`${API_URL}/services`, {
+      const response = await axios.get(`${API_URL}/appointments/my-appointments`, {
         headers: {
           Authorization: `Bearer ${userData.token}`
         }
       });
-      
+
+      console.log("API Response:", response.data);
+
       const now = new Date();
-      const upcoming = response.data
-        .filter(service => new Date(service.date) > now)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-      
-      setNextService(upcoming[0] || null);
+
+      const allAppointments = response.data.data.map(appointment => {
+        const appointmentDate = new Date(appointment.date);
+        const timeParts = appointment.timeSlot.startTime.split(/[: ]/);
+        let hours = parseInt(timeParts[0], 10);
+        const minutes = parseInt(timeParts[1], 10);
+        const period = timeParts[2].toUpperCase();
+
+        if (period === 'PM' && hours < 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+
+        appointmentDate.setHours(hours, minutes, 0, 0);
+
+        return {
+          ...appointment,
+          fullDateTime: appointmentDate
+        };
+      });
+
+      const upcoming = allAppointments
+        .filter(appointment => appointment.fullDateTime > now)
+        .sort((a, b) => a.fullDateTime - b.fullDateTime);
+
+      const past = allAppointments
+        .filter(appointment => appointment.fullDateTime <= now)
+        .sort((a, b) => b.fullDateTime - a.fullDateTime);
+
+      console.log("Upcoming appointments:", upcoming);
+      console.log("Past appointments:", past);
+
+      if (upcoming.length > 0) {
+        const next = upcoming[0];
+        setNextAppointment({
+          name: next.service?.name || 'Unnamed Service',
+          category: next.service?.category || 'N/A',
+          type: next.packageType || 'Service',
+          date: next.date.split('T')[0],
+          startTime: next.timeSlot.startTime,
+          endTime: next.timeSlot.endTime,
+          duration: calculateDuration(next.timeSlot.startTime, next.timeSlot.endTime)
+        });
+      } else {
+        setNextAppointment(null);
+      }
+
+      setPastAppointments(past); // set past appointments list
+
     } catch (err) {
-      console.error("Failed to fetch services:", err);
+      console.error("Failed to fetch appointments:", err);
     }
   };
 
   if (userData?.token) {
-    fetchAndFilterServices();
+    fetchAndFilterAppointment();
   }
 }, [userData?.token, API_URL]);
+
 
 
 
@@ -244,6 +306,8 @@ useEffect(() => {
 
 
 
+ 
+ 
 
   // const handleChange = (e) => {
   //   const { name, value, type, checked } = e.target;
@@ -435,48 +499,54 @@ useEffect(() => {
           Next Scheduled Service
         </h2>
       </div>
-       <div className="p-4">
-      {nextService ? (
-        <div className="md:flex items-center justify-between">
-          <div className="flex items-center mb-4 md:mb-0">
-            <div className="bg-green-100 p-3 rounded-full mr-4">
-              <Calendar className="text-green-600" size={20} />
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-800">{nextService.type}</h3>
-              <p className="text-sm text-gray-600">
-                {new Date(nextService.date).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-6">
-            <div>
-              <p className="text-sm text-green-600 font-medium">Time</p>
-              <p className="text-gray-700">
-                {nextService.startTime} - {nextService.endTime}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-green-600 font-medium">Duration</p>
-              <p className="text-gray-700">{nextService.duration}</p>
-            </div>
-            <button className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors">
-              View Details
-            </button>
-          </div>
+      <div className="p-4">
+  {nextAppointment ? (
+    <div className="md:flex items-center justify-between">
+      <div className="flex items-center mb-4 md:mb-0">
+        <div className="bg-green-100 p-3 rounded-full mr-4">
+          <Calendar className="text-green-600" size={20} />
         </div>
-      ) : (
-        <div className="text-center py-6">
-          <div className="bg-green-100 p-4 rounded-lg inline-block mb-3">
-            <Calendar className="text-green-600 mx-auto" size={24} />
-          </div>
-          <h3 className="text-gray-500 mb-2">No upcoming services</h3>
-          <button className="text-green-600 hover:text-green-800 font-medium">
-            Schedule a Service
-          </button>
+        <div>
+          <h3 className="font-medium text-gray-800">{nextAppointment.name}</h3>
+          <p className="text-sm text-gray-600">{nextAppointment.category}</p> 
+         <p className="text-sm text-gray-600">
+  {new Date(nextAppointment.date).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })}
+</p>
         </div>
-      )}
+      </div>
+      <div className="flex items-center space-x-6">
+        <div>
+          <p className="text-sm text-green-600 font-medium">Time</p>
+          <p className="text-gray-700">
+            {nextAppointment.startTime} - {nextAppointment.endTime}
+          </p>
+        </div>
+        {/* <div>
+          <p className="text-sm text-green-600 font-medium">Duration</p>
+          <p className="text-gray-700">{nextAppointment.duration}</p>
+        </div>
+        <button className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors">
+          View Details
+        </button> */}
+      </div>
     </div>
+  ) : (
+    <div className="text-center py-6">
+      <div className="bg-green-100 p-4 rounded-lg inline-block mb-3">
+        <Calendar className="text-green-600 mx-auto" size={24} />
+      </div>
+      <h3 className="text-gray-500 mb-2">No upcoming services</h3>
+      <button className="text-green-600 hover:text-green-800 font-medium">
+        Schedule a Service
+      </button>
+    </div>
+  )}
+</div>
     </div>
 
     {/* Personal Info and Property Cards - 2 columns */}
@@ -569,61 +639,69 @@ useEffect(() => {
         </h2>
       </div>
       <div className="p-4">
-        {user.recentServices.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-green-100">
-              <thead className="bg-green-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Service</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Rating</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-green-100">
-                {user.recentServices.map((service) => (
-                  <tr key={service.id}>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
-                          <img 
-                            src={placeholderImages.garden}
-                            alt={service.type} 
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{service.type}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {service.date}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex">
-                        {renderStars(service.rating)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Completed
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="bg-green-100 p-4 rounded-full inline-block mb-3">
-              <Calendar className="text-green-600" size={24} />
-            </div>
-            <h3 className="text-gray-500">No recent services found</h3>
-          </div>
-        )}
+  {pastAppointments.length > 0 ? (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-green-100">
+        <thead className="bg-green-50">
+          <tr>
+            <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Service</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Date</th>
+            {/* <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Rating</th> */}
+            <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Status</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-green-100">
+          {pastAppointments.map((service) => (
+            <tr key={service._id}>
+              <td className="px-4 py-3 whitespace-nowrap">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
+                    <img
+                      src={placeholderImages.garden}
+                      alt={service.packageType || 'Service'}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{service.service?.name || 'Service'}</div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                {new Date(service.date).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </td>
+             
+              <td className="px-4 py-3 whitespace-nowrap">
+               <span
+    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+      ${service.status === 'Completed' ? 'bg-green-100 text-green-800' :
+        service.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' :
+        service.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+        'bg-gray-100 text-gray-800'}`}>
+    {service.status}
+  </span>
+
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="text-center py-8">
+      <div className="bg-green-100 p-4 rounded-full inline-block mb-3">
+        <Calendar className="text-green-600" size={24} />
       </div>
+      <h3 className="text-gray-500">No recent services found</h3>
+    </div>
+  )}
+</div>
+
     </div>
 
     {/* Quick Actions Section */}
@@ -636,14 +714,17 @@ useEffect(() => {
       </div>
       <div className="p-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-            <CalendarPlus className="text-green-600 mb-2" size={24} />
-            <span className="text-sm font-medium text-gray-700">Schedule Service</span>
-          </button>
-          <button className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-            <MessageSquare className="text-green-600 mb-2" size={24} />
-            <span className="text-sm font-medium text-gray-700">Contact Support</span>
-          </button>
+          <Link href="/booking" className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+        <CalendarPlus className="text-green-600 mb-2" size={24} />
+        <span className="text-sm font-medium text-gray-700">Schedule Service</span>
+      </Link>
+
+      <Link href="/contact" className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+       <MessageSquare className="text-green-600 mb-2" size={24} />
+        <span className="text-sm font-medium text-gray-700">Contact Support</span>
+      </Link>
+
+          
           <button className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
             <CreditCard className="text-green-600 mb-2" size={24} />
             <span className="text-sm font-medium text-gray-700">Make Payment</span>
