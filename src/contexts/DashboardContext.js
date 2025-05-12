@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
 
 const DashboardContext = createContext();
 
@@ -22,29 +23,39 @@ export const DashboardProvider = ({ children }) => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        
+
         if (token) {
-          try {
-            const decodedToken = jwtDecode(token);
-            
-            if (decodedToken) {
-              setUserRole(decodedToken.role);
-              setUserData({
-                id: decodedToken.id,
-                role: decodedToken.role,
-                token: token // Store the actual token here
-              });
-            }
-          } catch (decodeError) {
-            console.error('Failed to decode token:', decodeError);
-            clearAuthData();
+          const decodedToken = jwtDecode(token);
+
+          if (decodedToken?.id && decodedToken?.role) {
+            setUserRole(decodedToken.role);
+
+            // ✅ Get full user details from API
+            const response = await axios.get('http://localhost:5000/api/v1/auth/me', {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            const user = response.data.data;
+
+            const newUserData = {
+              id: user._id,
+              name: user.name,
+              email: user.email,
+              role: decodedToken.role,
+              token: token,
+            };
+
+            setUserData(newUserData);
+            console.log('Fetched full user data:', newUserData);
           }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
         clearAuthData();
       } finally {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     };
 
@@ -60,7 +71,6 @@ export const DashboardProvider = ({ children }) => {
 
   const loginWithRole = (token, rememberMe) => {
     try {
-      // First validate the token structure
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid token: Token must be a string');
       }
@@ -70,30 +80,22 @@ export const DashboardProvider = ({ children }) => {
         throw new Error('Invalid token: Malformed JWT structure');
       }
 
-      // Then decode it
       const decodedToken = jwtDecode(token);
-      
+
       if (!decodedToken?.id || !decodedToken?.role) {
         throw new Error('Invalid token: Missing required claims');
       }
 
-      const newUserData = {
-        id: decodedToken.id,
-        role: decodedToken.role,
-        token: token
-      };
-      
       setUserRole(decodedToken.role);
-      setUserData(newUserData);
-      
       const storage = rememberMe ? localStorage : sessionStorage;
       storage.setItem('authToken', token);
 
-      return true; // Indicate success
+      // Don't set userData here — it will be fetched by useEffect
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       clearAuthData();
-      throw error; // Re-throw for handling in the calling component
+      throw error;
     }
   };
 
@@ -104,7 +106,7 @@ export const DashboardProvider = ({ children }) => {
     userData,
     isLoading,
     loginWithRole,
-    logout
+    logout,
   };
 
   return (

@@ -112,9 +112,14 @@ const ServiceSelection = ({ onNext }) => {
               }`}
               onClick={() => handleSelectService(service._id)}
             >
-              <div className="aspect-[16/9] bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500">{service.name} Image</span>
-              </div>
+            <div className="aspect-[16/9] bg-gray-100 rounded-t-md overflow-hidden">
+  <img
+    src={service.image}
+    alt={service.name}
+    className="w-full h-full object-cover"
+  />
+</div>
+
 
               <div className="p-4">
                 <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
