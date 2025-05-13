@@ -66,6 +66,8 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [editedAppointment, setEditedAppointment] = useState(appointment);
   const [selectedPhotos, setSelectedPhotos] = useState({ beforeService: [], afterService: [] });
   const [previewUrls, setPreviewUrls] = useState({ beforeService: [], afterService: [] });
+  const [activePhotoTab, setActivePhotoTab] = useState('beforeService');
+  const [showFullImage, setShowFullImage] = useState(null);
 
   const router = useRouter();
   const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -79,9 +81,6 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     customerSignature: appointment.completionDetails?.customerSignature || ''
   });
 
-
-
-  
   useEffect(() => {
     if (!isLoading) {
       if (!userData?.role) {
@@ -95,7 +94,6 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   if (isLoading) return <p>Loading...</p>;
 
   if (userData?.role !== 'admin') return null;
-
 
   const handleUpdate = async () => {
     try {
@@ -356,370 +354,214 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     };
   }, []);
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Appointment Details</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ×
+  const renderPhotoSection = () => {
+    if (appointment.status !== 'Completed') {
+      return (
+        <div className="bg-yellow-50 p-4 rounded-md mb-4">
+          <p className="text-yellow-700">
+            Photos can only be uploaded once the appointment is marked as completed.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex space-x-4 mb-4">
+          <button
+            className={`px-4 py-2 rounded-md ${
+              activePhotoTab === 'beforeService'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200'
+            }`}
+            onClick={() => setActivePhotoTab('beforeService')}
+          >
+            Before Service
+            {appointment.photos?.beforeService?.length > 0 && (
+              <span className="ml-2 bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs">
+                {appointment.photos.beforeService.length}
+              </span>
+            )}
+          </button>
+          <button
+            className={`px-4 py-2 rounded-md ${
+              activePhotoTab === 'afterService'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200'
+            }`}
+            onClick={() => setActivePhotoTab('afterService')}
+          >
+            After Service
+            {appointment.photos?.afterService?.length > 0 && (
+              <span className="ml-2 bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs">
+                {appointment.photos.afterService.length}
+              </span>
+            )}
           </button>
         </div>
 
-        {isEditing ? (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
-              <select
-                value={editedAppointment.status}
-                onChange={(e) => setEditedAppointment({ ...editedAppointment, status: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              >
-                <option value="Scheduled">Scheduled</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
-                <option value="Rescheduled">Rescheduled</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                value={editedAppointment.date.split('T')[0]}
-                onChange={(e) => setEditedAppointment({ ...editedAppointment, date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Start Time</label>
-                <input
-                  type="time"
-                  value={editedAppointment.startTime}
-                  onChange={(e) => setEditedAppointment({ ...editedAppointment, startTime: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">End Time</label>
-                <input
-                  type="time"
-                  value={editedAppointment.endTime}
-                  onChange={(e) => setEditedAppointment({ ...editedAppointment, endTime: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdate}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Customer</p>
-                <p className="mt-1">{appointment.customerName}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Service</p>
-                <p className="mt-1">{appointment.serviceName}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Date</p>
-                <p className="mt-1">{new Date(appointment.date).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Time</p>
-                <p className="mt-1">{`${appointment.startTime} - ${appointment.endTime}`}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Status</p>
-                <StatusBadge status={appointment.status} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Frequency</p>
-                <p className="mt-1">{appointment.frequency}</p>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Crew Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Lead Professional</p>
-                  <p className="mt-1">{appointment.crew?.leadProfessional?.name || 'Not assigned'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Team Members</p>
-                  <div className="mt-1">
-                    {appointment.crew?.assignedTo?.map(member => (
-                      <span key={member._id} className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-                        {member.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Payment Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Status</p>
-                  <p className="mt-1">{appointment.payment?.status}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Amount</p>
-                  <p className="mt-1">${appointment.payment?.amount}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Method</p>
-                  <p className="mt-1">{appointment.payment?.paymentMethod}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Transaction ID</p>
-                  <p className="mt-1">{appointment.payment?.transactionId || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Notes</h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Customer Notes</p>
-                  <p className="mt-1">{appointment.notes?.customer || 'No customer notes'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Professional Notes</p>
-                  <p className="mt-1">{appointment.notes?.professional || 'No professional notes'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Internal Notes</p>
-                  <p className="mt-1">{appointment.notes?.internal || 'No internal notes'}</p>
-                </div>
-              </div>
-            </div>
-
-            {appointment.status === 'Completed' && (
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Completion Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Completed At</p>
-                    <p className="mt-1">{new Date(appointment.completionDetails?.completedAt).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Duration</p>
-                    <p className="mt-1">{appointment.completionDetails?.duration} minutes</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-gray-500">Additional Work</p>
-                    <p className="mt-1">{appointment.completionDetails?.additionalWorkPerformed || 'None'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <h3 className="text-lg font-medium text-gray-900">Photos</h3>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Before Service</h4>
-                  <div className="mt-2 space-y-2">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => handleFileSelect(e, 'beforeService')}
-                      disabled={uploadingPhotos}
-                      className="hidden"
-                      id="beforePhotos"
+        {/* Existing Photos Display */}
+        {appointment.photos && appointment.photos[activePhotoTab]?.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-lg font-semibold mb-2">Existing Photos</h4>
+            <div className="grid grid-cols-3 gap-4">
+              {appointment.photos[activePhotoTab].map((photo, index) => (
+                <div key={index} className="relative group cursor-pointer" onClick={() => setShowFullImage(photo)}>
+                  <div className="aspect-w-16 aspect-h-9">
+                    <img
+                      src={photo.url}
+                      alt={photo.caption || `Photo ${index + 1}`}
+                      className="w-full h-full object-cover rounded-lg transition-transform duration-200 hover:scale-105"
                     />
-                    <div className="flex space-x-2">
-                      <label
-                        htmlFor="beforePhotos"
-                        className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Select Photos
-                      </label>
-                      {selectedPhotos.beforeService.length > 0 && (
-                        <button
-                          onClick={() => handlePhotoUpload('beforeService')}
-                          disabled={uploadingPhotos}
-                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
-                        >
-                          {uploadingPhotos ? 'Uploading...' : 'Upload Selected'}
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Selected photos preview */}
-                    {previewUrls.beforeService.length > 0 && (
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        {previewUrls.beforeService.map((url, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={url}
-                              alt={`Before service preview ${index + 1}`}
-                              className="w-full h-24 object-cover rounded"
-                            />
-                            <button
-                              onClick={() => removePhoto('beforeService', index)}
-                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Existing uploaded photos */}
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {appointment.photos?.beforeService?.map((photo, index) => (
-                        <img
-                          key={`uploaded-${index}`}
-                          src={photo.url}
-                          alt={`Before service ${index + 1}`}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                      ))}
-                    </div>
                   </div>
+                  {photo.caption && (
+                    <p className="text-sm text-gray-600 mt-1 truncate">{photo.caption}</p>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-200 rounded-lg"></div>
                 </div>
-
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">After Service</h4>
-                  <div className="mt-2 space-y-2">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => handleFileSelect(e, 'afterService')}
-                      disabled={uploadingPhotos}
-                      className="hidden"
-                      id="afterPhotos"
-                    />
-                    <div className="flex space-x-2">
-                      <label
-                        htmlFor="afterPhotos"
-                        className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Select Photos
-                      </label>
-                      {selectedPhotos.afterService.length > 0 && (
-                        <button
-                          onClick={() => handlePhotoUpload('afterService')}
-                          disabled={uploadingPhotos}
-                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
-                        >
-                          {uploadingPhotos ? 'Uploading...' : 'Upload Selected'}
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Selected photos preview */}
-                    {previewUrls.afterService.length > 0 && (
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        {previewUrls.afterService.map((url, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={url}
-                              alt={`After service preview ${index + 1}`}
-                              className="w-full h-24 object-cover rounded"
-                            />
-                            <button
-                              onClick={() => removePhoto('afterService', index)}
-                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Existing uploaded photos */}
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {appointment.photos?.afterService?.map((photo, index) => (
-                        <img
-                          key={`uploaded-${index}`}
-                          src={photo.url}
-                          alt={`After service ${index + 1}`}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end space-x-2">
-              {appointment.status !== 'Completed' && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
-                >
-                  Edit Appointment
-                </button>
-              )}
-              {appointment.status === 'Scheduled' && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-                >
-                  Delete Appointment
-                </button>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Deletion</h3>
-              <p className="text-gray-500 mb-4">Are you sure you want to delete this appointment? This action cannot be undone.</p>
-              <div className="flex justify-end space-x-2">
+        {/* Photo Upload Section */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => handleFileSelect(e, activePhotoTab)}
+            className="hidden"
+            id={`photo-upload-${activePhotoTab}`}
+          />
+          <label
+            htmlFor={`photo-upload-${activePhotoTab}`}
+            className="cursor-pointer flex flex-col items-center justify-center space-y-2"
+          >
+            <Upload className="w-8 h-8 text-gray-400" />
+            <span className="text-sm text-gray-500">Click to upload photos</span>
+          </label>
+        </div>
+
+        {/* Preview Section */}
+        {previewUrls[activePhotoTab].length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            {previewUrls[activePhotoTab].map((url, index) => (
+              <div key={index} className="relative group">
+                <div className="aspect-w-16 aspect-h-9">
+                  <img
+                    src={url}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
                 <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  onClick={() => removePhoto(activePhotoTab, index)}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-                >
-                  Delete
+                  ×
                 </button>
               </div>
-            </div>
+            ))}
+          </div>
+        )}
+
+        {selectedPhotos[activePhotoTab].length > 0 && (
+          <div className="mt-4">
+            <Button
+              onClick={() => handlePhotoUpload(activePhotoTab)}
+              disabled={uploadingPhotos}
+              className="w-full"
+            >
+              {uploadingPhotos ? 'Uploading...' : 'Upload Selected Photos'}
+            </Button>
           </div>
         )}
       </div>
-    </div>
+    );
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Appointment Details</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Status and Basic Info */}
+          <div className="mb-6">
+            <StatusBadge status={appointment.status} />
+            <div className="mt-2 grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-gray-600">Date</p>
+                <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Time</p>
+                <p className="font-medium">
+                  {appointment.timeSlot ? 
+                    `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
+                    `${appointment.startTime} - ${appointment.endTime}`
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Photos Section */}
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold mb-4">Service Photos</h3>
+            {renderPhotoSection()}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-4 mt-6">
+            <Button onClick={onClose} variant="secondary">
+              Close
+            </Button>
+            {isEditing ? (
+              <Button onClick={handleUpdate}>Save Changes</Button>
+            ) : (
+              <Button onClick={() => setIsEditing(true)}>Edit</Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Full Image Modal */}
+      {showFullImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowFullImage(null)}
+        >
+          <div className="relative max-w-6xl w-full max-h-[90vh]">
+            <img
+              src={showFullImage.url}
+              alt={showFullImage.caption || 'Full size image'}
+              className="w-full h-full object-contain"
+            />
+            {showFullImage.caption && (
+              <p className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4 text-center">
+                {showFullImage.caption}
+              </p>
+            )}
+            <button
+              onClick={() => setShowFullImage(null)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 text-xl"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -771,9 +613,13 @@ const AppointmentsPage = () => {
             serviceName: app.service?.name || "N/A",
             serviceId: app.service?._id || "",
             date: app.date,
+            timeSlot: {
+              startTime: app.timeSlot?.startTime || 'N/A',
+              endTime: app.timeSlot?.endTime || 'N/A'
+            },
             startTime: app.timeSlot?.startTime || 'N/A',
             endTime: app.timeSlot?.endTime || 'N/A',
-            status: app.status,
+            status: app.status || 'Pending',
             frequency: app.recurringType || 'One-time',
             payment: app.payment || {
               status: 'Pending',
@@ -788,6 +634,10 @@ const AppointmentsPage = () => {
               customer: '',
               professional: '',
               internal: ''
+            },
+            photos: app.photos || {
+              beforeService: [],
+              afterService: []
             }
           };
         });
