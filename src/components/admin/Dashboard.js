@@ -388,6 +388,14 @@ const Dashboard = () => {
               <span className="block mt-2 text-sm font-medium text-gray-900">Manage Services</span>
             </div>
           </Link>
+          <Link href="/admin/staff">
+            <div className="p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-6 w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span className="block mt-2 text-sm font-medium text-gray-900">Manage Staff</span>
+            </div>
+          </Link>
           <Link href="/admin/settings">
             <div className="p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
               <svg className="h-6 w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

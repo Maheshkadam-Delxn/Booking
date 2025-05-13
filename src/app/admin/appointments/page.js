@@ -502,7 +502,7 @@ const AppointmentsPage = () => {
         // Transform appointment data to match frontend structure
         const transformedAppointments = appointments.map((app) => {
           console.log("Processing appointment:", app);
-          
+        
           return {
             id: app._id,
             customerName: app.customer?.user?.name || "N/A",
@@ -533,7 +533,7 @@ const AppointmentsPage = () => {
             }
           };
         });
-
+        
         console.log("Transformed appointments:", transformedAppointments);
         setAppointments(transformedAppointments);
 
@@ -762,111 +762,111 @@ const AppointmentsPage = () => {
             >
               List View
             </button>
-          </div>
         </div>
+      </div>
 
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                name="search"
-                id="search"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Search appointments..."
-                value={searchTerm}
-                onChange={handleSearch}
-              />
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              name="search"
+              id="search"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+              placeholder="Search appointments..."
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {/* Status Filter */}
+            <div>
+              <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 sr-only">
+                Status
+              </label>
+              <select
+                id="status-filter"
+                name="status-filter"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {statuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status === 'all' 
+                      ? 'All Statuses' 
+                      : status
+                          .split('-')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="flex items-center space-x-4">
-              {/* Status Filter */}
-              <div>
-                <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 sr-only">
-                  Status
-                </label>
-                <select
-                  id="status-filter"
-                  name="status-filter"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  {statuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status === 'all' 
-                        ? 'All Statuses' 
-                        : status
-                            .split('-')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Service Filter */}
-              <div>
-                <label htmlFor="service-filter" className="block text-sm font-medium text-gray-700 sr-only">
-                  Service
-                </label>
-                <select
-                  id="service-filter"
-                  name="service-filter"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
-                  value={serviceFilter}
-                  onChange={(e) => setServiceFilter(e.target.value)}
-                >
-                  <option value="all">All Services</option>
+            {/* Service Filter */}
+            <div>
+              <label htmlFor="service-filter" className="block text-sm font-medium text-gray-700 sr-only">
+                Service
+              </label>
+              <select
+                id="service-filter"
+                name="service-filter"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+              >
+                <option value="all">All Services</option>
                   {services && services.map((service) => (
                     <option key={service._id} value={service._id}>
-                      {service.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
+      </div>
 
         {viewType === 'list' ? (
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Customer
-                    </th>
+                  </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Service
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date & Time
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Payment
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
                   {filteredAppointments.map((appointment) => (
                     <tr key={appointment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {appointment.customerName}
-                        </div>
+                          </div>
                         <div className="text-sm text-gray-500 truncate max-w-[200px]">
                           {appointment.address}
                         </div>
@@ -881,12 +881,12 @@ const AppointmentsPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {new Date(appointment.date).toLocaleDateString()}
+                        {new Date(appointment.date).toLocaleDateString()}
                         </div>
                         <div className="text-sm text-gray-500">
                           {appointment.startTime} - {appointment.endTime}
                         </div>
-                      </td>
+</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={appointment.status} />
                       </td>
@@ -913,8 +913,8 @@ const AppointmentsPage = () => {
                                   setSelectedAppointment(appointment);
                                   setShowCrewModal(true);
                                 }}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
+                            className="text-blue-600 hover:text-blue-900"
+                          >
                                 Assign Crew
                               </button>
                               <button
@@ -943,10 +943,10 @@ const AppointmentsPage = () => {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+              </tbody>
+            </table>
           </div>
+        </div>
         ) : (
           <div className="bg-white rounded-lg shadow p-4">
             <Calendar
@@ -1000,7 +1000,7 @@ const AppointmentsPage = () => {
             onUpdate={handleUpdateAppointment}
           />
         )}
-      </div>
+        </div>
     </AdminLayout>
   );
 };
