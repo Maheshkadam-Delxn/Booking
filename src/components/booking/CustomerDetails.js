@@ -8,7 +8,8 @@ import axios from 'axios';
 
 const CustomerDetails = ({ onNext, onBack }) => {
   const { currentBooking, updateCurrentBooking } = useStore();
-  const { userData } = useDashboard();
+  // const { userData } = useDashboard();
+  const { userData, isLoading } = useDashboard();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const [formData, setFormData] = useState({
     address: {
@@ -38,30 +39,29 @@ const CustomerDetails = ({ onNext, onBack }) => {
 
   const [customerData, setCustomerData] = useState(null);
 
-  useEffect(() => {
-    const fetchCustomerDetails = async () => {
-      if (!userData?.token) return;
+ useEffect(() => {
+  if (isLoading || !userData?.token) return;
 
-      try {
-        const response = await axios.get(`${API_URL}/customers/me`, {
-          headers: { Authorization: `Bearer ${userData.token}` }
-        });
-        
-        const customer = response.data.data;
-        setCustomerData(customer);
-        setFormData({
-          address: customer.address || formData.address,
-          propertyDetails: customer.propertyDetails || formData.propertyDetails,
-          notificationPreferences: customer.notificationPreferences || formData.notificationPreferences,
-          notes: currentBooking.notes || ''
-        });
-      } catch (error) {
-        console.error('Failed to fetch customer details:', error);
-      }
-    };
+  const fetchCustomerDetails = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/customers/me`, {
+        headers: { Authorization: `Bearer ${userData.token}` }
+      });
+      const customer = response.data.data;
+      setCustomerData(customer);
+      setFormData({
+        address: customer.address || formData.address,
+        propertyDetails: customer.propertyDetails || formData.propertyDetails,
+        notificationPreferences: customer.notificationPreferences || formData.notificationPreferences,
+        notes: currentBooking.notes || ''
+      });
+    } catch (error) {
+      console.error('Failed to fetch customer details:', error);
+    }
+  };
 
-    fetchCustomerDetails();
-  }, [userData]);
+  fetchCustomerDetails();
+}, [userData, isLoading]);
 
   const handleInputChange = (path, value) => {
     setFormData(prev => ({

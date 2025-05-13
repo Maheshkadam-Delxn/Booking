@@ -137,7 +137,6 @@ export default function LoginPage() {
 // LoginPage.jsx updates
 const handleSubmit = async (e) => {
   e.preventDefault();
-  
   if (!validateForm()) return;
 
   setIsLoading(true);
@@ -148,40 +147,36 @@ const handleSubmit = async (e) => {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(formData),
+      body: JSON.stringify(formData)
     });
 
-    if (!response.ok) throw new Error('Login failed');
-    
-    const data = await response.json();
-    console.log("Login response:", data);
-
-    if (!data.token || !data.user) {
-      throw new Error('Invalid response from server');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
 
-    // Store both token and user data
-    loginWithRole(data.token, data.user, rememberMe);
+    const { token } = await response.json();
+    if (!token) throw new Error('No token received');
+
+    // Wait for login to complete
+    const userData = await loginWithRole(token, rememberMe);
 
     setShowSuccess(true);
-
-    // Redirect based on role from user data
     setTimeout(() => {
       router.push(
-        data.user.role === 'admin' ? '/admin' : 
-        data.user.role === 'professional' ? '/professional' : 
-        data.user.role === 'customer' ? '/customers' : '/'
+        userData.role === 'admin' ? '/admin' :
+        userData.role === 'professional' ? '/professional' :
+        '/customers'
       );
     }, 1500);
-
   } catch (error) {
-    console.error('Login error:', error);
     setShowError(error.message || 'Login failed');
+    console.error('Login error:', error);
   } finally {
     setIsLoading(false);
   }
 };
+
   const handleSocialLogin = (provider) => {
     console.log(`Login with ${provider}`);
     setIsLoading(true);

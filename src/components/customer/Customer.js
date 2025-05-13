@@ -606,7 +606,7 @@ useEffect(() => {
               <p className="text-gray-700">{user.phone}</p>
             </div>
           )}
-          <div>
+          {/* <div>
             <p className="text-sm text-green-600 font-medium">Address</p>
             <p className="text-gray-700">
               {user.formattedAddress || "No address provided"}
@@ -615,7 +615,7 @@ useEffect(() => {
           <div>
             <p className="text-sm text-green-600 font-medium">Member Status</p>
             <p className="text-gray-700">{user.memberStatus}</p>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -648,10 +648,10 @@ useEffect(() => {
                 <p className="text-sm text-green-600 font-medium">Size</p>
                 <p className="text-gray-700">{user.properties[0].sqft}</p>
               </div>
-              <div>
+              {/* <div>
                 <p className="text-sm text-green-600 font-medium">Services</p>
                 <p className="text-gray-700">{user.properties[0].tags.length}</p>
-              </div>
+              </div> */}
             </div>
           </div>
           <button className="w-full mt-4 flex items-center justify-center text-green-600 hover:text-green-800 font-medium">

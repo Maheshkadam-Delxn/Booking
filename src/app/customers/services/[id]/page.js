@@ -120,9 +120,9 @@ export default function ServiceDetailPage() {
             <div className="md:w-1/2 bg-slate-50">
               <div className="flex justify-center items-center h-full p-4">
                 <img
-                  src={service.image}
+                  src={service.image.url}
                   alt={service.name}
-                  className="max-h-full max-w-full object-contain rounded"
+                  className="h-72 max-w-full object-contain rounded"
                 />
               </div>
             </div>

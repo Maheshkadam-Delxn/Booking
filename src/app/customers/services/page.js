@@ -330,7 +330,7 @@ const UserServices = () => {
               >
                 <div className="relative h-52 overflow-hidden">
                   <img
-                    src={service.image}
+                    src={service.image.url}
                     alt={service.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -391,9 +391,9 @@ const UserServices = () => {
                 <div className="flex flex-col flex justify-center md:flex-row">
                   <div className="relative md:w-64 h-40 md:h-auto overflow-hidden">
                     <img
-                      src={service.image}
+                      src={service.image.url}
                       alt={service.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-52 object-cover object-center"
                     />
                   </div>
 
