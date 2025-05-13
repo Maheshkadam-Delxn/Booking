@@ -1,13 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { FaTimes } from 'react-icons/fa';
+import { useDashboard } from '@/contexts/DashboardContext';
+import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+
 export default function AddStaffModal({ onClose, onSuccess }) {
+
+  const { userData, isLoading } = useDashboard();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!userData?.role) {
+        router.push('/login');
+      } else if (userData.role !== 'admin') {
+        router.push('/login');
+      }
+    }
+  }, [isLoading, userData, router]);
+
+  if (isLoading) return <p>Loading...</p>;
+
+  if (userData?.role !== 'admin') return null;
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -30,7 +50,7 @@ export default function AddStaffModal({ onClose, onSuccess }) {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = userData.token;
       await axios.post(`${API_URL}/professionals`, formData, {
         headers: {
           Authorization: `Bearer ${token}`

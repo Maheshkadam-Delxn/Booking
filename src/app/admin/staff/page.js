@@ -10,7 +10,7 @@ import EditStaffModal from './components/EditStaffModal';
 import WorkloadModal from './components/WorkloadModal';
 import { useDashboard } from '@/contexts/DashboardContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export default function StaffPage() {
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function StaffPage() {
 
   const fetchStaff = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/professionals`, {
+      const response = await axios.get(`${API_URL}/professionals`, {
         headers: {
           Authorization: `Bearer ${userData.token}`
         }
@@ -68,7 +68,7 @@ export default function StaffPage() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this staff member?')) {
       try {
-        await axios.delete(`${API_URL}/api/v1/professionals/${id}`, {
+        await axios.delete(`${API_URL}/professionals/${id}`, {
           headers: {
             Authorization: `Bearer ${userData.token}`
           }
@@ -90,7 +90,7 @@ export default function StaffPage() {
 
   const handleViewWorkload = async (staff) => {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/professionals/${staff._id}/workload`, {
+      const response = await axios.get(`${API_URL}/professionals/${staff._id}/workload`, {
         headers: {
           Authorization: `Bearer ${userData.token}`
         }

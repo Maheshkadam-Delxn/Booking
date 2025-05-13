@@ -16,7 +16,7 @@ const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
     const fetchProfessionals = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/professionals`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals`,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
           }

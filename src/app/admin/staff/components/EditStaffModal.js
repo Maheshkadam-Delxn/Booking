@@ -41,7 +41,7 @@ export default function EditStaffModal({ staff, onClose, onSuccess }) {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API_URL}/api/v1/professionals/${staff._id}`, formData, {
+      await axios.put(`${API_URL}/professionals/${staff._id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`
         }
