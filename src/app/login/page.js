@@ -61,80 +61,127 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
   
-    if (!validateForm()) return;
+  //   if (!validateForm()) return;
   
-    setIsLoading(true);
-    setShowError(false);
-    setShowSuccess(false);
+  //   setIsLoading(true);
+  //   setShowError(false);
+  //   setShowSuccess(false);
   
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
+  //   try {
+  //     const response = await fetch(`${API_URL}/auth/login`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       credentials: 'include',
+  //       body: JSON.stringify(formData),
+  //     });
   
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Server response:', errorData);
-        throw new Error('Login failed: Server returned ' + response.status);
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.text();
+  //       console.error('Server response:', errorData);
+  //       throw new Error('Login failed: Server returned ' + response.status);
+  //     }
   
-      const data = await response.json();
+  //     const data = await response.json();
+  // console.log("done login",data);
+  //     if (!data.token) {
+  //       throw new Error('Token not received from server');
+  //     }
   
-      if (!data.token) {
-        throw new Error('Token not received from server');
-      }
+  //     // Use the context to handle login
+  //     loginWithRole(data.token, rememberMe);
   
-      // Use the context to handle login
-      loginWithRole(data.token, rememberMe);
+  //     setShowSuccess(true);
   
-      setShowSuccess(true);
-  
-      // Decode token to get role for redirection
-      const decodedToken = jwtDecode(data.token);
-      const role = decodedToken.role;
+  //     // Decode token to get role for redirection
+  //     const decodedToken = jwtDecode(data.token);
+  //     const role = decodedToken.role;
       
-      setTimeout(() => {
-        router.push(
-          role === 'admin' ? '/admin' : 
-          role === 'professional' ? '/professional' : 
-          role === 'customer' ? '/customers' : '/'
-        );
-      }, 1500);
+  //     setTimeout(() => {
+  //       router.push(
+  //         role === 'admin' ? '/admin' : 
+  //         role === 'professional' ? '/professional' : 
+  //         role === 'customer' ? '/customers' : '/'
+  //       );
+  //     }, 1500);
   
-      // If the user is a customer, fetch customer data
-      if (role === 'customer') {
-        try {
-          const res = await fetch(`${API_URL}/customers/me`, {
-            headers: {
-              Authorization: `Bearer ${data.token}`,
-            },
-          });
+  //     // If the user is a customer, fetch customer data
+  //     if (role === 'customer') {
+  //       try {
+  //         const res = await fetch(`${API_URL}/customers/me`, {
+  //           headers: {
+  //             Authorization: `Bearer ${data.token}`,
+  //           },
+  //         });
   
-          const customerData = await res.json();
-          if (customerData.success) {
-            localStorage.setItem('customerId', customerData.data._id);
-          }
-        } catch (customerErr) {
-          console.error('Error fetching customer data:', customerErr);
-        }
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setShowError(error.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //         const customerData = await res.json();
+  //         if (customerData.success) {
+  //           localStorage.setItem('customerId', customerData.data._id);
+  //         }
+  //       } catch (customerErr) {
+  //         console.error('Error fetching customer data:', customerErr);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Login error:', error);
+  //     setShowError(error.message || 'Login failed');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   
+// LoginPage.jsx updates
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
 
+  setIsLoading(true);
+  setShowError(false);
+  setShowSuccess(false);
+
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) throw new Error('Login failed');
+    
+    const data = await response.json();
+    console.log("Login response:", data);
+
+    if (!data.token || !data.user) {
+      throw new Error('Invalid response from server');
+    }
+
+    // Store both token and user data
+    loginWithRole(data.token, data.user, rememberMe);
+
+    setShowSuccess(true);
+
+    // Redirect based on role from user data
+    setTimeout(() => {
+      router.push(
+        data.user.role === 'admin' ? '/admin' : 
+        data.user.role === 'professional' ? '/professional' : 
+        data.user.role === 'customer' ? '/customers' : '/'
+      );
+    }, 1500);
+
+  } catch (error) {
+    console.error('Login error:', error);
+    setShowError(error.message || 'Login failed');
+  } finally {
+    setIsLoading(false);
+  }
+};
   const handleSocialLogin = (provider) => {
     console.log(`Login with ${provider}`);
     setIsLoading(true);

@@ -14,7 +14,7 @@ const DateTimeSelection = ({ onNext, onBack }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const searchParams = useSearchParams();
-
+// const [errorMessage, setErrorMessage] = useState('');
   const frequencies = [
     { id: 'one-time', label: 'One-Time Service' },
     { id: 'weekly', label: 'Weekly' },
