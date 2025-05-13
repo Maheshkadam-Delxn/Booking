@@ -235,7 +235,7 @@
 // context/DashboardContext.js
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import jwtDecode from 'jwt-decode'; // Ensure jwt-decode is installed
+import {jwtDecode} from 'jwt-decode'; // Ensure jwt-decode is installed
 
 export const DashboardContext = createContext();
 
