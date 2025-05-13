@@ -14,6 +14,7 @@ import { Upload, Calendar as CalendarIcon, List, Grid } from 'lucide-react';
 import RecurringAppointmentModal from './components/RecurringAppointmentModal';
 import CrewAssignmentModal from './components/CrewAssignmentModal';
 import PaymentStatusModal from './components/PaymentStatusModal';
+import { useRouter } from 'next/navigation';
 
 // Status badge component with appropriate colors
 const StatusBadge = ({ status }) => {
@@ -63,16 +64,38 @@ const localizer = momentLocalizer(moment);
 const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedAppointment, setEditedAppointment] = useState(appointment);
+  const [selectedPhotos, setSelectedPhotos] = useState({ beforeService: [], afterService: [] });
+  const [previewUrls, setPreviewUrls] = useState({ beforeService: [], afterService: [] });
 
+  const router = useRouter();
   const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { userData, isLoading } = useDashboard();
   const [completionDetails, setCompletionDetails] = useState({
     completedAt: appointment.completionDetails?.completedAt || '',
     duration: appointment.completionDetails?.duration || '',
     additionalWorkPerformed: appointment.completionDetails?.additionalWorkPerformed || '',
     customerSignature: appointment.completionDetails?.customerSignature || ''
   });
+
+
+
+  
+  useEffect(() => {
+    if (!isLoading) {
+      if (!userData?.role) {
+        router.push('/login');
+      } else if (userData.role !== 'admin') {
+        router.push('/login');
+      }
+    }
+  }, [isLoading, userData, router]);
+
+  if (isLoading) return <p>Loading...</p>;
+
+  if (userData?.role !== 'admin') return null;
+
 
   const handleUpdate = async () => {
     try {
@@ -136,18 +159,51 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     }
   };
 
-  const handlePhotoUpload = async (e, type) => {
-    const files = e.target.files;
-    if (!files.length) return;
+  // Function to handle photo upload
+  const handlePhotoUpload = async (type) => {
+    if (selectedPhotos[type].length === 0) {
+      toast.info('Please select photos first');
+      return;
+    }
 
     setUploadingPhotos(true);
     const formData = new FormData();
-    Array.from(files).forEach(file => {
-      formData.append('photos', file);
-    });
-    formData.append('photoType', type);
-
+    
     try {
+      // Validate and append each file
+      for (const file of selectedPhotos[type]) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`${file.name} is not a valid image file`);
+        }
+
+        // Convert image to Blob if needed
+        const blob = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const blob = new Blob([reader.result], { type: file.type });
+            resolve(blob);
+          };
+          reader.readAsArrayBuffer(file);
+        });
+
+        // Append the blob as a file
+        formData.append('photos', blob, file.name);
+      }
+
+      // Add photoType
+      formData.append('photoType', type);
+
+      // Log formData contents for debugging
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof Blob) {
+          console.log(key, ':', value.type, value.size, 'bytes');
+        } else {
+          console.log(key, ':', value);
+        }
+      }
+
       const response = await axios.post(
         `${API_URL}/appointments/${appointment.id}/photos`,
         formData,
@@ -156,16 +212,149 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
             Authorization: `Bearer ${userData.token}`,
             'Content-Type': 'multipart/form-data',
           },
+          // Important: prevent axios from processing FormData
+          transformRequest: [(data) => data],
+          // Add timeout and larger size limit
+          timeout: 30000, // 30 seconds
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+          // Add response type
+          responseType: 'json',
+          // Add onUploadProgress
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log('Upload progress:', percentCompleted + '%');
+          }
         }
       );
-      toast.success('Photos uploaded successfully');
-      onUpdate({ ...appointment, photos: response.data.data });
+
+      console.log('Upload response:', response.data);
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Upload failed');
+      }
+
+      toast.success(`Successfully uploaded ${selectedPhotos[type].length} photo${selectedPhotos[type].length > 1 ? 's' : ''}`);
+
+      // Update the appointment state with new photos
+      const updatedAppointment = {
+        ...appointment,
+        photos: {
+          ...appointment.photos,
+          [type]: [...(appointment.photos?.[type] || []), ...response.data.data]
+        }
+      };
+      onUpdate(updatedAppointment);
+
+      // Clear previews and selected photos after successful upload
+      setSelectedPhotos(prev => ({ ...prev, [type]: [] }));
+      previewUrls[type].forEach(url => URL.revokeObjectURL(url));
+      setPreviewUrls(prev => ({ ...prev, [type]: [] }));
+
     } catch (error) {
-      toast.error('Failed to upload photos');
+      console.error('Photo upload error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        headers: error.response?.headers,
+        config: error.config
+      });
+
+      let errorMessage = 'Failed to upload photos';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      if (error.response?.status === 403) {
+        toast.error('You are not authorized to upload photos');
+      } else if (error.response?.status === 400) {
+        toast.error(errorMessage);
+      } else {
+        toast.error(`Upload failed: ${errorMessage}`);
+      }
     } finally {
       setUploadingPhotos(false);
     }
   };
+
+  // Add a function to validate file size
+  const validateFileSize = (file) => {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error(`File ${file.name} is too large. Maximum size is 5MB`);
+    }
+    return true;
+  };
+
+  // Update the handleFileSelect function
+  const handleFileSelect = async (e, type) => {
+    const files = Array.from(e.target.files);
+    
+    try {
+      // Validate each file
+      const validFiles = files.filter(file => {
+        try {
+          if (!file.type.startsWith('image/')) {
+            toast.error(`${file.name} is not an image file`);
+            return false;
+          }
+          if (!validateFileSize(file)) {
+            return false;
+          }
+          return true;
+        } catch (error) {
+          toast.error(error.message);
+          return false;
+        }
+      });
+
+      if (validFiles.length === 0) return;
+
+      // Create preview URLs
+      const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file));
+      
+      setSelectedPhotos(prev => ({
+        ...prev,
+        [type]: [...prev[type], ...validFiles]
+      }));
+      
+      setPreviewUrls(prev => ({
+        ...prev,
+        [type]: [...prev[type], ...newPreviewUrls]
+      }));
+    } catch (error) {
+      console.error('File selection error:', error);
+      toast.error('Error processing selected files');
+    }
+  };
+
+  // Function to remove a photo from preview
+  const removePhoto = (type, index) => {
+    setSelectedPhotos(prev => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index)
+    }));
+    
+    // Revoke the URL to prevent memory leaks
+    URL.revokeObjectURL(previewUrls[type][index]);
+    setPreviewUrls(prev => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index)
+    }));
+  };
+
+  // Cleanup function for preview URLs
+  useEffect(() => {
+    return () => {
+      // Cleanup preview URLs when component unmounts
+      [...previewUrls.beforeService, ...previewUrls.afterService].forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
@@ -354,64 +543,133 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-sm font-medium text-gray-700">Before Service</h4>
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-2">
                     <input
                       type="file"
                       multiple
                       accept="image/*"
-                      onChange={(e) => handlePhotoUpload(e, 'beforeService')}
+                      onChange={(e) => handleFileSelect(e, 'beforeService')}
                       disabled={uploadingPhotos}
                       className="hidden"
                       id="beforePhotos"
                     />
-                    <label
-                      htmlFor="beforePhotos"
-                      className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Photos
-                    </label>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {appointment.photos?.beforeService?.map((photo, index) => (
-                      <img
-                        key={index}
-                        src={photo.url}
-                        alt={`Before service ${index + 1}`}
-                        className="w-full h-24 object-cover rounded"
-                      />
-                    ))}
+                    <div className="flex space-x-2">
+                      <label
+                        htmlFor="beforePhotos"
+                        className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Select Photos
+                      </label>
+                      {selectedPhotos.beforeService.length > 0 && (
+                        <button
+                          onClick={() => handlePhotoUpload('beforeService')}
+                          disabled={uploadingPhotos}
+                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                        >
+                          {uploadingPhotos ? 'Uploading...' : 'Upload Selected'}
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Selected photos preview */}
+                    {previewUrls.beforeService.length > 0 && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {previewUrls.beforeService.map((url, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={url}
+                              alt={`Before service preview ${index + 1}`}
+                              className="w-full h-24 object-cover rounded"
+                            />
+                            <button
+                              onClick={() => removePhoto('beforeService', index)}
+                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Existing uploaded photos */}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {appointment.photos?.beforeService?.map((photo, index) => (
+                        <img
+                          key={`uploaded-${index}`}
+                          src={photo.url}
+                          alt={`Before service ${index + 1}`}
+                          className="w-full h-24 object-cover rounded"
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
+
                 <div>
                   <h4 className="text-sm font-medium text-gray-700">After Service</h4>
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-2">
                     <input
                       type="file"
                       multiple
                       accept="image/*"
-                      onChange={(e) => handlePhotoUpload(e, 'afterService')}
+                      onChange={(e) => handleFileSelect(e, 'afterService')}
                       disabled={uploadingPhotos}
                       className="hidden"
                       id="afterPhotos"
                     />
-                    <label
-                      htmlFor="afterPhotos"
-                      className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Photos
-                    </label>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {appointment.photos?.afterService?.map((photo, index) => (
-                      <img
-                        key={index}
-                        src={photo.url}
-                        alt={`After service ${index + 1}`}
-                        className="w-full h-24 object-cover rounded"
-                      />
-                    ))}
+                    <div className="flex space-x-2">
+                      <label
+                        htmlFor="afterPhotos"
+                        className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Select Photos
+                      </label>
+                      {selectedPhotos.afterService.length > 0 && (
+                        <button
+                          onClick={() => handlePhotoUpload('afterService')}
+                          disabled={uploadingPhotos}
+                          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                        >
+                          {uploadingPhotos ? 'Uploading...' : 'Upload Selected'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Selected photos preview */}
+                    {previewUrls.afterService.length > 0 && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {previewUrls.afterService.map((url, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={url}
+                              alt={`After service preview ${index + 1}`}
+                              className="w-full h-24 object-cover rounded"
+                            />
+                            <button
+                              onClick={() => removePhoto('afterService', index)}
+                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Existing uploaded photos */}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {appointment.photos?.afterService?.map((photo, index) => (
+                        <img
+                          key={`uploaded-${index}`}
+                          src={photo.url}
+                          alt={`After service ${index + 1}`}
+                          className="w-full h-24 object-cover rounded"
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
