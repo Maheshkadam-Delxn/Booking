@@ -17,6 +17,7 @@ export default function SignupPage() {
     name: '',
     email: '',
     password: '',
+    phone:'',
     confirmPassword: '',
     role: '', // <-- Add this
     agreeToTerms: false
@@ -102,6 +103,7 @@ export default function SignupPage() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
+          phone:formData.phone,
           password: formData.password,
           role: formData.role
         })
@@ -109,7 +111,7 @@ export default function SignupPage() {
       });
   
       const data = await res.json();
-  
+  console.log("done",data);
       if (!res.ok) {
         throw new Error(data.error || 'Registration failed');
       }
@@ -203,7 +205,19 @@ export default function SignupPage() {
           error={errors.email}
           required
         />
-        
+         <Input
+          label="Phone Number"
+          type="tel"
+          id="phone"
+          name="phone"
+          placeholder="1234567890"
+          value={formData.phone}
+          onChange={handleChange}
+          error={errors.phone}
+          required
+          pattern="[0-9]{10}"
+          title="10-digit phone number"
+        />
         <Input
           label="Password"
           type="password"

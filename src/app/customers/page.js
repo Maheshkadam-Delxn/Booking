@@ -126,19 +126,40 @@
 
 
 
-
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import CustomerLayout from '../../components/customer/CustomerLayout';
 import Customer from '../../components/customer/Customer';
+import { useDashboard } from '@/contexts/DashboardContext';
 
 const AdminPage = () => {
+  const router = useRouter();
+  const { userData, isLoading } = useDashboard();
+
+  useEffect(() => {
+    // Wait until loading is complete before checking role
+    if (!isLoading) {
+      // Redirect if no user or not a customer
+      if (!userData?.token || userData.role !== 'customer') {
+        router.push('/login');
+      }
+    }
+  }, [isLoading, userData, router]);
+
+  // While loading context, show a loading message
+  if (isLoading) return <p>Loading...</p>;
+
+  // Prevent rendering while redirecting
+  if (!userData || userData.role !== 'customer') return null;
+
+  // Render content for 'customer' role
   return (
     <CustomerLayout>
-      <Customer/>
+      <Customer />
     </CustomerLayout>
   );
 };
 
-export default AdminPage; 
+export default AdminPage;

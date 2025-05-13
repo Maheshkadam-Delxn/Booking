@@ -11,7 +11,7 @@ const DateTimeSelection = ({ onNext, onBack }) => {
   const { currentBooking, updateCurrentBooking } = useStore();
   const [selectedDate, setSelectedDate] = useState(currentBooking.date || '');
   const [selectedFrequency, setSelectedFrequency] = useState(currentBooking.frequency || 'one-time');
-  
+  const [errorMessage, setErrorMessage] = useState('');
   const frequencies = [
     { id: 'one-time', label: 'One-Time Service' },
     { id: 'weekly', label: 'Weekly' },

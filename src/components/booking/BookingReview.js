@@ -61,7 +61,7 @@ const BookingReview = ({ onBack }) => {
       );
 
       if (response.status === 201) {
-        router.push(`/booking/confirmation/${response.data.data._id}`);
+        router.push(`/booking/confirmation`);
         resetCurrentBooking();
       }
     } catch (error) {
