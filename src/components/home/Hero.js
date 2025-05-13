@@ -1,106 +1,3 @@
-// 'use client';
-// import React, { useEffect, useState } from 'react';
-// import Link from 'next/link';
-// import Button from '../ui/Button';
-// import { useRouter } from 'next/navigation';
-// import { jwtDecode } from 'jwt-decode';
-// import { useDashboard} from '@/contexts/DashboardContext';
-
-// const Hero = () => {
-//   const { userData, isLoading } = useDashboard();
-//   const router = useRouter();
-//   const [isLoggedIn, setIsLoggedIn] = useState(false);
-//   const [isHovered, setIsHovered] = useState(false);
-
-//   useEffect(() => {
-//     const token = userData?.token || null;
-//     setIsLoggedIn(!!token);
-//   }, []);
-
-//   console.log(userData);
-
-//   const goToBookingDetail = () => {
-//     const token = userData.token;
-//     if (!token) {
-//       router.push("/login");
-//       return;
-//     }
-
-//     try {
-//       const decoded = jwtDecode(token);
-//       const role = decoded.role;
-
-//       if (role === "customer") {
-//         router.push("/booking");
-//       } else {
-//         alert("Access Denied: You are not authorized to access this page.");
-//       }
-//     } catch (error) {
-//       console.error("Invalid token", error);
-//       router.push("/login");
-//     }
-//   };
-
-//   return (
-//     <section className="relative overflow-hidden">
-//       {/* Background Image with Overlay */}
-//       <div 
-//         className="relative bg-cover bg-center min-h-[100vh] w-full"
-//         style={{
-//           backgroundImage: 'url(/images/landscaping-image.png)',
-//           backgroundSize: 'cover',
-//           backgroundPosition: 'center',
-//         }}
-//       >
-//         {/* Dark overlay for better text contrast */}
-//         <div className="absolute inset-0 bg-black/30"></div>
-
-//         {/* Glass effect container */}
-//         <div className="absolute inset-0 flex items-center">
-//           <div 
-//             className={`ml-10 p-10 max-w-2xl backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-2xl transition-all duration-500 ${isHovered ? 'bg-white/20' : ''}`}
-//             onMouseEnter={() => setIsHovered(true)}
-//             onMouseLeave={() => setIsHovered(false)}
-//           >
-//             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-//               Transform Your <span className="text-green-300">Outdoor</span> Space
-//             </h1>
-//             <p className="text-xl text-white/90 mb-10">
-//               Professional landscaping and lawn care services customized to your needs. 
-//               From regular maintenance to complete redesigns, we'll keep your yard 
-//               looking its best all year round.
-//             </p>
-//             <div className="flex flex-col sm:flex-row gap-4">
-//               <Button 
-//                 size="lg" 
-//                 onClick={goToBookingDetail}
-//                 className="hover:scale-105 transition-transform"
-//               >
-//                 Book Now
-//               </Button>
-//               <Link 
-//               href="/"
-//               // "/admin/create-estimate"
-//               >
-//                 <Button 
-//                   variant="secondary" 
-//                   size="lg"
-//                   className="hover:scale-105 transition-transform bg-white"
-//                 >
-//                   Request Estimate
-//                 </Button>
-//               </Link>
-//             </div>
-//           </div>
-//         </div>
-
-
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default Hero;
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -119,8 +16,8 @@ const Hero = () => {
 
   const features = [
     // { icon: <Leaf className="w-6 h-6" />, title: "Landscaping Excellence", description: "Expert design and installation for stunning outdoor" },
-    { icon: <Calendar className="w-6 h-6" />, title: "Scheduled Maintenance", description: "Regular care to keep your yard looking its best" },
-    { icon: <Star className="w-6 h-6" />, title: "Premium Service", description: "Quality-focused attention to every detail" }
+    { icon: <Calendar className="w-6 h-6" />, title: "Budgeted Maintenance", description: "Consistent care to keep your yard pristine" },
+    { icon: <Star className="w-6 h-6" />, title: "Premium Service", description: "Good quality with attention to each detail" }
   ];
 
   useEffect(() => {
@@ -162,17 +59,6 @@ const Hero = () => {
       {/* Background Video/Image */}
       <div className="absolute inset-0 z-0">
         <div className="relative h-full w-full">
-          {/* Video background option */}
-          {/* <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 object-cover w-full h-full"
-          >
-            <source src="/videos/landscaping-video.mp4" type="video/mp4" />
-          </video> */}
-
           {/* Image option with modern parallax effect */}
           <div
             className="absolute inset-0 bg-cover bg-center h-full w-full transform scale-110"
@@ -193,7 +79,6 @@ const Hero = () => {
           {/* Left side - Text content */}
           <div className="text-white space-y-8 max-w-xl">
 
-
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
               Transform Your <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-green-500">
@@ -207,27 +92,18 @@ const Hero = () => {
               looking its best all year round.
             </p>
 
-            {/* Animated features */}
-            <div className="">
-              <div className="flex items-center space-x-4 overflow-hidden h-20">
-                {features.map((feature, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center space-x-3 bg-white px-4 py-2 rounded-lg border-2 border-green-200 transition-all duration-500 transform ${index === activeFeature ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                      } absolute w-64`}  // Added w-64 for fixed width (16rem or 256px)
-                    style={{
-                      left: '0',
-                      display: index === activeFeature ? 'flex' : 'none',
-                      // width: '256px'
-                    }}
-                  >
-                    <div className="text-green-600">{feature.icon}</div>
-                    <div className="flex-1 min-w-0">  {/* Added flex-1 and min-w-0 to prevent text overflow */}
-                      <h3 className="font-medium text-green-800 truncate">{feature.title}</h3>
-                      <p className="text-sm text-green-600 line-clamp-2">{feature.description}</p>
-                    </div>
+            {/* Static Feature Card */}
+            <div className="mt-1">
+              <div className="bg-white rounded-lg p-4 border-2 border-green-200 inline-block">
+                <div className="flex items-center space-x-3">
+                  <div className="text-green-600 p-2 bg-green-50 rounded-full flex-shrink-0">
+                    {features[activeFeature].icon}
                   </div>
-                ))}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-green-800">{features[activeFeature].title}</h3>
+                    <p className="text-sm text-green-600">{features[activeFeature].description}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -239,9 +115,7 @@ const Hero = () => {
                 Book Now
               </Button>
               <Link
-                href=
-                // "/"
-                "/admin/create-estimate"
+                href="/admin/create-estimate"
               >
                 <Button
                   variant="secondary"
