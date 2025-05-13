@@ -19,49 +19,6 @@ export const DashboardProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-
-        if (token) {
-          const decodedToken = jwtDecode(token);
-
-          if (decodedToken?.id && decodedToken?.role) {
-            setUserRole(decodedToken.role);
-
-            // ✅ Get full user details from API
-            const response = await axios.get('http://localhost:5000/api/v1/auth/me', {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-
-            const user = response.data.data;
-
-            const newUserData = {
-              id: user._id,
-              name: user.name,
-              email: user.email,
-              role: decodedToken.role,
-              token: token,
-            };
-
-            setUserData(newUserData);
-            console.log('Fetched full user data:', newUserData);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        clearAuthData();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
   const clearAuthData = () => {
     setUserRole(null);
     setUserData(null);
@@ -69,28 +26,58 @@ export const DashboardProvider = ({ children }) => {
     sessionStorage.removeItem('authToken');
   };
 
-  const loginWithRole = (token, rememberMe) => {
+  const fetchUserData = async (token) => {
     try {
-      if (!token || typeof token !== 'string') {
-        throw new Error('Invalid token: Token must be a string');
-      }
-
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        throw new Error('Invalid token: Malformed JWT structure');
-      }
-
       const decodedToken = jwtDecode(token);
 
-      if (!decodedToken?.id || !decodedToken?.role) {
-        throw new Error('Invalid token: Missing required claims');
-      }
+      if (decodedToken?.id && decodedToken?.role) {
+        setUserRole(decodedToken.role);
 
-      setUserRole(decodedToken.role);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const user = response.data.data;
+
+        setUserData({
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: decodedToken.role,
+          token: token,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      clearAuthData();
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    
+    if (token) {
+      fetchUserData(token).catch(() => {
+        // Handle error if needed
+      });
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loginWithRole = async (token, rememberMe) => {
+    try {
+      if (!token) throw new Error('No token provided');
+      
       const storage = rememberMe ? localStorage : sessionStorage;
       storage.setItem('authToken', token);
-
-      // Don't set userData here — it will be fetched by useEffect
+      
+      await fetchUserData(token);
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -99,7 +86,13 @@ export const DashboardProvider = ({ children }) => {
     }
   };
 
-  const logout = clearAuthData;
+  const logout = () => {
+    clearAuthData();
+    // Optional: Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+  };
 
   const value = {
     userRole,
@@ -115,5 +108,3 @@ export const DashboardProvider = ({ children }) => {
     </DashboardContext.Provider>
   );
 };
-
-export default DashboardContext;

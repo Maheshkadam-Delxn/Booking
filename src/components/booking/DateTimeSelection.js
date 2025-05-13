@@ -1,17 +1,19 @@
-// DateTimeSelection.jsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import useStore from '../../lib/store';
 import TimeSlotPicker from '../ui/TimeSlotPicker';
+import { useSearchParams } from 'next/navigation';
 
 const DateTimeSelection = ({ onNext, onBack }) => {
   const { currentBooking, updateCurrentBooking } = useStore();
-  const [selectedDate, setSelectedDate] = useState(currentBooking.date || '');
+  const [selectedDate, setSelectedDate] = useState(currentBooking.appointmentDate || '');
   const [selectedFrequency, setSelectedFrequency] = useState(currentBooking.frequency || 'one-time');
   const [errorMessage, setErrorMessage] = useState('');
+
+  const searchParams = useSearchParams();
 
   const frequencies = [
     { id: 'one-time', label: 'One-Time Service' },
@@ -19,6 +21,26 @@ const DateTimeSelection = ({ onNext, onBack }) => {
     { id: 'bi-weekly', label: 'Bi-Weekly' },
     { id: 'monthly', label: 'Monthly' }
   ];
+
+  // Auto-skip logic for existing booking data or URL params
+  useEffect(() => {
+    const urlDate = searchParams.get('appointmentDate');
+    const urlSlot = searchParams.get('timeSlot');
+
+    if (urlDate && !currentBooking.appointmentDate) {
+      setSelectedDate(urlDate);
+      updateCurrentBooking({ appointmentDate: urlDate });
+    }
+
+    if (urlSlot && !currentBooking.timeSlot) {
+      updateCurrentBooking({ timeSlot: urlSlot });
+    }
+
+    // If already selected, skip this step
+    if (currentBooking.appointmentDate && currentBooking.timeSlot) {
+      onNext(); // Skip to the next step
+    }
+  }, [searchParams, currentBooking, updateCurrentBooking, onNext]);
 
   const handleTimeSelect = (startTime, endTime) => {
     updateCurrentBooking({ 
@@ -30,6 +52,10 @@ const DateTimeSelection = ({ onNext, onBack }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!selectedDate || !currentBooking.timeSlot) {
+      setErrorMessage("Please select both a date and a time slot.");
+      return;
+    }
     updateCurrentBooking({
       appointmentDate: selectedDate,
       frequency: selectedFrequency
@@ -97,12 +123,12 @@ const DateTimeSelection = ({ onNext, onBack }) => {
           <div>
             <h3 className="text-lg font-medium mb-4">Select a Time Slot</h3>
             <Card className="p-4">
-            <TimeSlotPicker 
-  selectedDate={selectedDate}
-  onTimeSelect={handleTimeSelect}
-  selectedSlot={currentBooking.timeSlot}
-  serviceId={currentBooking.serviceId}
-/>
+              <TimeSlotPicker 
+                selectedDate={selectedDate}
+                onTimeSelect={handleTimeSelect}
+                selectedSlot={currentBooking.timeSlot}
+                serviceId={currentBooking.serviceId}
+              />
             </Card>
           </div>
         </div>
@@ -111,7 +137,12 @@ const DateTimeSelection = ({ onNext, onBack }) => {
           <Button type="button" variant="outline" onClick={onBack}>
             Back to Services
           </Button>
-          <Button type="submit">Continue to Details</Button>
+          <button
+            onClick={handleSubmit}
+            className="bg-green-600 text-white py-2 px-6 rounded-lg disabled:opacity-50"
+          >
+            Continue to Details
+          </button>
         </div>
       </form>
     </div>

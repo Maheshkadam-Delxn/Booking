@@ -301,118 +301,30 @@ import { AlertCircle, CheckCircle, ChevronRight, Loader2 } from 'lucide-react';
 import Container from '../../components/ui/Container';
 import PageHeader from '../../components/layout/PageHeader';
 
-const dummyServices = [
-  {
-    id: 1,
-    name: 'Lawn Mowing',
-    description: 'Professional lawn cutting and edging service for a pristine look',
-    image: 'https://img.freepik.com/free-photo/gardener-with-weedwacker-cutting-grass-garden_329181-20539.jpg',
-    price: 50,
-    duration: 60,
-    highlights: ['Precision cutting', 'Edging included', 'Debris cleanup']
-  },
-  {
-    id: 2,
-    name: 'Garden Design',
-    description: 'Custom landscape design and planting services',
-    image: 'https://img.freepik.com/free-photo/beautiful-green-park_1417-1447.jpg',
-    price: 200,
-    duration: 120,
-    highlights: ['Custom designs', 'Plant selection', '3D visualization']
-  },
-  {
-    id: 3,
-    name: 'Tree Trimming',
-    description: 'Expert tree pruning and maintenance',
-    image: 'https://img.freepik.com/free-photo/close-up-gardener-taking-care-plants_23-2148905240.jpg',
-    price: 150,
-    duration: 90,
-    highlights: ['Safety pruning', 'Disease control', 'Waste removal']
-  },
-  {
-    id: 4,
-    name: 'Irrigation Setup',
-    description: 'Smart watering system installation',
-    image: 'https://img.freepik.com/free-photo/greenhouse-still-life_23-2148127861.jpg',
-    price: 300,
-    duration: 180,
-    highlights: ['Smart controllers', 'Zone setup', 'Maintenance alerts']
-  },
-  {
-    id: 5,
-    name: 'Seasonal Cleanup',
-    description: 'Spring/Fall yard cleanup and preparation',
-    image: 'https://img.freepik.com/premium-photo/low-section-person-standing-field-autumn_1048944-11624616.jpg',
-    price: 100,
-    duration: 120,
-    highlights: ['Leaf removal', 'Mulching', 'Gutter cleaning']
-  },
-  {
-    id: 6,
-    name: 'Paver block landscaping',
-    description: 'Custom stone or paver patio construction',
-    image: 'https://img.freepik.com/free-photo/construction-worker-sanding-down-wood-piece_23-2148748861.jpg',
-    price: 2500,
-    duration: 480,
-    highlights: ['Custom designs', 'Premium materials', 'Drainage solutions']
-  }
-];
-
 export default function ServicesPage() {
-  const [services] = useState(dummyServices);
-  const [plans, setPlans] = useState([]);
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => {
-      setPlans([
-        {
-          id: 'basic',
-          title: 'Basic Care',
-          price: '$150/month',
-          frequency: 'Monthly Service',
-          features: [
-            'Lawn mowing and edging',
-            'Blowing and cleanup',
-            'Basic weed control',
-            'Seasonal fertilization'
-          ]
-        },
-        {
-          id: 'premium',
-          title: 'Premium Care',
-          price: '$250/month',
-          frequency: 'Bi-weekly Service',
-          features: [
-            'All Basic Care services',
-            'Deep pruning',
-            'Bed weed control',
-            'Regular fertilizer',
-            'Plant health monitoring'
-          ]
-        },
-        {
-          id: 'ultimate',
-          title: 'Ultimate Care',
-          price: '$350/month',
-          frequency: 'Weekly Service',
-          features: [
-            'All Premium Care services',
-            'Tree trimming (up to 8ft)',
-            'Seasonal flower rotation',
-            'Irrigation system checks',
-            'Priority scheduling',
-            'Monthly service reports'
-          ]
-        }
-      ]);
+ useEffect(() => {
+  const fetchServices = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/services`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch services');
+      }
+      const data = await response.json();
+      setServices(data.data); // Access the "data" property to get the array of services
       setLoading(false);
-    }, 1000);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
-    return () => clearTimeout(timer);
-  }, []);
+  fetchServices();
+}, []);
+
 
   const renderLoading = () => (
     <div className="flex flex-col items-center justify-center py-20">
@@ -428,7 +340,7 @@ export default function ServicesPage() {
         <h3 className="text-lg font-medium text-red-800">Unable to load services</h3>
       </div>
       <p className="text-red-700 mb-4">{error}</p>
-      <button 
+      <button
         onClick={() => {
           setLoading(true);
           setError(null);
@@ -443,21 +355,16 @@ export default function ServicesPage() {
   const renderServices = () => (
     <>
       {services.map((service) => (
-        <div key={service.id} className="mb-16 overflow-hidden group">
-          <div className="flex flex-col md:flex-row items-stretch bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl">
+        <div key={service._id || service.id} className="mb-16 overflow-hidden group">
+          <div className="flex flex-col md:flex-row items-stretch bg-white shadow-md overflow-hidden transition-all hover:shadow-xl">
             <div className="w-full md:w-2/5 lg:w-1/3 relative">
-              <img 
-                src={service.image} 
-                alt={service.name} 
-                className="w-full h-full object-cover object-center min-h-64"
+              <img
+                src={service.image.url}
+                alt={service.name}
+                className="w-full h-72 rounded-xl object-cover object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
-                {/* <Link href={`/services/${service.id}`} passHref>
-                  <span className="inline-flex items-center bg-white/90 hover:bg-white text-green-800 font-medium py-2 px-4 rounded-full backdrop-blur-sm transition-colors">
-                    View Details
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </span>
-                </Link> */}
+              <div className="absolute inset-0 flex items-end justify-center pb-4">
+                {/* Optional: Add View Details */}
               </div>
             </div>
             <div className="w-full md:w-3/5 lg:w-2/3 p-6 md:p-8 flex flex-col">
@@ -465,7 +372,7 @@ export default function ServicesPage() {
               <p className="text-gray-700 text-lg mb-6 flex-grow">{service.description}</p>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {service.highlights.map((item, i) => (
+                  {service.highlights?.map((item, i) => (
                     <div key={i} className="flex items-start">
                       <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{item}</span>
@@ -478,11 +385,12 @@ export default function ServicesPage() {
                       Get a Quote
                     </span>
                   </Link>
-                  {/* <Link href="/schedule">
-                    <span className="inline-flex items-center bg-white border-2 border-green-600 text-green-700 hover:bg-green-50 font-medium py-2.5 px-6 rounded-lg transition-colors">
-                      Schedule Service
-                    </span>
-                  </Link> */}
+                 <Link href={`/booknow?serviceId=${service._id}`}>
+  <span className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors">
+    Book Now
+  </span>
+</Link>
+
                 </div>
               </div>
             </div>
@@ -492,46 +400,21 @@ export default function ServicesPage() {
     </>
   );
 
-  // const renderPlans = () => (
-  //   <div className="mt-16">
-  //     <h2 className="text-2xl md:text-3xl font-bold text-center text-green-800 mb-8">Service Plans</h2>
-  //     <div className="grid gap-6 md:grid-cols-3">
-  //       {plans.map((plan) => (
-  //         <div key={plan.id} className="bg-white shadow-lg rounded-xl p-6 text-center">
-  //           <h3 className="text-xl font-semibold text-green-700 mb-2">{plan.title}</h3>
-  //           <p className="text-green-800 text-lg font-bold mb-1">{plan.price}</p>
-  //           <p className="text-gray-600 mb-4">{plan.frequency}</p>
-  //           <ul className="text-left space-y-2">
-  //             {plan.features.map((feature, idx) => (
-  //               <li key={idx} className="flex items-start">
-  //                 <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-  //                 <span>{feature}</span>
-  //               </li>
-  //             ))}
-  //           </ul>
-  //         </div>
-  //       ))}
-  //     </div>
-  //   </div>
-  // );
-
   return (
     <>
-      <PageHeader 
+      <PageHeader
         title="Professional Landscaping Services"
         description="Creating and maintaining beautiful outdoor spaces for your home or business"
         backgroundImage="/images/services-header.jpg"
       />
-      
+
       <Container className="py-12 md:py-20">
         {loading ? renderLoading() : error ? renderError() : renderServices()}
-        {!loading && !error
-        //  && renderPlans()
-         }
+
         <div className="bg-gradient-to-br from-green-700 to-green-900 text-white rounded-xl p-8 md:p-12 text-center mt-12">
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Ready to Transform Your Outdoor Space?</h2>
           <p className="mb-8 max-w-2xl mx-auto text-green-50 text-lg">
-            Contact us today for a free consultation and estimate. Our experts are ready to help you 
+            Contact us today for a free consultation and estimate. Our experts are ready to help you
             create and maintain the landscape of your dreams.
           </p>
           <Link href="/contact">
