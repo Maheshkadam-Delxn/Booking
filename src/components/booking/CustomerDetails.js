@@ -1,4 +1,3 @@
-// CustomerDetails.jsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -17,7 +16,7 @@ const CustomerDetails = ({ onNext, onBack }) => {
       city: '',
       state: '',
       zipCode: '',
-      country: 'USA'
+      country: ''
     },
     propertyDetails: {
       size: '',
@@ -37,6 +36,8 @@ const CustomerDetails = ({ onNext, onBack }) => {
     notes: ''
   });
 
+  const [customerData, setCustomerData] = useState(null);
+
   useEffect(() => {
     const fetchCustomerDetails = async () => {
       if (!userData?.token) return;
@@ -47,6 +48,7 @@ const CustomerDetails = ({ onNext, onBack }) => {
         });
         
         const customer = response.data.data;
+        setCustomerData(customer);
         setFormData({
           address: customer.address || formData.address,
           propertyDetails: customer.propertyDetails || formData.propertyDetails,
@@ -84,11 +86,47 @@ const CustomerDetails = ({ onNext, onBack }) => {
     onNext();
   };
 
+  if (!customerData) return <div>Loading...</div>;
+
   return (
     <div className="py-8">
       <h2 className="text-2xl font-bold mb-6">Customer Details</h2>
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Personal Details Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Personal Information</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border rounded-md"
+                value={customerData.user.name}
+                disabled
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                className="w-full px-4 py-2 border rounded-md"
+                value={customerData.user.email}
+                disabled
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border rounded-md"
+                value={customerData.user.phone || ''}
+                disabled
+              />
+            </div>
+          </div>
+
           {/* Address Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Property Address</h3>
@@ -112,9 +150,7 @@ const CustomerDetails = ({ onNext, onBack }) => {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Property Details</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Size (sq ft)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Size (sq ft)</label>
               <input
                 type="number"
                 className="w-full px-4 py-2 border rounded-md"
@@ -124,9 +160,7 @@ const CustomerDetails = ({ onNext, onBack }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Access Instructions
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Access Instructions</label>
               <textarea
                 className="w-full px-4 py-2 border rounded-md"
                 value={formData.propertyDetails.accessInstructions || ''}
@@ -135,9 +169,7 @@ const CustomerDetails = ({ onNext, onBack }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Property Features
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Property Features</label>
               {Object.keys(formData.propertyDetails.features).map((feature) => (
                 <label key={feature} className="flex items-center">
                   <input

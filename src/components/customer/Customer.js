@@ -60,67 +60,99 @@ function calculateDuration(startTime, endTime) {
 
 useEffect(() => {
   const fetchAndFilterAppointment = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/appointments/my-appointments`, {
-        headers: {
-          Authorization: `Bearer ${userData.token}`
+  try {
+    const response = await axios.get(`${API_URL}/appointments/my-appointments`, {
+      headers: {
+        Authorization: `Bearer ${userData.token}`
+      }
+    });
+
+    console.log("API Response:", response.data);
+
+    const now = new Date();
+    const allAppointments = [];
+
+    // Safely process each appointment
+    response.data.data.forEach(appointment => {
+      try {
+        // Skip if no time slot or invalid data
+        if (!appointment?.timeSlot?.startTime) {
+          console.warn('Skipping appointment - missing time slot:', appointment);
+          return;
         }
-      });
 
-      console.log("API Response:", response.data);
-
-      const now = new Date();
-
-      const allAppointments = response.data.data.map(appointment => {
         const appointmentDate = new Date(appointment.date);
-        const timeParts = appointment.timeSlot.startTime.split(/[: ]/);
-        let hours = parseInt(timeParts[0], 10);
-        const minutes = parseInt(timeParts[1], 10);
-        const period = timeParts[2].toUpperCase();
+        
+        // Safely parse time
+        const timeString = appointment.timeSlot.startTime;
+        if (typeof timeString !== 'string') {
+          console.warn('Invalid time format:', timeString);
+          return;
+        }
 
-        if (period === 'PM' && hours < 12) hours += 12;
-        if (period === 'AM' && hours === 12) hours = 0;
+        // Parse time (handle both "HH:MM AM/PM" and "HH:MM:SS AM/PM" formats)
+        const timeParts = timeString.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+        if (!timeParts) {
+          console.warn('Could not parse time:', timeString);
+          return;
+        }
+
+        let hours = parseInt(timeParts[1], 10);
+        const minutes = parseInt(timeParts[2], 10);
+        const period = timeParts[3]?.toUpperCase();
+
+        // Convert to 24-hour format if period exists
+        if (period) {
+          if (period === 'PM' && hours < 12) hours += 12;
+          if (period === 'AM' && hours === 12) hours = 0;
+        }
 
         appointmentDate.setHours(hours, minutes, 0, 0);
 
-        return {
+        allAppointments.push({
           ...appointment,
           fullDateTime: appointmentDate
-        };
-      });
-
-      const upcoming = allAppointments
-        .filter(appointment => appointment.fullDateTime > now)
-        .sort((a, b) => a.fullDateTime - b.fullDateTime);
-
-      const past = allAppointments
-        .filter(appointment => appointment.fullDateTime <= now)
-        .sort((a, b) => b.fullDateTime - a.fullDateTime);
-
-      console.log("Upcoming appointments:", upcoming);
-      console.log("Past appointments:", past);
-
-      if (upcoming.length > 0) {
-        const next = upcoming[0];
-        setNextAppointment({
-          name: next.service?.name || 'Unnamed Service',
-          category: next.service?.category || 'N/A',
-          type: next.packageType || 'Service',
-          date: next.date.split('T')[0],
-          startTime: next.timeSlot.startTime,
-          endTime: next.timeSlot.endTime,
-          duration: calculateDuration(next.timeSlot.startTime, next.timeSlot.endTime)
         });
-      } else {
-        setNextAppointment(null);
+      } catch (error) {
+        console.error('Error processing appointment:', appointment, error);
       }
+    });
 
-      setPastAppointments(past); // set past appointments list
+    // Filter and sort appointments
+    const upcoming = allAppointments
+      .filter(appointment => appointment.fullDateTime > now)
+      .sort((a, b) => a.fullDateTime - b.fullDateTime);
 
-    } catch (err) {
-      console.error("Failed to fetch appointments:", err);
+    const past = allAppointments
+      .filter(appointment => appointment.fullDateTime <= now)
+      .sort((a, b) => b.fullDateTime - a.fullDateTime);
+
+    console.log("Upcoming appointments:", upcoming);
+    console.log("Past appointments:", past);
+
+    if (upcoming.length > 0) {
+      const next = upcoming[0];
+      setNextAppointment({
+        _id: next._id,
+        name: next.service?.name || 'Unnamed Service',
+        category: next.service?.category || 'N/A',
+        type: next.packageType || 'Service',
+        date: next.date,
+        startTime: next.timeSlot.startTime,
+        endTime: next.timeSlot.endTime,
+        duration: calculateDuration(next.timeSlot.startTime, next.timeSlot.endTime),
+        status: next.status || 'Scheduled'
+      });
+    } else {
+      setNextAppointment(null);
     }
-  };
+
+    setPastAppointments(past);
+  } catch (err) {
+    console.error("Failed to fetch appointments:", err);
+    setError("Failed to load appointments. Please try again later.");
+  }
+};
 
   if (userData?.token) {
     fetchAndFilterAppointment();

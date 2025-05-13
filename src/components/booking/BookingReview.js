@@ -72,109 +72,89 @@ const BookingReview = ({ onBack }) => {
   };
 
   return (
-    <div className="py-8">
-      <h2 className="text-2xl font-bold mb-6">Review Your Booking</h2>
+    <div className="py-8 bg-emerald-50 min-h-screen px-4 md:px-8 rounded-lg shadow-sm">
+      <h2 className="text-3xl font-bold text-emerald-800 mb-6">Review Your Booking</h2>
 
-      <Card className="mb-8">
-        <Card.Header>
-          <h3 className="text-xl font-semibold">Booking Summary</h3>
+      <Card className="mb-10 bg-white border border-emerald-100 shadow-md">
+        <Card.Header className="bg-emerald-100 px-6 py-4 rounded-t-lg">
+          <h3 className="text-xl font-semibold text-emerald-900">Booking Summary</h3>
         </Card.Header>
 
-        <Card.Content>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card.Content className="px-6 py-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Service Details */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">
-                Service Details
-              </h4>
-              <ul className="space-y-2 text-gray-600">
-                <li>
-                  <span className="font-medium">Service:</span>{" "}
-                  {selectedService?.name || "N/A"}
-                </li>
-                <li>
-                  <span className="font-medium">Date:</span>{" "}
-                  {currentBooking?.appointmentDate}
-                </li>
-                <li>
-                  <span className="font-medium">Time:</span>{" "}
-                  {currentBooking?.startTime} - {currentBooking?.endTime}
-                </li>
-                <li>
-                  <span className="font-medium">Frequency:</span>{" "}
-                  {currentBooking?.frequency}
-                </li>
-                <li>
-                  <span className="font-medium">Estimated Price:</span> $
-                  {selectedService?.price || "0.00"}
-                </li>
+              <h4 className="text-emerald-700 font-medium mb-2">Service Details</h4>
+              <ul className="space-y-2 text-gray-700">
+                <li><strong>Service:</strong> {selectedService?.service || "N/A"}</li>
+                <li><strong>Date:</strong> {currentBooking?.appointmentDate}</li>
+                <li><strong>Time:</strong> {currentBooking?.startTime} - {currentBooking?.endTime}</li>
+                <li><strong>Frequency:</strong> {currentBooking?.frequency}</li>
+                <li><strong>Estimated Price:</strong> ${selectedService?.price || "0.00"}</li>
+                <li><strong>Preferred Time:</strong> {currentBooking?.servicePreferences?.preferredTimeOfDay || "Any"}</li>
+                <li><strong>Preferred Days:</strong> {currentBooking?.servicePreferences?.preferredDays?.join(", ") || "None"}</li>
               </ul>
             </div>
 
+            {/* Contact Info */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">
-                Contact Information
-              </h4>
-              <ul className="space-y-2 text-gray-600">
-                <li>
-                  <span className="font-medium">Name:</span>{" "}
-                  {currentBooking?.customerName}
-                </li>
-                <li>
-                  <span className="font-medium">Email:</span>{" "}
-                  {currentBooking?.customerEmail}
-                </li>
-                <li>
-                  <span className="font-medium">Phone:</span>{" "}
-                  {currentBooking?.customerPhone}
-                </li>
-                <li>
-                  <span className="font-medium">Address:</span>{" "}
-                  {currentBooking?.address?.street},{" "}
-                  {currentBooking?.address?.city},{" "}
-                  {currentBooking?.address?.state}{" "}
-                  {currentBooking?.address?.zipCode},{" "}
-                  {currentBooking?.address?.country}
-                </li>
+              <h4 className="text-emerald-700 font-medium mb-2">Contact Info</h4>
+              <ul className="space-y-2 text-gray-700">
+                <li><strong>Name:</strong> {userData?.name || "N/A"}</li>
+                <li><strong>Email:</strong> {userData?.email || "N/A"}</li>
               </ul>
             </div>
           </div>
 
-          {currentBooking?.notes && (
-            <div className="mt-6">
-              <h4 className="font-medium text-gray-900 mb-2">
-                Special Instructions
-              </h4>
-              <p className="text-gray-600 bg-gray-50 p-3 rounded">
-                {currentBooking.notes}
-              </p>
+          {/* Property and Notification Details */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 className="text-emerald-700 font-medium mb-2">Property Details</h4>
+              <ul className="space-y-2 text-gray-700">
+                <li><strong>Size:</strong> {currentBooking?.propertyDetails?.size || "N/A"} sq ft</li>
+                <li><strong>Access:</strong> {currentBooking?.propertyDetails?.accessInstructions || "None"}</li>
+                <li><strong>Front Yard:</strong> {currentBooking?.propertyDetails?.features?.hasFrontYard ? "Yes" : "No"}</li>
+                <li><strong>Back Yard:</strong> {currentBooking?.propertyDetails?.features?.hasBackYard ? "Yes" : "No"}</li>
+                <li><strong>Trees:</strong> {currentBooking?.propertyDetails?.features?.hasTrees ? "Yes" : "No"}</li>
+                <li><strong>Garden:</strong> {currentBooking?.propertyDetails?.features?.hasGarden ? "Yes" : "No"}</li>
+                <li><strong>Sprinkler:</strong> {currentBooking?.propertyDetails?.features?.hasSprinklerSystem ? "Yes" : "No"}</li>
+              </ul>
             </div>
-          )}
+
+            <div>
+              <h4 className="text-emerald-700 font-medium mb-2">Notifications</h4>
+              <ul className="space-y-2 text-gray-700">
+                <li><strong>Email:</strong> {currentBooking?.notificationPreferences?.email ? "Yes" : "No"}</li>
+                <li><strong>SMS:</strong> {currentBooking?.notificationPreferences?.sms ? "Yes" : "No"}</li>
+                <li><strong>Reminder:</strong> {currentBooking?.notificationPreferences?.reminderDaysBefore} days before</li>
+              </ul>
+            </div>
+          </div>
         </Card.Content>
       </Card>
 
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
-        <p className="text-green-800">
-          <span className="font-medium">What happens next?</span> After you
-          submit your booking, our team will review your request and prepare a
-          detailed estimate. We'll contact you within 24-48 hours to confirm the
-          appointment and provide pricing details.
+      <div className="bg-emerald-100 border border-emerald-300 rounded-lg p-5 mb-6">
+        <p className="text-emerald-800">
+          <strong>What happens next?</strong> Our team will review your request and get back to you with a detailed estimate within 24–48 hours.
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">
+        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded border border-red-300">
           {error}
         </div>
       )}
 
-      <div className="flex justify-between">
+      <div className="flex justify-between mt-6">
         <Button type="button" variant="outline" onClick={onBack}>
           Back to Details
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className={isSubmitting ? "opacity-70 cursor-not-allowed" : ""}
+          className={`bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg transition ${
+            isSubmitting ? "opacity-60 cursor-not-allowed" : ""
+          }`}
         >
           {isSubmitting ? "Submitting..." : "Submit Booking"}
         </Button>
