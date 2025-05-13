@@ -25,21 +25,38 @@ const ContactForm = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // In a real application, this would send the form data to a server
-    console.log(formData);
-    alert('Your message has been sent successfully!');
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      service: '',
-      message: ''
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/contact`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
     });
-  };
+
+    if (response.ok) {
+      alert('Your message has been sent successfully!');
+    } else {
+      alert('There was an issue sending your message.');
+    }
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    alert('There was an error submitting the form.');
+  }
+
+  // Reset the form
+  setFormData({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    service: '',
+    message: ''
+  });
+};
 
   return (
     <section className="py-20 bg-white">

@@ -4,8 +4,7 @@ import { services, appointments, estimates } from './data/mockData';
 const useStore = create((set) => ({
   // Services
   services: services,
-  
-  // Create a new service
+
   createService: (service) =>
     set((state) => ({
       services: [
@@ -16,16 +15,14 @@ const useStore = create((set) => ({
         }
       ]
     })),
-  
-  // Update an existing service
+
   updateService: (id, updatedData) =>
     set((state) => ({
       services: state.services.map((service) =>
         service.id === id ? { ...service, ...updatedData } : service
       )
     })),
-  
-  // Delete a service
+
   deleteService: (id) =>
     set((state) => ({
       services: state.services.filter((service) => service.id !== id)
@@ -33,6 +30,7 @@ const useStore = create((set) => ({
 
   // Appointments
   appointments: appointments,
+
   createAppointment: (appointment) =>
     set((state) => ({
       appointments: [
@@ -54,6 +52,7 @@ const useStore = create((set) => ({
 
   // Estimates
   estimates: estimates,
+
   createEstimate: (estimate) =>
     set((state) => ({
       estimates: [
@@ -75,14 +74,14 @@ const useStore = create((set) => ({
       )
     })),
 
-  // Current booking data (for multi-step form)
+  // Current Booking (multi-step form data)
   currentBooking: {
     serviceId: null,
-    appointmentDate: null, // Added appointmentDate
-    startTime: null,       // Added startTime
-    endTime: null,         // Added endTime
+    appointmentDate: null,
+    startTime: null,
+    endTime: null,
     frequency: 'one-time',
-    customerId: null, // ✅ NEW
+    customerId: null,
     customerName: '',
     customerEmail: '',
     customerPhone: '',
@@ -100,10 +99,11 @@ const useStore = create((set) => ({
     set({
       currentBooking: {
         serviceId: null,
-        appointmentDate: null, // Reset appointmentDate
-        startTime: null,       // Reset startTime
-        endTime: null,         // Reset endTime
+        appointmentDate: null,
+        startTime: null,
+        endTime: null,
         frequency: 'one-time',
+        customerId: null,
         customerName: '',
         customerEmail: '',
         customerPhone: '',

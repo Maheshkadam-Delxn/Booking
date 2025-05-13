@@ -135,6 +135,8 @@ const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'year'
   const [token, setToken] = useState('');
   const [decodedToken, setDecodedToken] = useState(null);
+    // Add this line to check admin status
+  const isAdmin = decodedToken?.role === 'admin';
   
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
@@ -232,9 +234,11 @@ const Dashboard = () => {
           <Link href="/admin/appointments/new">
             <Button variant="primary" size="sm">New Appointment</Button>
           </Link>
-          <Link href="/admin/services/new">
-            <Button variant="secondary" size="sm">Add Service</Button>
-          </Link>
+          {isAdmin && (
+    <Link href="/admin/services/new">
+      <Button variant="secondary" size="sm">Add Service</Button>
+    </Link>
+  )}
         </div>
       </div>
 
