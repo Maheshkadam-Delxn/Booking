@@ -6,7 +6,6 @@ import useStore from '../../lib/store';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 
-// A simple activity log component to show recent activities
 const ActivityLog = ({ activities }) => {
   return (
     <div className="flow-root">
@@ -45,9 +44,7 @@ const ActivityLog = ({ activities }) => {
   );
 };
 
-// A calendar overview component showing upcoming appointments
 const CalendarOverview = ({ appointments }) => {
-  // Only show the next 5 upcoming appointments
   const upcomingAppointments = appointments
     .filter(a => a.status === 'scheduled')
     .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -65,11 +62,11 @@ const CalendarOverview = ({ appointments }) => {
           {upcomingAppointments.map((appointment) => (
             <li key={appointment.id} className="p-4 hover:bg-gray-50">
               <Link href={`/admin/appointments/${appointment.id}`} className="block">
-                <div className="flex justify-between">
-                  <p className="text-sm font-medium text-gray-900">{appointment.customerName}</p>
+                <div className="flex flex-col sm:flex-row sm:justify-between">
+                  <p className="text-sm font-medium text-gray-900 mb-1 sm:mb-0">{appointment.customerName}</p>
                   <p className="text-sm text-gray-500">{appointment.date}</p>
                 </div>
-                <div className="mt-2 flex justify-between">
+                <div className="mt-2 flex flex-col sm:flex-row sm:justify-between">
                   <p className="text-sm text-gray-500">{appointment.serviceName}</p>
                   <p className="text-sm text-gray-500">{appointment.timeSlot}</p>
                 </div>
@@ -87,10 +84,7 @@ const CalendarOverview = ({ appointments }) => {
   );
 };
 
-// Sample data for the charts visualization
 const getBarChartData = () => {
-  // Return sample data for a simple bar chart
-  // In a real application, this would come from an API or calculated from real data
   return [
     { month: 'Jan', value: 12 },
     { month: 'Feb', value: 15 },
@@ -107,14 +101,13 @@ const getBarChartData = () => {
   ];
 };
 
-// Simple bar chart component
 const BarChart = ({ data, title }) => {
   const maxValue = Math.max(...data.map(item => item.value));
   
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
       <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
-      <div className="flex items-end space-x-2 h-48">
+      <div className="flex items-end space-x-2 h-48 min-w-[600px]">
         {data.map((item, index) => (
           <div key={index} className="flex flex-col items-center flex-1">
             <div 
@@ -129,13 +122,11 @@ const BarChart = ({ data, title }) => {
   );
 };
 
-// Main Dashboard component
 const Dashboard = () => {
   const { appointments, estimates, services } = useStore();
-  const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'year'
+  const [timeRange, setTimeRange] = useState('week');
   const [token, setToken] = useState('');
   const [decodedToken, setDecodedToken] = useState(null);
-    // Add this line to check admin status
   const isAdmin = decodedToken?.role === 'admin';
   
   useEffect(() => {
@@ -153,7 +144,6 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Generate recent activities from the appointments and estimates data
   const recentActivities = [
     {
       id: 1,
@@ -184,7 +174,6 @@ const Dashboard = () => {
     },
   ];
 
-  // Count appointments by status
   const appointmentCounts = {
     total: appointments.length,
     pending: appointments.filter(a => a.status === 'pending-estimate').length,
@@ -192,7 +181,6 @@ const Dashboard = () => {
     completed: appointments.filter(a => a.status === 'completed').length,
   };
   
-  // Count estimates by status
   const estimateCounts = {
     total: estimates.length,
     pending: estimates.filter(e => e.status === 'pending').length,
@@ -200,19 +188,17 @@ const Dashboard = () => {
     rejected: estimates.filter(e => e.status === 'rejected').length,
   };
 
-  // Sample chart data
   const barChartData = getBarChartData();
   
   return (
-    <div>
-      {/* Token Display Section */}
-      <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+    <div className="px-4 sm:px-6 lg:px-8 py-6">
+      {/* Token Display Section - Hidden on mobile */}
+      <div className="mb-6 p-4 bg-gray-100 rounded-lg hidden sm:block">
         <h2 className="text-lg font-medium text-gray-900 mb-2">Authentication Token</h2>
         <div className="bg-white p-3 rounded border border-gray-200">
           <p className="text-sm font-mono break-all">{token}</p>
         </div>
         
-        {/* Decoded Token Data */}
         {decodedToken && (
           <div className="mt-4">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Decoded Token Data</h3>
@@ -232,23 +218,27 @@ const Dashboard = () => {
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <Link href="/admin/appointments/new">
-            <Button variant="primary" size="sm">New Appointment</Button>
+            <Button variant="primary" size="sm" className="w-full sm:w-auto">
+              New Appointment
+            </Button>
           </Link>
           {isAdmin && (
-    <Link href="/admin/services/new">
-      <Button variant="secondary" size="sm">Add Service</Button>
-    </Link>
-  )}
+            <Link href="/admin/services/new">
+              <Button variant="secondary" size="sm" className="w-full sm:w-auto">
+                Add Service
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
       {/* Time range selector */}
-      <div className="mb-6 bg-white rounded-lg shadow p-4 flex justify-between items-center">
-        <h2 className="text-lg font-medium text-gray-900">Overview</h2>
-        <div className="flex space-x-2">
+      <div className="mb-6 bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row justify-between items-center">
+        <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-0">Overview</h2>
+        <div className="flex space-x-2 w-full sm:w-auto">
           <button
             onClick={() => setTimeRange('week')}
-            className={`px-3 py-1 text-sm rounded-md ${
+            className={`px-3 py-1 text-sm rounded-md flex-1 sm:flex-none ${
               timeRange === 'week'
                 ? 'bg-green-100 text-green-800'
                 : 'text-gray-500 hover:bg-gray-100'
@@ -258,7 +248,7 @@ const Dashboard = () => {
           </button>
           <button
             onClick={() => setTimeRange('month')}
-            className={`px-3 py-1 text-sm rounded-md ${
+            className={`px-3 py-1 text-sm rounded-md flex-1 sm:flex-none ${
               timeRange === 'month'
                 ? 'bg-green-100 text-green-800'
                 : 'text-gray-500 hover:bg-gray-100'
@@ -268,7 +258,7 @@ const Dashboard = () => {
           </button>
           <button
             onClick={() => setTimeRange('year')}
-            className={`px-3 py-1 text-sm rounded-md ${
+            className={`px-3 py-1 text-sm rounded-md flex-1 sm:flex-none ${
               timeRange === 'year'
                 ? 'bg-green-100 text-green-800'
                 : 'text-gray-500 hover:bg-gray-100'
@@ -280,69 +270,69 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
-          <Card.Content className="text-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full">
-              <svg className="w-6 h-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <Card.Content className="text-center p-4 sm:p-6">
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-green-100 rounded-full">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h2 className="mt-4 text-lg font-medium text-gray-700">Total Appointments</h2>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{appointmentCounts.total}</p>
-            <p className="mt-1 text-sm text-gray-500">From all time</p>
+            <h2 className="mt-3 text-base sm:text-lg font-medium text-gray-700">Total Appointments</h2>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900">{appointmentCounts.total}</p>
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">From all time</p>
           </Card.Content>
         </Card>
         
         <Card>
-          <Card.Content className="text-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-yellow-100 rounded-full">
-              <svg className="w-6 h-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <Card.Content className="text-center p-4 sm:p-6">
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-yellow-100 rounded-full">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="mt-4 text-lg font-medium text-gray-700">Pending Estimates</h2>
-            <p className="mt-2 text-3xl font-bold text-yellow-600">{appointmentCounts.pending}</p>
-            <p className="mt-1 text-sm text-gray-500">Needs attention</p>
+            <h2 className="mt-3 text-base sm:text-lg font-medium text-gray-700">Pending Estimates</h2>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-yellow-600">{appointmentCounts.pending}</p>
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">Needs attention</p>
           </Card.Content>
         </Card>
         
         <Card>
-          <Card.Content className="text-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full">
-              <svg className="w-6 h-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          <Card.Content className="text-center p-4 sm:p-6">
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-blue-100 rounded-full">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h2 className="mt-4 text-lg font-medium text-gray-700">Services Offered</h2>
-            <p className="mt-2 text-3xl font-bold text-blue-600">{services.length}</p>
-            <p className="mt-1 text-sm text-gray-500">Active services</p>
+            <h2 className="mt-3 text-base sm:text-lg font-medium text-gray-700">Services Offered</h2>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-blue-600">{services.length}</p>
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">Active services</p>
           </Card.Content>
         </Card>
         
         <Card>
-          <Card.Content className="text-center p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full">
-              <svg className="w-6 h-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <Card.Content className="text-center p-4 sm:p-6">
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-green-100 rounded-full">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="mt-4 text-lg font-medium text-gray-700">Completed Jobs</h2>
-            <p className="mt-2 text-3xl font-bold text-green-600">{appointmentCounts.completed}</p>
-            <p className="mt-1 text-sm text-gray-500">Successfully completed</p>
+            <h2 className="mt-3 text-base sm:text-lg font-medium text-gray-700">Completed Jobs</h2>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-green-600">{appointmentCounts.completed}</p>
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">Successfully completed</p>
           </Card.Content>
         </Card>
       </div>
 
       {/* Charts and Activity Log */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
         <div className="lg:col-span-2">
           <BarChart 
             data={barChartData} 
             title={timeRange === 'week' ? 'Weekly Appointments' : timeRange === 'month' ? 'Monthly Appointments' : 'Yearly Appointments'} 
           />
         </div>
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-4 sm:space-y-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
             <ActivityLog activities={recentActivities} />
@@ -363,46 +353,46 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
           <Link href="/admin/appointments">
-            <div className="p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-6 w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span className="block mt-2 text-sm font-medium text-gray-900">View All Appointments</span>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">View All Appointments</span>
             </div>
           </Link>
           <Link href="/admin/customers">
-            <div className="p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-6 w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="block mt-2 text-sm font-medium text-gray-900">Manage Customers</span>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Customers</span>
             </div>
           </Link>
           <Link href="/admin/services">
-            <div className="p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-6 w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              <span className="block mt-2 text-sm font-medium text-gray-900">Manage Services</span>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Services</span>
             </div>
           </Link>
           <Link href="/admin/staff">
-            <div className="p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-6 w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              <span className="block mt-2 text-sm font-medium text-gray-900">Manage Staff</span>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Staff</span>
             </div>
           </Link>
           <Link href="/admin/settings">
-            <div className="p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-6 w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="block mt-2 text-sm font-medium text-gray-900">Settings</span>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Settings</span>
             </div>
           </Link>
         </div>
@@ -411,4 +401,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
