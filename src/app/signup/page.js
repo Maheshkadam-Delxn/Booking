@@ -28,6 +28,7 @@ export default function SignupPage() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -97,7 +98,7 @@ export default function SignupPage() {
     setIsLoading(true);
   
     try {
-      const res = await fetch('http://localhost:5000/api/v1/auth/register', {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
