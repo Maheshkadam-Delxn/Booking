@@ -14,7 +14,6 @@ const DateTimeSelection = ({ onNext, onBack }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const searchParams = useSearchParams();
-// const [errorMessage, setErrorMessage] = useState('');
   const frequencies = [
     { id: 'one-time', label: 'One-Time Service' },
     { id: 'weekly', label: 'Weekly' },
@@ -22,25 +21,30 @@ const DateTimeSelection = ({ onNext, onBack }) => {
     { id: 'monthly', label: 'Monthly' }
   ];
 
-  // Auto-skip logic for existing booking data or URL params
   useEffect(() => {
-    const urlDate = searchParams.get('appointmentDate');
-    const urlSlot = searchParams.get('timeSlot');
+  const urlDate = searchParams.get('appointmentDate');
+  const urlSlot = searchParams.get('timeSlot');
 
-    if (urlDate && !currentBooking.appointmentDate) {
-      setSelectedDate(urlDate);
-      updateCurrentBooking({ appointmentDate: urlDate });
-    }
+  if (urlDate && !currentBooking.appointmentDate) {
+    setSelectedDate(urlDate);
+    updateCurrentBooking({ appointmentDate: urlDate });
+  }
 
-    if (urlSlot && !currentBooking.timeSlot) {
-      updateCurrentBooking({ timeSlot: urlSlot });
-    }
+  if (urlSlot && !currentBooking.timeSlot) {
+    updateCurrentBooking({ timeSlot: urlSlot });
+  }
 
-    // If already selected, skip this step
-    if (currentBooking.appointmentDate && currentBooking.timeSlot) {
-      onNext(); // Skip to the next step
-    }
-  }, [searchParams, currentBooking, updateCurrentBooking, onNext]);
+ if (
+  urlDate && urlSlot &&
+  !currentBooking.appointmentDate &&
+  !currentBooking.timeSlot
+) {
+  updateCurrentBooking({ appointmentDate: urlDate, timeSlot: urlSlot });
+  // Do NOT call onNext() here automatically — let the user proceed manually
+}
+
+}, [searchParams, currentBooking, updateCurrentBooking, onNext]);
+
 
   const handleTimeSelect = (startTime, endTime) => {
     updateCurrentBooking({ 
@@ -64,29 +68,28 @@ const DateTimeSelection = ({ onNext, onBack }) => {
   };
 
   return (
-    <div className="py-8">
-      <h2 className="text-2xl font-bold mb-6">Schedule Your Service</h2>
+    <div className="py-4 sm:py-6 md:py-8 px-4 sm:px-6">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Schedule Your Service</h2>
 
-      {/* Error message */}
       {errorMessage && (
-        <div className="mb-4 p-3 rounded-md bg-red-100 text-red-700 border border-red-300">
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 rounded-md bg-red-100 text-red-700 border border-red-300 text-sm sm:text-base">
           {errorMessage}
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
           <div>
-            <h3 className="text-lg font-medium mb-4">Select a Date</h3>
-            <Card className="p-4">
-              <div className="mb-4">
-                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+            <h3 className="text-base sm:text-lg font-medium mb-2 sm:mb-4">Select a Date</h3>
+            <Card className="p-3 sm:p-4">
+              <div className="mb-3 sm:mb-4">
+                <label htmlFor="date" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                   Service Date
                 </label>
                 <input
                   type="date"
                   id="date"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 text-sm sm:text-base"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   required
@@ -95,14 +98,14 @@ const DateTimeSelection = ({ onNext, onBack }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                   Service Frequency
                 </label>
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   {frequencies.map((frequency) => (
                     <label
                       key={frequency.id}
-                      className="flex items-center p-3 border rounded-md cursor-pointer hover:bg-gray-50"
+                      className="flex items-center p-2 sm:p-3 border rounded-md cursor-pointer hover:bg-gray-50 text-sm sm:text-base"
                     >
                       <input
                         type="radio"
@@ -110,7 +113,7 @@ const DateTimeSelection = ({ onNext, onBack }) => {
                         value={frequency.id}
                         checked={selectedFrequency === frequency.id}
                         onChange={() => setSelectedFrequency(frequency.id)}
-                        className="h-4 w-4 text-green-600 focus:ring-green-500 mr-3"
+                        className="h-4 w-4 text-green-600 focus:ring-green-500 mr-2 sm:mr-3"
                       />
                       <span>{frequency.label}</span>
                     </label>
@@ -121,8 +124,8 @@ const DateTimeSelection = ({ onNext, onBack }) => {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium mb-4">Select a Time Slot</h3>
-            <Card className="p-4">
+            <h3 className="text-base sm:text-lg font-medium mb-2 sm:mb-4">Select a Time Slot</h3>
+            <Card className="p-3 sm:p-4">
               <TimeSlotPicker 
                 selectedDate={selectedDate}
                 onTimeSelect={handleTimeSelect}
@@ -133,16 +136,16 @@ const DateTimeSelection = ({ onNext, onBack }) => {
           </div>
         </div>
 
-        <div className="mt-8 flex justify-between">
-          <Button type="button" variant="outline" onClick={onBack}>
+        <div className="mt-6 sm:mt-8 flex flex-col-reverse sm:flex-row justify-between gap-3 sm:gap-0">
+          <Button type="button" variant="outline" onClick={onBack} className="w-full sm:w-auto">
             Back to Services
           </Button>
-          <button
-            onClick={handleSubmit}
-            className="bg-green-600 text-white py-2 px-6 rounded-lg disabled:opacity-50"
+          <Button
+            type="submit"
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white py-2 px-4 sm:px-6 rounded-lg disabled:opacity-50"
           >
             Continue to Details
-          </button>
+          </Button>
         </div>
       </form>
     </div>
