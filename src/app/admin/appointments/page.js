@@ -21,7 +21,11 @@ const StatusBadge = ({ status }) => {
   let bgColor = 'bg-gray-100';
   let textColor = 'text-gray-800';
 
-  switch (status) {
+  // Convert to lowercase for comparison to ensure consistent behavior
+  const statusLower = status ? status.toLowerCase() : '';
+
+  switch (statusLower) {
+    case 'pending':
     case 'pending-estimate':
       bgColor = 'bg-yellow-100';
       textColor = 'text-yellow-800';
@@ -35,6 +39,7 @@ const StatusBadge = ({ status }) => {
       textColor = 'text-green-800';
       break;
     case 'cancelled':
+    case 'canceled':
       bgColor = 'bg-red-100';
       textColor = 'text-red-800';
       break;
@@ -44,10 +49,18 @@ const StatusBadge = ({ status }) => {
 
   // Format the status for display
   const formatStatus = (status) => {
-    return status
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    if (!status) return 'Unknown';
+    
+    // If status contains hyphens, format each word
+    if (status.includes('-')) {
+      return status
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+    
+    // Otherwise just capitalize first letter
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
   return (
@@ -68,9 +81,10 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [previewUrls, setPreviewUrls] = useState({ beforeService: [], afterService: [] });
   const [activePhotoTab, setActivePhotoTab] = useState('beforeService');
   const [showFullImage, setShowFullImage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
-  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { userData, isLoading } = useDashboard();
@@ -81,42 +95,121 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     customerSignature: appointment.completionDetails?.customerSignature || ''
   });
 
+  // Redirect if not authenticated
   useEffect(() => {
-    if (!isLoading) {
-      if (!userData?.role) {
+    if (!isLoading && !userData?.token) {
         router.push('/login');
-      } else if (userData.role !== 'admin') {
-        router.push('/login');
-      }
     }
   }, [isLoading, userData, router]);
 
-  if (isLoading) return <p>Loading...</p>;
-
-  if (userData?.role !== 'admin') return null;
+  // Get auth headers function
+  const getAuthHeaders = (contentType = 'application/json') => {
+    // First try to get from context
+    let token = userData?.token;
+    
+    // If not found in context, try localStorage and sessionStorage
+    if (!token) {
+      token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    }
+    
+    if (!token) {
+      console.error('No auth token available in modal');
+      return {};
+    }
+    
+    return { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': contentType
+    };
+  };
 
   const handleUpdate = async () => {
+    setLoading(true);
     try {
-      await onUpdate(editedAppointment);
-      setIsEditing(false);
-      toast.success('Appointment updated successfully');
+      const headers = getAuthHeaders();
+      
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
+      }
+      
+      // Prepare update data
+      const updateData = {
+        date: editedAppointment.date,
+        timeSlot: {
+          startTime: editedAppointment.startTime,
+          endTime: editedAppointment.endTime
+        },
+        status: editedAppointment.status, // Now using capitalized status values
+        notes: editedAppointment.notes
+      };
+      
+      // Log the update data for debugging
+      console.log('Sending update with data:', {
+        id: appointment.id,
+        status: updateData.status,
+        date: updateData.date
+      });
+
+      const response = await axios.put(
+        `${API_URL}/appointments/${appointment.id}`,
+        updateData,
+        { headers }
+      );
+
+      if (response.data.success) {
+        // Update the local state with the edited appointment
+        onUpdate({
+          ...appointment,
+          ...editedAppointment
+        });
+        
+        setIsEditing(false);
+        toast.success('Appointment updated successfully');
+      } else {
+        throw new Error(response.data.message || 'Failed to update appointment');
+      }
     } catch (error) {
-      toast.error(error.message || 'Failed to update appointment');
+      console.error('Update error:', error);
+      
+      // Detailed error logging
+      if (error.response) {
+        console.error('Error response:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
+      
+      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async () => {
+    setLoading(true);
     try {
-      await axios.delete(
+      const headers = getAuthHeaders();
+      
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
+      }
+      
+      const response = await axios.delete(
         `${API_URL}/appointments/${appointment.id}`,
-        {
-          headers: { Authorization: `Bearer ${userData.token}` }
-        }
+        { headers }
       );
-      toast.success('Appointment deleted successfully');
-      onClose();
+
+      if (response.data.success) {
+        toast.success('Appointment deleted successfully');
+        onClose();
+      } else {
+        throw new Error(response.data.message || 'Failed to delete appointment');
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete appointment');
+      toast.error(error.response?.data?.message || error.message || 'Failed to delete appointment');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -192,24 +285,21 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
       // Add photoType
       formData.append('photoType', type);
 
-      // Log formData contents for debugging
-      console.log('FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof Blob) {
-          console.log(key, ':', value.type, value.size, 'bytes');
-        } else {
-          console.log(key, ':', value);
-        }
+      // Get auth headers but for multipart/form-data
+      const headers = getAuthHeaders('multipart/form-data');
+      
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
       }
+      
+      // Log the auth header for debugging
+      console.log('Photo upload auth header exists:', !!headers.Authorization);
 
       const response = await axios.post(
         `${API_URL}/appointments/${appointment.id}/photos`,
         formData,
         {
-          headers: {
-            Authorization: `Bearer ${userData.token}`,
-            'Content-Type': 'multipart/form-data',
-          },
+          headers,
           // Important: prevent axios from processing FormData
           transformRequest: [(data) => data],
           // Add timeout and larger size limit
@@ -481,6 +571,18 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     );
   };
 
+  // Show loading state
+  if (isLoading || !userData) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg p-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-2 text-center">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -497,6 +599,65 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
 
           {/* Status and Basic Info */}
           <div className="mb-6">
+            {isEditing ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <select
+                    value={editedAppointment.status}
+                    onChange={(e) => setEditedAppointment(prev => ({ ...prev, status: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Date</label>
+                    <input
+                      type="date"
+                      value={editedAppointment.date ? new Date(editedAppointment.date).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setEditedAppointment(prev => ({ ...prev, date: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Time Slot</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="time"
+                        value={editedAppointment.startTime}
+                        onChange={(e) => setEditedAppointment(prev => ({ ...prev, startTime: e.target.value }))}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                      />
+                      <input
+                        type="time"
+                        value={editedAppointment.endTime}
+                        onChange={(e) => setEditedAppointment(prev => ({ ...prev, endTime: e.target.value }))}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <textarea
+                    value={editedAppointment.notes?.internal || ''}
+                    onChange={(e) => setEditedAppointment(prev => ({ 
+                      ...prev, 
+                      notes: { ...prev.notes, internal: e.target.value }
+                    }))}
+                    rows={3}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                    placeholder="Add internal notes..."
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
             <StatusBadge status={appointment.status} />
             <div className="mt-2 grid grid-cols-2 gap-4">
               <div>
@@ -513,6 +674,14 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
                 </p>
               </div>
             </div>
+                {appointment.notes?.internal && (
+                  <div className="mt-4">
+                    <p className="text-gray-600">Internal Notes</p>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{appointment.notes.internal}</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Photos Section */}
@@ -566,7 +735,10 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
 };
 
 const AppointmentsPage = () => {
-  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
+  const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const { userData, isLoading } = useDashboard();
+  
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -577,33 +749,83 @@ const AppointmentsPage = () => {
   const [sortField, setSortField] = useState('date');
   const [sortDirection, setSortDirection] = useState('asc');
   const [viewType, setViewType] = useState('list');
-  const {userData, isLoading} = useDashboard();
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [showCrewModal, setShowCrewModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  // Debug: Log userData to see if token exists
   useEffect(() => {
-    if (!userData?.token) return;
+    if (!isLoading) {
+      console.log('Auth State:', { 
+        hasToken: !!userData?.token, 
+        userDataExists: !!userData,
+        tokenPrefix: userData?.token ? userData.token.substring(0, 10) + '...' : 'No token'
+      });
+      
+      // Check local storage if context doesn't have token
+      const token = userData?.token || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      if (!token) {
+        console.log('No token available, redirecting to login');
+        router.push('/login');
+      }
+    }
+  }, [isLoading, userData, router]);
 
+  // Robust token check function
+  const getAuthHeaders = () => {
+    // First try to get from context
+    let token = userData?.token;
+    
+    // If not found in context, try localStorage and sessionStorage
+    if (!token) {
+      token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      console.log('Retrieved token from storage:', !!token);
+    }
+    
+    if (!token) {
+      console.error('No auth token available');
+      return {};
+    }
+    
+    return { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
+  useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        // Fetch appointments
-        const appointmentsRes = await axios.get(`${API_URL}/appointments`, {
-          headers: { Authorization: `Bearer ${userData.token}` },
+        const headers = getAuthHeaders();
+        
+        // Debug: log headers
+        console.log('Request headers:', {
+          hasAuth: !!headers.Authorization,
+          headerKeys: Object.keys(headers)
         });
+        
+        if (!headers.Authorization) {
+          throw new Error('No authorization token available');
+        }
+        
+        // Fetch appointments with robust error handling
+        const appointmentsRes = await axios.get(
+          `${API_URL}/appointments`,
+          { headers }
+        );
 
-        console.log("Raw appointments response:", appointmentsRes.data);
+        if (!appointmentsRes.data.success) {
+          throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
+        }
 
-        // Check if we have the correct data structure
         const appointments = appointmentsRes.data?.data || [];
 
-        // Transform appointment data to match frontend structure
-        const transformedAppointments = appointments.map((app) => {
-          console.log("Processing appointment:", app);
-        
-          return {
+        // Transform appointment data
+        const transformedAppointments = appointments.map((app) => ({
             id: app._id,
             customerName: app.customer?.user?.name || "N/A",
             customerPhone: app.customer?.user?.phone || "N/A",
@@ -639,38 +861,45 @@ const AppointmentsPage = () => {
               beforeService: [],
               afterService: []
             }
-          };
-        });
+        }));
         
-        console.log("Transformed appointments:", transformedAppointments);
         setAppointments(transformedAppointments);
 
         // Fetch services
-        const servicesRes = await axios.get(`${API_URL}/services`, {
-          headers: { Authorization: `Bearer ${userData.token}` },
-        });
+        const servicesRes = await axios.get(
+          `${API_URL}/services`,
+          {
+            headers: { 
+              Authorization: `Bearer ${userData.token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
 
-        console.log("Services response:", servicesRes.data);
-        // Transform services data to ensure consistent structure
+        if (!servicesRes.data.success) {
+          throw new Error(servicesRes.data.message || 'Failed to fetch services');
+        }
+
         const transformedServices = (servicesRes.data?.data || []).map(service => ({
           _id: service._id,
           name: service.name,
           category: service.category,
           price: service.price
         }));
-        setServices(transformedServices);
 
+        setServices(transformedServices);
         setError(null);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(err.response?.data?.message || err.message);
+        toast.error(err.response?.data?.message || err.message || 'Failed to load data');
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [userData]);
+  }, [userData, API_URL]);
 
   // Handle search
   const handleSearch = (e) => {
@@ -728,9 +957,22 @@ const AppointmentsPage = () => {
   // List of unique statuses for the filter
   const statuses = ['all', ...new Set(appointments.map(a => a.status))];
 
-  // Add this function to handle appointment updates
+  // Update the handleUpdateAppointment function
   const handleUpdateAppointment = async (updatedAppointment) => {
     try {
+      const headers = getAuthHeaders();
+      
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
+      }
+      
+      console.log('Update appointment headers:', { hasAuth: !!headers.Authorization });
+      console.log('Sending appointment update:', {
+        id: updatedAppointment.id,
+        status: updatedAppointment.status,
+        date: updatedAppointment.date
+      });
+      
       const response = await axios.put(
         `${API_URL}/appointments/${updatedAppointment.id}`,
         {
@@ -741,35 +983,61 @@ const AppointmentsPage = () => {
           },
           status: updatedAppointment.status,
         },
-        {
-          headers: { Authorization: `Bearer ${userData.token}` },
-        }
+        { headers }
       );
 
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to update appointment');
+      }
+
+      // Update local state
       setAppointments(appointments.map(apt => 
         apt.id === updatedAppointment.id ? response.data.data : apt
       ));
+      
+      return response.data.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to update appointment');
+      console.error('Update error:', error);
+      
+      // Detailed error logging
+      if (error.response) {
+        console.error('Error response:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
+      
+      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+      throw new Error(error.response?.data?.message || error.message || 'Failed to update appointment');
     }
   };
 
-  // Add this function to handle calendar view
+  // Update the handleCalendarView function
   const handleCalendarView = async () => {
     try {
+      const headers = getAuthHeaders();
+      
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
+      }
+      
       const start = moment().startOf('month').format('YYYY-MM-DD');
       const end = moment().endOf('month').format('YYYY-MM-DD');
       
       const response = await axios.get(
         `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
-        {
-          headers: { Authorization: `Bearer ${userData.token}` },
-        }
+        { headers }
       );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to load calendar events');
+      }
 
       setCalendarEvents(response.data.data);
     } catch (error) {
-      toast.error('Failed to load calendar events');
+      console.error('Calendar view error:', error);
+      toast.error(error.message || 'Failed to load calendar events');
     }
   };
 
