@@ -1,3 +1,4 @@
+// app/booking/page.js
 "use client";
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
@@ -15,10 +16,9 @@ export default function BookingPage() {
   const serviceIdFromUrl = searchParams.get("serviceId");
 
   useEffect(() => {
-    // If serviceId is passed in URL, set it and skip to datetime
     if (serviceIdFromUrl && !currentBooking.serviceId) {
       updateCurrentBooking({ serviceId: serviceIdFromUrl });
-      setStep(2); // Skip service selection
+      setStep(2); // Skip SelectService if serviceId is pre-selected
     }
   }, [serviceIdFromUrl]);
 

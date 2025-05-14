@@ -22,22 +22,29 @@ const DateTimeSelection = ({ onNext, onBack }) => {
   ];
 
   useEffect(() => {
-    const urlDate = searchParams.get('appointmentDate');
-    const urlSlot = searchParams.get('timeSlot');
+  const urlDate = searchParams.get('appointmentDate');
+  const urlSlot = searchParams.get('timeSlot');
 
-    if (urlDate && !currentBooking.appointmentDate) {
-      setSelectedDate(urlDate);
-      updateCurrentBooking({ appointmentDate: urlDate });
-    }
+  if (urlDate && !currentBooking.appointmentDate) {
+    setSelectedDate(urlDate);
+    updateCurrentBooking({ appointmentDate: urlDate });
+  }
 
-    if (urlSlot && !currentBooking.timeSlot) {
-      updateCurrentBooking({ timeSlot: urlSlot });
-    }
+  if (urlSlot && !currentBooking.timeSlot) {
+    updateCurrentBooking({ timeSlot: urlSlot });
+  }
 
-    if (currentBooking.appointmentDate && currentBooking.timeSlot) {
-      onNext();
-    }
-  }, [searchParams, currentBooking, updateCurrentBooking, onNext]);
+ if (
+  urlDate && urlSlot &&
+  !currentBooking.appointmentDate &&
+  !currentBooking.timeSlot
+) {
+  updateCurrentBooking({ appointmentDate: urlDate, timeSlot: urlSlot });
+  // Do NOT call onNext() here automatically — let the user proceed manually
+}
+
+}, [searchParams, currentBooking, updateCurrentBooking, onNext]);
+
 
   const handleTimeSelect = (startTime, endTime) => {
     updateCurrentBooking({ 

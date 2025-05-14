@@ -5,6 +5,8 @@ import Link from 'next/link';
 import useStore from '../../lib/store';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import axios from "axios";
+
 
 const ActivityLog = ({ activities }) => {
   return (
@@ -127,7 +129,59 @@ const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [token, setToken] = useState('');
   const [decodedToken, setDecodedToken] = useState(null);
+
+
+const [message, setMessage] = useState("");
+  const [active, setActive] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+ const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+
+    // Add this line to check admin status
   const isAdmin = decodedToken?.role === 'admin';
+
+
+
+
+
+  useEffect(() => {
+    // Fetch current message from server
+    axios.get(`${API_URL}/message`)
+      .then((response) => {
+        if (response.data) {
+          setMessage(response.data.content);
+          setActive(response.data.active);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching message:", error);
+      });
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(
+       `${API_URL}/message`,
+        { content: message, active },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+          },
+        }
+      );
+      alert("Message updated successfully!");
+      setShowForm(false); // Hide form after submit
+    } catch (error) {
+      console.error("Error updating message:", error);
+      alert("Failed to update message.");
+    }
+  };
+
+
+
+
+
   
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
@@ -223,12 +277,44 @@ const Dashboard = () => {
             </Button>
           </Link>
           {isAdmin && (
-            <Link href="/admin/services/new">
-              <Button variant="secondary" size="sm" className="w-full sm:w-auto">
-                Add Service
-              </Button>
-            </Link>
-          )}
+    <Link href="/admin/services/new">
+      <Button variant="secondary" size="sm">Add Service</Button>
+    </Link>
+  )}
+
+   <div>
+      <h2>Admin Dashboard</h2>
+
+      {!showForm && (
+        <button onClick={() => setShowForm(true)}>Add Message</button>
+      )}
+
+      {showForm && (
+        <form onSubmit={handleSubmit}>
+          <div>
+            <label>Message Content</label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </div>
+          <div>
+            <label>
+              <input
+                type="checkbox"
+                checked={active}
+                onChange={() => setActive(!active)}
+              />
+              Active
+            </label>
+          </div>
+          <button type="submit">Update Message</button>
+          <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+        </form>
+      )}
+    </div>
+
+
         </div>
       </div>
 
