@@ -86,13 +86,13 @@ const BookingReview = ({ onBack }) => {
             <div>
               <h4 className="text-emerald-700 font-medium mb-2">Service Details</h4>
               <ul className="space-y-2 text-gray-700">
-                <li><strong>Service:</strong> {selectedService?.service || "N/A"}</li>
-                <li><strong>Date:</strong> {currentBooking?.appointmentDate}</li>
+                <li><strong>Service:</strong> {currentBooking?.selectedService?.name || "N/A"}</li>
+                <li><strong>Category:</strong> {currentBooking?.selectedService?.category || "N/A"}</li>
+                <li><strong>Date:</strong> {new Date(currentBooking?.appointmentDate).toLocaleDateString() || "N/A"}</li>
                 <li><strong>Time:</strong> {currentBooking?.startTime} - {currentBooking?.endTime}</li>
-                <li><strong>Frequency:</strong> {currentBooking?.frequency}</li>
-                <li><strong>Estimated Price:</strong> ${selectedService?.price || "0.00"}</li>
-                <li><strong>Preferred Time:</strong> {currentBooking?.servicePreferences?.preferredTimeOfDay || "Any"}</li>
-                <li><strong>Preferred Days:</strong> {currentBooking?.servicePreferences?.preferredDays?.join(", ") || "None"}</li>
+                <li><strong>Frequency:</strong> {currentBooking?.frequency || "One-time"}</li>
+                <li><strong>Estimated Price:</strong> ${currentBooking?.selectedService?.price || "0.00"}</li>
+                <li><strong>Duration:</strong> {currentBooking?.selectedService?.duration || "N/A"} minutes</li>
               </ul>
             </div>
 
