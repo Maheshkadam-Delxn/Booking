@@ -28,24 +28,25 @@ const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 
 
-   useEffect(() => {
-    // Get the current message from server on page load
-    axios.get(`${API_URL}/message`)
-      .then((response) => {
-        if (response.data.active) {
-          setMessage(response.data.content);
-          setShowPopup(true);
+  useEffect(() => {
+  if (!API_URL) return; // ✅ only run if API_URL is ready
 
-          // Auto-hide the popup after 5 seconds
-          setTimeout(() => {
-            setShowPopup(false);
-          }, 5000);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching message:", error);
-      });
-  }, []);
+  axios.get(`${API_URL}/message`)
+    .then((response) => {
+      if (response.data.active) {
+        setMessage(response.data.content);
+        setShowPopup(true);
+
+        setTimeout(() => {
+          setShowPopup(false);
+        }, 5000);
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching message:", error);
+    });
+}, [API_URL]); // ✅ run this effect again when API_URL becomes available
+
 
   useEffect(() => {
     const token = userData?.token || null;
