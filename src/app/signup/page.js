@@ -19,7 +19,9 @@ export default function SignupPage() {
     password: '',
     phone:'',
     confirmPassword: '',
-    role: '', // <-- Add this
+    // role: '', // <-- Add this
+    role: 'customer',
+
     agreeToTerms: false
   });
   
@@ -73,9 +75,9 @@ export default function SignupPage() {
     }
   
     // Role validation
-    if (!formData.role) {
-      newErrors.role = 'Please select a role';
-    }
+    // if (!formData.role) {
+    //   newErrors.role = 'Please select a role';
+    // }
   
     // Terms agreement validation
     if (!formData.agreeToTerms) {
@@ -241,7 +243,7 @@ export default function SignupPage() {
           error={errors.confirmPassword}
           required
         />
-        <label className="block mb-2 text-sm font-medium text-gray-700">Select Role</label>
+{/* <label className="block mb-2 text-sm font-medium text-gray-700">Select Role</label>
 <select
   name="role"
   value={formData.role}
@@ -253,7 +255,7 @@ export default function SignupPage() {
   <option value="professional">Professional</option>
   <option value="admin">Admin</option>
 </select>
-{errors.role && <p className="text-red-500 text-sm">{errors.role}</p>}
+{errors.role && <p className="text-red-500 text-sm">{errors.role}</p>} */}
 
         
         <div className="flex items-start">
