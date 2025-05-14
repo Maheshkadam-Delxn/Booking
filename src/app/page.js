@@ -3,13 +3,13 @@ import ServicesGrid from '../components/home/ServicesGrid';
 // import Testimonials from '../components/home/Testimonials';
 import Gallery from '../components/home/Gallery';
 import ContactForm from '../components/home/ContactForm';
-import AnnouncementModal from '../components/home/AnnouncementModal';
+import AnnouncementBanner from '../components/home/AnnouncementBanner';
 
 export default function Home() {
   return (
     <>
-      <AnnouncementModal />
       <Hero />
+      <AnnouncementBanner />
       <ServicesGrid />
       <Gallery />
       {/* <Testimonials /> */}

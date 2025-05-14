@@ -7,45 +7,17 @@ import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { ArrowRight, Leaf, Calendar, Star, ChevronDown } from 'lucide-react';
-import axios from "axios";
-
-
 
 const Hero = () => {
   const { userData, isLoading } = useDashboard();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
-const [message, setMessage] = useState("");
-  const [showPopup, setShowPopup] = useState(false);
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const features = [
     { icon: <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />, title: "Budgeted Maintenance", description: "Consistent care to keep your yard pristine" },
     { icon: <Star className="w-5 h-5 sm:w-6 sm:h-6" />, title: "Premium Service", description: "Good quality with attention to each detail" }
   ];
-
-
-
-
-   useEffect(() => {
-    // Get the current message from server on page load
-    axios.get(`${API_URL}/message`)
-      .then((response) => {
-        if (response.data.active) {
-          setMessage(response.data.content);
-          setShowPopup(true);
-
-          // Auto-hide the popup after 5 seconds
-          setTimeout(() => {
-            setShowPopup(false);
-          }, 5000);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching message:", error);
-      });
-  }, []);
 
   useEffect(() => {
     const token = userData?.token || null;
@@ -95,21 +67,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
         </div>
       </div>
-
-
-
- <div>
-      {showPopup && message && (
-        <div
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-100 text-blue-800 px-6 py-3 rounded-md shadow-md border border-blue-300 animate-fade-in-out"
-          role="alert"
-        >
-          {message}
-        </div>
-      )}
-      {/* Other homepage content */}
-    </div>
-
 
       {/* Content area */}
       <div className="relative z-10 h-full flex flex-col justify-center pt-16 sm:pt-0 pb-8 sm:pb-0">
