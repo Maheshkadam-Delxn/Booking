@@ -109,7 +109,7 @@ const Header = () => {
             </div>
             <div className="flex items-center">
               <Mail className="w-4 h-4 mr-2 text-green-600" />
-              <span>contact@greengardens.com</span>
+              <span>contact@gildordorochin.com</span>
             </div>
           </div>
           <div className="flex items-center space-x-6">
