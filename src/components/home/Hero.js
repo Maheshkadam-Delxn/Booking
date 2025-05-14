@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { ArrowRight, Leaf, Calendar, Star, ChevronDown } from 'lucide-react';
+import AnnouncementBanner from '@/components/home/AnnouncementBanner';
 
 const Hero = () => {
   const { userData, isLoading } = useDashboard();
@@ -55,7 +56,8 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative h-[80vh] w-full overflow-hidden">
+    <>       <AnnouncementBanner />
+<section className="relative h-[80vh] w-full overflow-hidden">
       {/* Background Video/Image */}
       <div className="absolute inset-0 z-0">
         <div className="relative h-full w-full">
@@ -194,7 +196,8 @@ const Hero = () => {
           }
         }
       `}</style>
-    </section>
+    </section></>
+   
   );
 };
 
