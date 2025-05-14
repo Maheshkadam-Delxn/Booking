@@ -13,8 +13,6 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
    const [nextAppointment, setNextAppointment] = useState(null);
    const [pastAppointments, setPastAppointments] = useState([]);
-   
-
 
   const { userData, isLoading: contextLoading } = useDashboard();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -47,8 +45,6 @@ export default function ProfilePage() {
     notes: ''
   });
 
-
-
   // Define the calculateDuration function
 function calculateDuration(startTime, endTime) {
   const start = new Date(startTime);
@@ -61,7 +57,7 @@ function calculateDuration(startTime, endTime) {
 useEffect(() => {
   const fetchAndFilterAppointment = async () => {
   try {
-    const response = await axios.get(`${API_URL}/appointments/my-appointments`, {
+    const response = await axios.get(`${API_URL}/customers/me/history`, {
       headers: {
         Authorization: `Bearer ${userData.token}`
       }
@@ -158,8 +154,6 @@ useEffect(() => {
     fetchAndFilterAppointment();
   }
 }, [userData?.token, API_URL]);
-
-
 
 
   // Fetch user data when userData or contextLoading changes
@@ -333,174 +327,14 @@ useEffect(() => {
       </div>
     );
   }
-
-
-
-
-
- 
- 
-
-  // const handleChange = (e) => {
-  //   const { name, value, type, checked } = e.target;
-
-  //   if (type === 'checkbox') {
-  //     if (name.includes('.')) {
-  //       const [parent, child, subChild] = name.split('.');
-  //       if (subChild) {
-  //         setFormData(prev => ({
-  //           ...prev,
-  //           [parent]: {
-  //             ...prev[parent],
-  //             [child]: {
-  //               ...prev[parent][child],
-  //               [subChild]: checked
-  //             }
-  //           }
-  //         }));
-  //       } else {
-  //         setFormData(prev => ({
-  //           ...prev,
-  //           [parent]: {
-  //             ...prev[parent],
-  //             [child]: checked
-  //           }
-  //         }));
-  //       }
-  //     } else {
-  //       setFormData(prev => ({
-  //         ...prev,
-  //         [name]: checked
-  //       }));
-  //     }
-  //   } else if (name.includes('.')) {
-  //     const [parent, child, subChild] = name.split('.');
-  //     if (subChild) {
-  //       setFormData(prev => ({
-  //         ...prev,
-  //         [parent]: {
-  //           ...prev[parent],
-  //           [child]: {
-  //             ...prev[parent][child],
-  //             [subChild]: value
-  //           }
-  //         }
-  //       }));
-  //     } else {
-  //       setFormData(prev => ({
-  //         ...prev,
-  //         [parent]: {
-  //           ...prev[parent],
-  //           [child]: value
-  //         }
-  //       }));
-  //     }
-  //   } else {
-  //     setFormData(prev => ({
-  //       ...prev,
-  //       [name]: value
-  //     }));
-  //   }
-  // };
-
-  // const handleMultiSelect = (e) => {
-  //   const { options } = e.target;
-  //   const selectedValues = [];
-    
-  //   for (let i = 0; i < options.length; i++) {
-  //     if (options[i].selected) {
-  //       selectedValues.push(options[i].value);
-  //     }
-  //   }
-    
-  //   setFormData(prev => ({
-  //     ...prev,
-  //     servicePreferences: {
-  //       ...prev.servicePreferences,
-  //       preferredDays: selectedValues
-  //     }
-  //   }));
-  // };
-
-  const handleSave = async () => {
-    try {
-      if (!userData?.token) {
-        setError('Authentication token not found. Please log in again.');
-        return;
-      }
-      
-      const response = await axios.put(`${API_URL}/auth/updatedetails`, 
-        {
-          user: {
-            name: formData.name,
-            email: formData.email
-          },
-          phone: formData.phone,
-          address: formData.address,
-          propertyDetails: formData.propertyDetails,
-          servicePreferences: formData.servicePreferences,
-          notificationPreferences: formData.notificationPreferences,
-          notes: formData.notes
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${userData.token}`
-          }
-        }
-      );
   
-      let formattedAddress = formData.address;
-      if (typeof formData.address === 'object' && formData.address !== null) {
-        const addressParts = [];
-        if (formData.address.street) addressParts.push(formData.address.street);
-        if (formData.address.city) addressParts.push(formData.address.city);
-        if (formData.address.state) addressParts.push(formData.address.state);
-        if (formData.address.zipCode) addressParts.push(formData.address.zipCode);
-        if (formData.address.country) addressParts.push(formData.address.country);
-        formattedAddress = addressParts.join(', ');
-      }
-  
-      setUser(prev => ({
-        ...prev,
-        name: response.data.user?.name || formData.name,
-        email: response.data.user?.email || formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        formattedAddress: formattedAddress,
-        propertyDetails: formData.propertyDetails,
-        properties: [{
-          ...prev.properties[0],
-          address: formattedAddress || 'No address provided',
-          sqft: formData.propertyDetails?.size 
-            ? `${formData.propertyDetails.size} sq ft` 
-            : 'N/A'
-        }]
-      }));
-      
-      setIsEditing(false);
-      setError(null);
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError(err.response?.data?.message || 'Failed to update profile');
-    }
-  };
-
   const placeholderImages = {
     avatar: "https://via.placeholder.com/80/22c55e/ffffff?text=MA",
     property: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
     garden: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
   };
 
-  const renderStars = (rating) => {
-    return Array(5).fill(0).map((_, i) => (
-      <Star
-        key={i}
-        size={16}
-        className={i < rating ? "fill-green-400 text-green-400" : "text-gray-300"}
-      />
-    ));
-  };
-
+ 
   return (
    <div className="min-h-screen">
   {/* Profile Header */}
@@ -512,11 +346,28 @@ useEffect(() => {
         </div>
         <div className="text-center md:text-left">
           <h1 className="text-2xl font-bold">Welcome back, {user.name}</h1>
+          
           <div className="flex items-center justify-center md:justify-start text-gray-500">
             <Mail size={16} className="mr-2" />
             <span>{user.email}</span>
+
+           
+             
           </div>
         </div>
+
+         <div className="flex items-center justify-between">
+ 
+  <Link 
+    href="/customers/edit"
+    className="text-black hover:text-green-600 font-medium text-lg flex items-center"
+  >
+    Edit
+    <ChevronRight size={16} className="ml-1" />
+  </Link>
+</div>
+
+        
       </div>
     </div>
   {/* </div> */}
@@ -689,7 +540,7 @@ useEffect(() => {
                 <div className="flex items-center">
                   <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
                     <img
-                      src={placeholderImages.garden}
+                      src={service.image}
                       alt={service.packageType || 'Service'}
                       className="h-full w-full object-cover"
                     />
