@@ -9,41 +9,40 @@ import { useDashboard } from '@/contexts/DashboardContext';
 import { ArrowRight, Leaf, Calendar, Star, ChevronDown } from 'lucide-react';
 import AnnouncementBanner from '@/components/home/AnnouncementBanner';
 import { motion } from 'framer-motion';
-// import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-// k
+
 const Hero = () => {
   const { userData, isLoading } = useDashboard();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const features = [
-  {
-    icon: <Calendar className="w-6 h-6" />,
-    title: "Budgeted Maintenance",
-    description: "Consistent care to keep your yard pristine"
-  },
-  {
-    icon: <Star className="w-6 h-6" />,
-    title: "Premium Service",
-    description: "Good quality with attention to each detail"
-  }
-];
-const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+    {
+      icon: <Calendar className="w-6 h-6" />,
+      title: "Budgeted Maintenance",
+      description: "Consistent care to keep your yard pristine"
+    },
+    {
+      icon: <Star className="w-6 h-6" />,
+      title: "Premium Service",
+      description: "Good quality with attention to each detail"
+    }
+  ];
+  const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
 
-// Auto-rotate every 4 seconds
-useEffect(() => {
-  const interval = setInterval(() => {
-    setCurrentFeatureIndex((prevIndex) => (prevIndex + 1) % features.length);
-  }, 4000);
-  return () => clearInterval(interval);
-}, [features.length]);
+  // Auto-rotate every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFeatureIndex((prevIndex) => (prevIndex + 1) % features.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [features.length]);
 
 
   useEffect(() => {
     const token = userData?.token || null;
     setIsLoggedIn(!!token);
-  }, []);
+  }, [userData]);
 
   const goToBookingDetail = () => {
     const token = userData?.token;
@@ -94,7 +93,8 @@ useEffect(() => {
   return (
     <>
       <AnnouncementBanner />
-      <section className="relative h-[80vh] w-full overflow-hidden">
+      {/* Removed h-[80vh] to prevent fixed height issues */}
+      <section className="relative min-h-screen w-full overflow-hidden">
         {/* Background Video/Image */}
         <div className="absolute inset-0 z-0">
           <div className="relative h-full w-full">
@@ -119,8 +119,8 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Content area */}
-        <div className="relative z-10 h-full flex flex-col justify-center pt-16">
+        {/* Content area - adjusted pt to account for header height */}
+        <div className="relative z-10 h-full flex flex-col justify-center pt-24 md:pt-32 pb-16">
           <div className="container mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 items-start">
             {/* Left side - Text content */}
             <motion.div 
@@ -158,33 +158,31 @@ useEffect(() => {
                 looking its best all year round.
               </motion.p>
 
-             {/* Dynamic Feature Cards */}
-<AnimatePresence mode="wait">
-  <motion.div
-    key={currentFeatureIndex}
-    className="bg-white rounded-lg p-4 border-2 border-green-200 inline-block mt-1"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{ duration: 0.6 }}
-  >
-    <div className="flex items-center space-x-3">
-      <div className="text-green-600 p-2 bg-green-50 rounded-full flex-shrink-0">
-        {features[currentFeatureIndex].icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="font-medium text-green-800">
-          {features[currentFeatureIndex].title}
-        </h3>
-        <p className="text-sm text-green-600">
-          {features[currentFeatureIndex].description}
-        </p>
-      </div>
-    </div>
-  </motion.div>
-</AnimatePresence>
-
-
+              {/* Dynamic Feature Cards */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentFeatureIndex}
+                  className="bg-white rounded-lg p-4 border-2 border-green-200 inline-block mt-1"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="text-green-600 p-2 bg-green-50 rounded-full flex-shrink-0">
+                      {features[currentFeatureIndex].icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-green-800">
+                        {features[currentFeatureIndex].title}
+                      </h3>
+                      <p className="text-sm text-green-600">
+                        {features[currentFeatureIndex].description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
 
             {/* Right side - Visual element */}
@@ -313,8 +311,6 @@ useEffect(() => {
             </div>
           </div>
         </div>
-
-      
       </section>
     </>
   );
