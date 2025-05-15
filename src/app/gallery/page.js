@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -17,11 +16,9 @@ const GalleryPage = () => {
     const fetchCompletedAppointments = async () => {
       try {
         const response = await axios.get(`${API_URL}/appointments?status=Completed`);
-        
-        // Filter appointments that have photos
         const projectsWithPhotos = response.data.data.filter(
-          appointment => 
-            (appointment.photos?.beforeService?.length > 0 || 
+          appointment =>
+            (appointment.photos?.beforeService?.length > 0 ||
              appointment.photos?.afterService?.length > 0)
         ).map(appointment => ({
           id: appointment._id,
@@ -33,11 +30,9 @@ const GalleryPage = () => {
           customer: appointment.customer,
           service: appointment.service,
           notes: appointment.notes,
-          // Get thumbnail - prioritize after photos, then before photos
-          thumbnail: appointment.photos?.afterService?.[0]?.url || 
+          thumbnail: appointment.photos?.afterService?.[0]?.url ||
                      appointment.photos?.beforeService?.[0]?.url || ''
         }));
-
         setCompletedProjects(projectsWithPhotos);
       } catch (error) {
         console.error('Error fetching completed projects:', error);
@@ -46,23 +41,20 @@ const GalleryPage = () => {
         setLoading(false);
       }
     };
-
     fetchCompletedAppointments();
   }, []);
 
-  // Function to open project details modal
   const openProjectDetails = (project) => {
     setSelectedProject(project);
   };
 
-  // Function to close project details modal
   const closeProjectDetails = () => {
     setSelectedProject(null);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-100 to-white py-12">
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-12">
         <Container>
           <div className="text-center p-12">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600 mx-auto"></div>
@@ -74,46 +66,31 @@ const GalleryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
-      {/* <div className="relative bg-green-400 text-white py-20 mb-12 overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-40"></div>
-        <div className="absolute inset-0 bg-[url('/images/pattern.svg')] opacity-10"></div>
-        <Container>
-          <div className="relative z-10 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">
-              Transformation Gallery
-            </h1>
-            <p className="text-lg md:text-xl text-green-50 max-w-3xl mx-auto">
-              Explore our portfolio of beautiful landscapes and outdoor transformations
-            </p>
-          </div>
-        </Container>
-      </div> */}
-       <PageHeader
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white pb-24">
+      <PageHeader
         title="Transformation Gallery"
         description="Explore our portfolio of beautiful landscapes and outdoor transformations"
         backgroundImage="/images/services-header.jpg"
       />
-
       <Container>
         {/* View Controls */}
-        <div className="flex justify-between items-center mb-8 py-5">
-          <p className="text-gray-600">
+        <div className="flex justify-between items-center mb-8 py-5 flex-wrap gap-4">
+          <p className="text-gray-700">
             <span className="font-semibold">{completedProjects.length}</span> completed projects
           </p>
           <div className="flex space-x-2">
-            <button 
+            <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded ${viewMode === 'grid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}
+              className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'} transition-colors`}
               aria-label="Grid view"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded ${viewMode === 'list' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}
+              className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'} transition-colors`}
               aria-label="List view"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,12 +113,11 @@ const GalleryPage = () => {
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {completedProjects.map((project) => (
-              <div 
-                key={project.id} 
-                className="group bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-                onClick={() => openProjectDetails(project)}
+              <div
+                key={project.id}
+                className="group bg-white rounded-xl shadow hover:shadow-xl transform transition-all duration-300 hover:-translate-y-1 overflow-hidden"
               >
-                <div className="aspect-w-16 aspect-h-12 bg-gray-100 overflow-hidden">
+                <div className="relative aspect-video bg-gray-100 overflow-hidden">
                   {project.thumbnail ? (
                     <img
                       src={project.thumbnail}
@@ -155,7 +131,7 @@ const GalleryPage = () => {
                       </svg>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 text-white translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-2 h-2 rounded-full bg-green-400"></span>
@@ -178,14 +154,14 @@ const GalleryPage = () => {
         ) : (
           <div className="space-y-4">
             {completedProjects.map((project) => (
-              <div 
-                key={project.id} 
-                className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-green-300"
+              <div
+                key={project.id}
+                className="bg-white rounded-xl shadow overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg"
                 onClick={() => openProjectDetails(project)}
               >
                 <div className="flex flex-col md:flex-row">
                   <div className="md:w-1/3 lg:w-1/4">
-                    <div className="aspect-w-16 aspect-h-12 bg-gray-100 h-full">
+                    <div className="aspect-video bg-gray-100 h-full">
                       {project.thumbnail ? (
                         <img
                           src={project.thumbnail}
@@ -223,10 +199,6 @@ const GalleryPage = () => {
                           </svg>
                           <span>{project.beforePhotos.length + project.afterPhotos.length} Photos</span>
                         </div>
-                        <div className="hidden md:flex text-sm text-gray-500">
-                          <span className="mr-2">Before: {project.beforePhotos.length}</span>
-                          <span>After: {project.afterPhotos.length}</span>
-                        </div>
                       </div>
                       <span className="text-green-600 text-sm font-medium hover:text-green-700">View Details →</span>
                     </div>
@@ -236,117 +208,102 @@ const GalleryPage = () => {
             ))}
           </div>
         )}
-      </Container>
 
-      {/* Project Detail Modal */}
-      {selectedProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white z-10 border-b border-gray-100 flex justify-between items-center p-4">
-              <h2 className="text-xl font-bold">{selectedProject.title}</h2>
-              <button 
-                onClick={closeProjectDetails}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span>
-                  <span className="text-sm font-medium text-green-600 uppercase tracking-wider">{selectedProject.category}</span>
-                </div>
-                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                  Completed: {selectedProject.date}
-                </div>
+        {/* Modal */}
+        {selectedProject && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70 overflow-y-auto">
+            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white z-10 border-b border-gray-100 flex justify-between items-center p-4">
+                <h2 className="text-xl font-bold">{selectedProject.title}</h2>
+                <button
+                  onClick={closeProjectDetails}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span>
+                    <span className="text-sm font-medium text-green-600 uppercase tracking-wider">{selectedProject.category}</span>
+                  </div>
+                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Completed: {selectedProject.date}
+                  </div>
+                </div>
 
-              {/* Before & After Sections */}
-              <div className="space-y-8">
-                {/* Before Photos */}
-                {selectedProject.beforePhotos.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
+                {/* Before & After Sections */}
+                <div className="space-y-8">
+                  {selectedProject.beforePhotos.length > 0 && (
+                    <div className="space-y-4">
                       <h3 className="text-xl font-semibold text-gray-800">Before</h3>
-                      <div className="flex-1 h-px bg-gray-200"></div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {selectedProject.beforePhotos.map((photo, index) => (
-                        <div 
-                          key={`before-${index}`} 
-                          className="relative group overflow-hidden rounded-lg shadow-sm"
-                        >
-                          <div className="aspect-w-16 aspect-h-10 bg-gray-100">
-                            <img
-                              src={photo.url}
-                              alt={`Before ${index + 1}`}
-                              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                              loading="lazy"
-                            />
-                          </div>
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {selectedProject.beforePhotos.map((photo, index) => (
+                          <div key={`before-${index}`} className="relative overflow-hidden rounded-lg shadow-sm group">
+                            <div className="aspect-video bg-gray-100">
+                              <img
+                                src={photo.url}
+                                alt={`Before ${index + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                            </div>
                             {photo.caption && (
-                              <p className="text-white text-sm font-medium">{photo.caption}</p>
+                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-sm p-2 text-center">
+                                {photo.caption}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* After Photos */}
-                {selectedProject.afterPhotos.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
+                  {selectedProject.afterPhotos.length > 0 && (
+                    <div className="space-y-4">
                       <h3 className="text-xl font-semibold text-gray-800">After</h3>
-                      <div className="flex-1 h-px bg-gray-200"></div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {selectedProject.afterPhotos.map((photo, index) => (
-                        <div 
-                          key={`after-${index}`} 
-                          className="relative group overflow-hidden rounded-lg shadow-sm"
-                        >
-                          <div className="aspect-w-16 aspect-h-10 bg-gray-100">
-                            <img
-                              src={photo.url}
-                              alt={`After ${index + 1}`}
-                              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                              loading="lazy"
-                            />
-                          </div>
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {selectedProject.afterPhotos.map((photo, index) => (
+                          <div key={`after-${index}`} className="relative overflow-hidden rounded-lg shadow-sm group">
+                            <div className="aspect-video bg-gray-100">
+                              <img
+                                src={photo.url}
+                                alt={`After ${index + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                            </div>
                             {photo.caption && (
-                              <p className="text-white text-sm font-medium">{photo.caption}</p>
+                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-sm p-2 text-center">
+                                {photo.caption}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
+                  )}
+                </div>
+
+                {selectedProject.notes?.professional && (
+                  <div className="mt-8 p-5 bg-green-50 rounded-lg border border-green-100">
+                    <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clipRule="evenodd" />
+                      </svg>
+                      Project Notes
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">{selectedProject.notes.professional}</p>
                   </div>
                 )}
               </div>
-
-              {/* Project Details */}
-              {selectedProject.notes?.professional && (
-                <div className="mt-8 p-5 bg-green-50 rounded-lg border border-green-100">
-                  <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clipRule="evenodd" />
-                    </svg>
-                    Project Notes
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed">{selectedProject.notes.professional}</p>
-                </div>
-              )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Container>
     </div>
   );
 };
