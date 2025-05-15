@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter,useSearchParams } from 'next/navigation';
 import AuthFormContainer from '../../components/auth/AuthFormContainer';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -10,10 +10,14 @@ import SocialButton from '../../components/auth/SocialButton';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { jwtDecode } from 'jwt-decode';
 
-function LoginForm() {
+
+
+export default function LoginPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const router = useRouter();
   const { loginWithRole } = useDashboard();
+  const searchParams = useSearchParams();
+const redirectPath = searchParams.get('redirect') || '/dashboard';
   
   const [formData, setFormData] = useState({
     email: '',
@@ -32,6 +36,7 @@ function LoginForm() {
       [name]: value
     });
     
+    // Clear field-specific error when user types
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -43,12 +48,14 @@ function LoginForm() {
   const validateForm = () => {
     const newErrors = {};
     
+    // Simple email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
     
+    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
@@ -57,58 +64,72 @@ function LoginForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  
+  
+// LoginPage.jsx updates
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    setShowError(false);
-    setShowSuccess(false);
+  setIsLoading(true);
+  setShowError(false);
+  setShowSuccess(false);
 
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
-      }
-
-      const { token } = await response.json();
-      if (!token) throw new Error('No token received');
-
-      const userData = await loginWithRole(token, rememberMe);
-
-      setShowSuccess(true);
-      setTimeout(() => {
-        router.push(
-          userData.role === 'admin' ? '/admin' :
-          userData.role === 'professional' ? '/professional' :
-          '/customers'
-        );
-      }, 1500);
-    } catch (error) {
-      setShowError(error.message || 'Login failed');
-      console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
-  };
+
+    const { token } = await response.json();
+    if (!token) throw new Error('No token received');
+
+    const userData = await loginWithRole(token, rememberMe);
+    setShowSuccess(true);
+
+setTimeout(() => {
+  if (redirectPath !== '/dashboard') {
+    router.push(redirectPath); // Use query param redirect if provided
+  } else {
+    router.push(
+      userData.role === 'admin' ? '/admin' :
+      userData.role === 'professional' ? '/professional' :
+      '/customers'
+    );
+  }
+}, 1500);
+
+
+
+  } catch (error) {
+    setShowError(error.message || 'Login failed');
+    console.error('Login error:', error);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleSocialLogin = (provider) => {
     console.log(`Login with ${provider}`);
     setIsLoading(true);
     
+    // Simulate API call for social login
     setTimeout(() => {
+      // Default social login as customer
       const userData = { id: 5, name: 'Social User', email: 'social@example.com' };
       loginWithRole('customer', userData);
       
       setShowSuccess(true);
       setIsLoading(false);
       
+      // Redirect after 1.5 seconds
       setTimeout(() => {
         router.push('/customer');
       }, 1500);
@@ -130,7 +151,7 @@ function LoginForm() {
       {showError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
           <p className="font-bold">Login failed</p>
-          <p className="text-sm">{showError}</p>
+          <p className="text-sm">Invalid email or password.</p>
         </div>
       )}
       
@@ -159,6 +180,7 @@ function LoginForm() {
           required
         />
         <div>
+
           <div className="flex items-center">
             <input
               id="rememberMe"
@@ -213,13 +235,5 @@ function LoginForm() {
         </div>
       </form>
     </AuthFormContainer>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LoginForm />
-    </Suspense>
   );
 }
