@@ -47,16 +47,31 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
 
-  const handleBookNowClick = (e) => {
-    e.preventDefault();
+  // const handleBookNowClick = (e) => {
+  //   e.preventDefault();
     
-    if (userData && userRole === 'customer') {
-      router.push('/booking');
-    } else {
-      router.push('/login');
-    }
-  };
+  //   if (userData && userRole === 'customer') {
+  //     router.push('/booking');
+  //   } else {
+  //     router.push('/login');
+  //   }
+  // };
 
+
+
+      const handleBookNowClick = (e) => {
+  e.preventDefault();
+
+  const token = userData?.token;
+  const role = userData?.role || '';
+
+  if (token && role === 'customer') {
+    router.push('/booking');
+  } else {
+    // Append redirect query
+    router.push('/login?redirect=/booking');
+  }
+};
   const handleLogout = () => {
     logout();
     router.push('/login');

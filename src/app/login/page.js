@@ -93,9 +93,19 @@ const handleSubmit = async (e) => {
     const userData = await loginWithRole(token, rememberMe);
     setShowSuccess(true);
 
-    setTimeout(() => {
-      router.push(redirectPath); // redirect to query param or /dashboard
-    }, 1500);
+setTimeout(() => {
+  if (redirectPath !== '/dashboard') {
+    router.push(redirectPath); // Use query param redirect if provided
+  } else {
+    router.push(
+      userData.role === 'admin' ? '/admin' :
+      userData.role === 'professional' ? '/professional' :
+      '/customers'
+    );
+  }
+}, 1500);
+
+
 
   } catch (error) {
     setShowError(error.message || 'Login failed');
