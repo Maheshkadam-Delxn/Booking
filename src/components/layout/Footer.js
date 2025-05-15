@@ -131,7 +131,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center group">
                 <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
-                  info@greengardens.com
+                  info@gildordorochin.com
                 </span>
               </li>
               <li className="flex items-center group">
