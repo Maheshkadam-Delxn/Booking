@@ -253,35 +253,46 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
       toast.info('Please select photos first');
       return;
     }
-
+  
     setUploadingPhotos(true);
-    const formData = new FormData();
     
     try {
-      for (const file of selectedPhotos[type]) {
-        formData.append('photos', file);
-      }
-
-      formData.append('photoType', type);
-
-      const headers = getAuthHeaders('multipart/form-data');
+      const headers = getAuthHeaders('application/json');
       
       if (!headers.Authorization) {
         throw new Error('No authorization token available');
       }
       
+      // Convert files to base64
+      const photoData = await Promise.all(
+        selectedPhotos[type].map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve({
+              data: reader.result.split(',')[1], // Remove the data:image/... prefix
+              contentType: file.type,
+              name: file.name
+            });
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+  
       const response = await axios.post(
         `${API_URL}/appointments/${appointment.id}/photos`,
-        formData,
+        {
+          photos: photoData,
+          photoType: type
+        },
         { headers }
       );
-
+  
       if (!response.data.success) {
         throw new Error(response.data.message || 'Upload failed');
       }
-
+  
       toast.success(`Successfully uploaded ${selectedPhotos[type].length} photo${selectedPhotos[type].length > 1 ? 's' : ''}`);
-
+  
       const updatedAppointment = {
         ...appointment,
         photos: {
@@ -290,11 +301,11 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
         }
       };
       onUpdate(updatedAppointment);
-
+  
       // Clear previews and selected photos
       setSelectedPhotos(prev => ({ ...prev, [type]: [] }));
       setPreviewUrls(prev => ({ ...prev, [type]: [] }));
-
+  
     } catch (error) {
       console.error('Photo upload error:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to upload photos');
