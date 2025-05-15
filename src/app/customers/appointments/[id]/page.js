@@ -28,27 +28,36 @@ const AppointmentDetails = () => {
 
   const fetchDetails = async () => {
     try {
+      setLoading(true);
+      setError("");
+      
+      if (!userData?.token) {
+        throw new Error("Authentication required");
+      }
+
       const response = await axios.get(`${API_URL}/appointments/${id}`, {
         headers: {
           Authorization: `Bearer ${userData.token}`,
         },
       });
 
-      if (response.data.success) {
-        setAppointment(response.data.data);
-      } else {
-        setError("Appointment not found.");
+      if (!response.data.success || !response.data.data) {
+        throw new Error(response.data.error || "Appointment not found");
       }
+
+      setAppointment(response.data.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Error fetching appointment.");
+      setError(err.message || "Error fetching appointment details");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (userData?.token) fetchDetails();
-  }, [userData]);
+    if (userData?.token) {
+      fetchDetails();
+    }
+  }, [userData, id]);
 
   if (loading) {
     return (
@@ -85,39 +94,78 @@ const AppointmentDetails = () => {
           Back to Appointments
         </button>
 
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-green-500 text-white p-6 rounded-2xl shadow-md">
-          <h2 className="text-3xl font-bold mb-2">Appointment Details</h2>
-          <p className="text-green-100 text-lg">{appointment.service?.name || "Service"}</p>
-        </div>
+        {appointment && (
+          <>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-600 to-green-500 text-white p-6 rounded-2xl shadow-md">
+              <h2 className="text-3xl font-bold mb-2">Appointment Details</h2>
+              <p className="text-green-100 text-lg">
+                {appointment.service?.name || "Service"}
+              </p>
+            </div>
 
-        {/* Detail Card */}
-        <div className="mt-6 bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
-          {/* Category */}
-          <div className="flex items-center text-gray-700 text-base font-medium">
-            <HardHat className="h-5 w-5 text-green-600 mr-3" />
-            {appointment.service?.category || "No category"}
-          </div>
+            {/* Detail Card */}
+            <div className="mt-6 bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
+              {/* Category */}
+              <div className="flex items-center text-gray-700 text-base font-medium">
+                <HardHat className="h-5 w-5 text-green-600 mr-3" />
+                {appointment.service?.category || "No category"}
+              </div>
 
-          {/* Grid Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InfoItem icon={Calendar} label="Date" value={
-              new Date(appointment.date).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })
-            } />
+              {/* Grid Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InfoItem 
+                  icon={Calendar} 
+                  label="Date" 
+                  value={
+                    appointment?.date 
+                      ? new Date(appointment.date).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Not available"
+                  } 
+                />
 
-            <InfoItem icon={Clock} label="Time" value={`${appointment.timeSlot?.startTime} - ${appointment.timeSlot?.endTime}`} />
+                <InfoItem 
+                  icon={Clock} 
+                  label="Time" 
+                  value={
+                    appointment?.timeSlot 
+                      ? `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}`
+                      : "Not available"
+                  } 
+                />
 
-            <InfoItem icon={Package} label="Package" value={appointment.packageType || "Standard"} />
-            <InfoItem icon={CreditCard} label="Payment Status" value={appointment.payment?.status || "Pending"} />
-            <InfoItem icon={User} label="Attendee" value={appointment.attendee?.name || "Not assigned"} />
-            <InfoItem icon={CheckCircle} label="Status" value={appointment.status} />
-          </div>
-        </div>
+                <InfoItem 
+                  icon={Package} 
+                  label="Package" 
+                  value={appointment.packageType || "Standard"} 
+                />
+                
+                <InfoItem 
+                  icon={CreditCard} 
+                  label="Payment Status" 
+                  value={appointment.payment?.status || "Pending"} 
+                />
+                
+                <InfoItem 
+                  icon={User} 
+                  label="Attendee" 
+                  value={appointment.attendee?.name || "Not assigned"} 
+                />
+                
+                <InfoItem 
+                  icon={CheckCircle} 
+                  label="Status" 
+                  value={appointment.status || "Unknown"} 
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </CustomerLayout>
   );

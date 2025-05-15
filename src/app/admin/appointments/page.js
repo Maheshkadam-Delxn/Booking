@@ -85,6 +85,7 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadErrors, setUploadErrors]=useState([]);
+
   const errors = [];
 
 
@@ -591,7 +592,20 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
               Close
             </Button>
             {isEditing ? (
-              <Button onClick={handleUpdate}>Save Changes</Button>
+              // <Button onClick={handleUpdate}>Save Changes</Button>
+              <Button onClick={handleUpdate} disabled={loading}>
+  {loading ? (
+    <div className="flex items-center justify-center">
+      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Saving...
+    </div>
+  ) : (
+    'Save Changes'
+  )}
+</Button>
             ) : (
               <Button onClick={() => setIsEditing(true)}>Edit</Button>
             )}
@@ -632,7 +646,12 @@ const AppointmentsPage = () => {
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { userData, isLoading } = useDashboard();
-  
+    const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 25,
+    total: 0,
+    hasMore: true
+  });
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -661,7 +680,8 @@ const AppointmentsPage = () => {
     };
   }, [userData]);
 
-  const fetchAppointments = useCallback(async () => {
+  // Modified to handle pagination
+  const fetchAppointments = useCallback(async (page = 1, limit = 25) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
@@ -671,7 +691,7 @@ const AppointmentsPage = () => {
       }
       
       const appointmentsRes = await axios.get(
-        `${API_URL}/appointments`,
+        `${API_URL}/appointments?page=${page}&limit=${limit}`,
         { headers }
       );
 
@@ -679,12 +699,14 @@ const AppointmentsPage = () => {
         throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
       }
 
-      const appointments = appointmentsRes.data?.data || [];
+      const newAppointments = appointmentsRes.data?.data || [];
+      const paginationData = appointmentsRes.data?.pagination || {};
 
-      const transformedAppointments = appointments.map((app) => ({
+      // Transform appointments with customer names (if available in your context)
+      const transformedAppointments = newAppointments.map((app) => ({
         id: app._id,
-        customerName: app.customer?.user?.name || "N/A",
-        customerPhone: app.customer?.user?.phone || "N/A",
+        customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
+        customerPhone: app.customer?.phone || "N/A",
         address: app.customer?.address ? 
           `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() : 
           'N/A',
@@ -718,9 +740,18 @@ const AppointmentsPage = () => {
           afterService: []
         }
       }));
-      
-      setAppointments(transformedAppointments);
+
+      // If it's the first page, replace the appointments, otherwise append
+      setAppointments(prev => page === 1 ? transformedAppointments : [...prev, ...transformedAppointments]);
       setError(null);
+      
+      // Update pagination state
+      setPagination({
+        page,
+        limit,
+        total: paginationData.total || 0,
+        hasMore: !!paginationData.next
+      });
     } catch (err) {
       console.error("Error fetching appointments:", err);
       setError(err.response?.data?.message || err.message);
@@ -729,6 +760,31 @@ const AppointmentsPage = () => {
       setLoading(false);
     }
   }, [API_URL, getAuthHeaders]);
+
+
+  // Add this function to load more appointments
+  const loadMoreAppointments = async () => {
+    if (pagination.hasMore) {
+      await fetchAppointments(pagination.page + 1, pagination.limit);
+    }
+  };
+
+  // Example implementation for a "Load More" button:
+  const renderLoadMore = () => {
+    if (!pagination.hasMore) return null;
+    
+    return (
+      <div className="mt-4 text-center">
+        <Button 
+          onClick={loadMoreAppointments}
+          disabled={loading}
+          variant="outline"
+        >
+          {loading ? 'Loading...' : 'Load More'}
+        </Button>
+      </div>
+    );
+  };
 
   const fetchServices = useCallback(async () => {
     try {
@@ -787,6 +843,7 @@ const AppointmentsPage = () => {
     }
   };
 
+  // Modify your filteredAppointments calculation to use the full list
   const filteredAppointments = [...appointments]
     .filter(appointment => {
       const searchMatches = 
@@ -1156,6 +1213,7 @@ const AppointmentsPage = () => {
                       </td>
                     </tr>
                   ))}
+                  {viewType === 'list' && renderLoadMore()}
                 </tbody>
               </table>
             </div>

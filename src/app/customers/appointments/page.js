@@ -309,14 +309,13 @@ const handleReschedule = async () => {
                       <User className="h-4 w-4 mr-2" />
                       <span>{appointment.attendee?.name || "No attendee specified"}</span>
                     </div>
-                    <button
-                      onClick={() => router.push(`/customers/appointments/${appointment._id}`)}
-                      className="flex items-center text-sm text-green-600 hover:underline focus:outline-none"
-                    >
-                      <span>View details</span>
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </button>
-
+                   <button
+  onClick={() => router.push(`/customers/appointments/${appointment._id}`)}
+  className="flex items-center text-sm text-green-600 hover:underline focus:outline-none"
+>
+  <span>View details</span>
+  <ChevronRight className="h-4 w-4 ml-1" />
+</button>
 <button
   onClick={() => {
     const { canReschedule, reason } = canRescheduleAppointment(appointment);

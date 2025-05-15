@@ -13,7 +13,8 @@ import {
   Mail, 
   HardHat,
   ClipboardList,
-  ArrowLeft
+  ArrowLeft,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import CustomerLayout from '../../../../components/customer/CustomerLayout';
@@ -248,7 +249,7 @@ export default function EstimateDetailPage({ params }) {
                   </div>
                 </div>
               </div> */}
-
+{/* 
               <div className="bg-gray-50 rounded-lg p-5">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                   <CheckCircle className="mr-2" size={18} />
@@ -266,7 +267,7 @@ export default function EstimateDetailPage({ params }) {
                     )}
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Services Section */}
@@ -340,9 +341,9 @@ export default function EstimateDetailPage({ params }) {
               <button className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium">
                 Download PDF
               </button>
-              <button className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium">
+              {/* <button className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium">
                 Approve Estimate
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

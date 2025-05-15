@@ -178,7 +178,7 @@ export default function EstimatesPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      {/* <div className="grid grid-cols-2 gap-4">
                         <div className="bg-emerald-50 rounded-lg p-4">
                           <h3 className="font-medium text-emerald-800 mb-1 text-sm flex items-center">
                             <CheckCircle className="mr-1" size={14} />
@@ -198,7 +198,7 @@ export default function EstimatesPage() {
                             {estimate.accessInfo || 'Standard'}
                           </p>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 
@@ -218,12 +218,12 @@ export default function EstimatesPage() {
                   )}
 
                   <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                    <button
+                    {/* <button
     onClick={() => router.push(`/customers/estimates/${estimate._id}`)}
     className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
   >
     View Full Details
-  </button>
+  </button> */}
                   </div>
                 </div>
               </div>
