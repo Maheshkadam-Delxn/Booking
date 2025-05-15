@@ -104,6 +104,7 @@ import BookingReview from '../../components/booking/BookingReview';
 
 const BookingPage = () => {
   const [step, setStep] = useState(1);
+ 
 
   const steps = [
     { id: 1, label: 'Service' },

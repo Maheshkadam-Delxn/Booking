@@ -23,43 +23,41 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [detailedAppointment, setDetailedAppointment] = useState(null);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+const [selectedAppointment, setSelectedAppointment] = useState(null);
+const [selectedDate, setSelectedDate] = useState('');
+const [availableSlots, setAvailableSlots] = useState([]);
+const [selectedSlot, setSelectedSlot] = useState(null);
+const [rescheduleLoading, setRescheduleLoading] = useState(false);
+const [rescheduleError, setRescheduleError] = useState(null);
+
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { userData, isLoading } = useDashboard();
   const router = useRouter();
 
-  const fetchAppointments = async () => {
-    try {
-      // Check if user data is available
-      if (!userData || isLoading) {
-        setLoading(true);
-        return;
-      }
-
-      const token = userData.token;
-      if (!token) {
-        setError("No authentication token found");
-        setLoading(false);
-        return;
-      }
-
-      const response = await axios.get(`${API_URL}/appointments/my-appointments`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.data.success && Array.isArray(response.data.data)) {
-        setAppointments(response.data.data);
-      } else {
-        setAppointments([]);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch appointments");
-      console.error("Error fetching appointments:", err);
-    } finally {
-      setLoading(false);
+ const fetchAppointments = async () => {
+  try {
+    setLoading(true);
+    const token = userData?.token;
+    if (!token) {
+      setError("No authentication token found");
+      return;
     }
-  };
+
+    const response = await axios.get(`${API_URL}/appointments/my-appointments`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (response.data.success) {
+      setAppointments(response.data.data || []);
+    }
+  } catch (err) {
+    setError(err.response?.data?.message || "Failed to fetch appointments");
+    console.error("Error fetching appointments:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     // Only fetch appointments if userData is available
@@ -68,6 +66,71 @@ const Appointments = () => {
     }
   }, [userData, isLoading]); // Add dependencies to re-fetch when userData changes
 
+ 
+ 
+
+const handleReschedule = async () => {
+  if (!selectedDate || !selectedSlot) {
+    setRescheduleError("Please select both date and time slot");
+    return;
+  }
+
+  setRescheduleLoading(true);
+  setRescheduleError(null);
+
+  try {
+    const res = await axios.put(
+      `${API_URL}/appointments/${selectedAppointment._id}/reschedule-request`,
+      {
+        requestedDate: selectedDate,
+        requestedTime: `${selectedSlot.start} - ${selectedSlot.end}`,
+        reason: "Customer requested reschedule through portal"
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${userData.token}`,
+        },
+      }
+    );
+
+    if (res.data.success) {
+      alert("Reschedule request submitted successfully!");
+
+      // Update the specific appointment in state
+      setAppointments(prevAppointments => 
+        prevAppointments.map(appointment => 
+          appointment._id === selectedAppointment._id
+            ? {
+                ...appointment,
+                date: selectedDate,
+                timeSlot: { startTime: selectedSlot.start, endTime: selectedSlot.end },
+              }
+            : appointment
+        )
+      );
+
+      setShowRescheduleModal(false);
+    } else {
+      setRescheduleError(res.data.error || "Failed to submit reschedule request");
+    }
+  } catch (err) {
+    console.error("Reschedule failed:", err);
+    setRescheduleError(
+      err.response?.data?.error ||
+      "Failed to submit reschedule request. Please try again."
+    );
+  } finally {
+    setRescheduleLoading(false);
+  }
+};
+
+
+
+
+
+
+ 
+ 
   // Rest of your component code remains the same...
   const getStatusBadge = (status) => {
     // ... existing status badge code ...
@@ -210,10 +273,118 @@ const Appointments = () => {
                       <span>View details</span>
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </button>
+
+<button
+  onClick={() => {
+    setSelectedAppointment(appointment);
+    setShowRescheduleModal(true);
+    setSelectedDate("");  // clear previous
+    setAvailableSlots([]);
+    setSelectedSlot(null);
+  }}
+  className="ml-4 flex items-center text-sm text-blue-600 hover:underline focus:outline-none"
+>
+  <span>Reschedule</span>
+</button>
+
+
                   </div>
                 </div>
               </div>
             ))}
+
+            {showRescheduleModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <h3 className="text-lg font-bold mb-4">Request Reschedule</h3>
+      
+      {rescheduleError && (
+        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded">
+          {rescheduleError}
+        </div>
+      )}
+
+      <label className="block text-sm mb-2">Select New Date:</label>
+      <input
+        type="date"
+        className="w-full mb-4 border rounded px-3 py-2"
+        value={selectedDate}
+        min={new Date().toISOString().split("T")[0]}
+        onChange={async (e) => {
+          const newDate = e.target.value;
+          setSelectedDate(newDate);
+          setSelectedSlot(null);
+          setRescheduleError(null);
+
+          try {
+            const res = await axios.get(`${API_URL}/appointments/availability`, {
+              params: {
+                date: newDate,
+                serviceId: selectedAppointment.service._id,
+              },
+            });
+            if (res.data.success) {
+              setAvailableSlots(res.data.data);
+            }
+          } catch (error) {
+            console.error("Failed to fetch slots:", error);
+          }
+        }}
+      />
+
+      {availableSlots.length > 0 && (
+        <>
+          <p className="mb-2 text-sm font-medium">Available Time Slots:</p>
+          <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto mb-4">
+            {availableSlots.map((slot, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedSlot(slot)}
+                className={`border rounded p-2 text-sm hover:bg-green-100 ${
+                  selectedSlot === slot ? 'bg-green-200 border-green-500' : ''
+                }`}
+              >
+                {slot.start} - {slot.end}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => {
+            setShowRescheduleModal(false);
+            setRescheduleError(null);
+          }}
+          className="text-red-600 text-sm"
+          disabled={rescheduleLoading}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleReschedule}
+          className="bg-green-600 text-white text-sm px-4 py-2 rounded hover:bg-green-700 flex items-center justify-center"
+          disabled={!selectedDate || !selectedSlot || rescheduleLoading}
+        >
+          {rescheduleLoading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            </>
+          ) : (
+            "Request Reschedule"
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
           </div>
         )}
       </div>

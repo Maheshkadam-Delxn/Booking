@@ -106,7 +106,7 @@ const EditServiceForm = ({ params }) => {
           }
         } catch (error) {
           console.error("Error fetching service:", error);
-          router.push('/dashboard/services');
+          router.push('/admin/services');
         }
       }
     };
@@ -335,7 +335,7 @@ const EditServiceForm = ({ params }) => {
 
       setSuccessMessage("Service updated successfully!");
       setTimeout(() => {
-        router.push('/dashboard/services');
+        router.push('/admin/services');
       }, 1500);
     } catch (err) {
       console.error("Error updating service:", err);
@@ -362,7 +362,7 @@ const EditServiceForm = ({ params }) => {
             Authorization: `Bearer ${userData?.token}`,
           },
         });
-        router.push('/dashboard/services');
+        router.push('/admin/services');
       } catch (err) {
         console.error("Error deleting service:", err);
         setFormErrors({
@@ -771,7 +771,7 @@ const EditServiceForm = ({ params }) => {
         <div className="flex justify-between pt-4 border-t">
           <button
             type="button"
-            onClick={() => router.push('/dashboard/services')}
+            onClick={() => router.push('/admin/services')}
             className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
           >
             Cancel

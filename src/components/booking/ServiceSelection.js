@@ -10,12 +10,13 @@ const ServiceSelection = ({ onNext }) => {
   const { currentBooking, updateCurrentBooking } = useStore();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const searchParams = useSearchParams();
 
   const fetchServices = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/v1/services');
+      const response = await fetch(`${API_URL}/services`);
       const data = await response.json();
       setServices(data.data || []);
     } catch (error) {

@@ -6,7 +6,7 @@ import LayoutWrapper from '../components/layout/LayoutWrapper'; // client compon
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: "Green Gardens",
+  title: "Gildordo Rochin",
   description: "Professional landscaping and lawn care services",
 };
 

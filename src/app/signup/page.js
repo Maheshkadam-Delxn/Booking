@@ -19,13 +19,16 @@ export default function SignupPage() {
     password: '',
     phone:'',
     confirmPassword: '',
-    role: '', // <-- Add this
+    // role: '', // <-- Add this
+    role: 'customer',
+
     agreeToTerms: false
   });
   
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -73,9 +76,9 @@ export default function SignupPage() {
     }
   
     // Role validation
-    if (!formData.role) {
-      newErrors.role = 'Please select a role';
-    }
+    // if (!formData.role) {
+    //   newErrors.role = 'Please select a role';
+    // }
   
     // Terms agreement validation
     if (!formData.agreeToTerms) {
@@ -95,7 +98,7 @@ export default function SignupPage() {
     setIsLoading(true);
   
     try {
-      const res = await fetch('http://localhost:5000/api/v1/auth/register', {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -241,7 +244,7 @@ export default function SignupPage() {
           error={errors.confirmPassword}
           required
         />
-        <label className="block mb-2 text-sm font-medium text-gray-700">Select Role</label>
+{/* <label className="block mb-2 text-sm font-medium text-gray-700">Select Role</label>
 <select
   name="role"
   value={formData.role}
@@ -253,7 +256,7 @@ export default function SignupPage() {
   <option value="professional">Professional</option>
   <option value="admin">Admin</option>
 </select>
-{errors.role && <p className="text-red-500 text-sm">{errors.role}</p>}
+{errors.role && <p className="text-red-500 text-sm">{errors.role}</p>} */}
 
         
         <div className="flex items-start">
