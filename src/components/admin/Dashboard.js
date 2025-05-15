@@ -246,24 +246,7 @@ const [message, setMessage] = useState("");
   
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6">
-      {/* Token Display Section - Hidden on mobile */}
-      <div className="mb-6 p-4 bg-gray-100 rounded-lg hidden sm:block">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Authentication Token</h2>
-        <div className="bg-white p-3 rounded border border-gray-200">
-          <p className="text-sm font-mono break-all">{token}</p>
-        </div>
-        
-        {decodedToken && (
-          <div className="mt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Decoded Token Data</h3>
-            <div className="bg-white p-3 rounded border border-gray-200">
-              <pre className="text-sm font-mono whitespace-pre-wrap">
-                {JSON.stringify(decodedToken, null, 2)}
-              </pre>
-            </div>
-          </div>
-        )}
-      </div>
+
 
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -283,9 +266,9 @@ const [message, setMessage] = useState("");
   )}
 
    <div>
-      <h2>Admin Dashboard</h2>
+ 
 
-      {!showForm && (
+      {/* {!showForm && (
         <button onClick={() => setShowForm(true)}>Add Message</button>
       )}
 
@@ -311,10 +294,58 @@ const [message, setMessage] = useState("");
           <button type="submit">Update Message</button>
           <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
         </form>
-      )}
+      )} */}
     </div>
 
 
+        </div>
+      </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white p-4 rounded-lg shadow">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+          <Link href="/admin/appointments">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">View All Appointments</span>
+            </div>
+          </Link>
+          <Link href="/admin/customers">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Customers</span>
+            </div>
+          </Link>
+          <Link href="/admin/services">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Services</span>
+            </div>
+          </Link>
+          <Link href="/admin/staff">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Staff</span>
+            </div>
+          </Link>
+          <Link href="/admin/settings">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Settings</span>
+            </div>
+          </Link>
         </div>
       </div>
 
@@ -436,53 +467,7 @@ const [message, setMessage] = useState("");
         <CalendarOverview appointments={appointments} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-          <Link href="/admin/appointments">
-            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">View All Appointments</span>
-            </div>
-          </Link>
-          <Link href="/admin/customers">
-            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Customers</span>
-            </div>
-          </Link>
-          <Link href="/admin/services">
-            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Services</span>
-            </div>
-          </Link>
-          <Link href="/admin/staff">
-            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Manage Staff</span>
-            </div>
-          </Link>
-          <Link href="/admin/settings">
-            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition-colors">
-              <svg className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="block mt-2 text-xs sm:text-sm font-medium text-gray-900">Settings</span>
-            </div>
-          </Link>
-        </div>
-      </div>
+
     </div>
   );
 };
