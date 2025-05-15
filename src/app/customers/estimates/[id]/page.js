@@ -13,7 +13,8 @@ import {
   Mail, 
   HardHat,
   ClipboardList,
-  ArrowLeft
+  ArrowLeft,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import CustomerLayout from '../../../../components/customer/CustomerLayout';

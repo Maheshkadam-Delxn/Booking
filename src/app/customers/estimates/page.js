@@ -218,12 +218,12 @@ export default function EstimatesPage() {
                   )}
 
                   <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                    <button
+                    {/* <button
     onClick={() => router.push(`/customers/estimates/${estimate._id}`)}
     className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
   >
     View Full Details
-  </button>
+  </button> */}
                   </div>
                 </div>
               </div>

@@ -30,6 +30,22 @@ const Hero = () => {
   ];
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
 
+
+    const handleCreateEstimateClick = (e) => {
+  e.preventDefault();
+
+  const token = userData?.token;
+  const role = userData?.role || '';
+
+  if (token && role === 'customer') {
+    router.push('/create-estimate');
+  } else {
+    // Append redirect query
+    router.push('/login?redirect=/create-estimate');
+  }
+};
+
+
   // Auto-rotate every 4 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -300,6 +316,7 @@ const Hero = () => {
                           className="bg-white text-green-700 border border-green-600 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors duration-300 w-full"
                           whileHover={{ scale: 1.03 }}
                           whileTap={{ scale: 0.98 }}
+                          onClick={handleCreateEstimateClick}
                         >
                           Request Estimate
                         </motion.button>

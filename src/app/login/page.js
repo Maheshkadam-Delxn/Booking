@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter,useSearchParams } from 'next/navigation';
 import AuthFormContainer from '../../components/auth/AuthFormContainer';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -11,10 +11,13 @@ import { useDashboard } from '../../contexts/DashboardContext';
 import { jwtDecode } from 'jwt-decode';
 
 
+
 export default function LoginPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const router = useRouter();
   const { loginWithRole } = useDashboard();
+  const searchParams = useSearchParams();
+const redirectPath = searchParams.get('redirect') || '/dashboard';
   
   const [formData, setFormData] = useState({
     email: '',
@@ -61,78 +64,7 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
   
-  //   if (!validateForm()) return;
-  
-  //   setIsLoading(true);
-  //   setShowError(false);
-  //   setShowSuccess(false);
-  
-  //   try {
-  //     const response = await fetch(`${API_URL}/auth/login`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       credentials: 'include',
-  //       body: JSON.stringify(formData),
-  //     });
-  
-  //     if (!response.ok) {
-  //       const errorData = await response.text();
-  //       console.error('Server response:', errorData);
-  //       throw new Error('Login failed: Server returned ' + response.status);
-  //     }
-  
-  //     const data = await response.json();
-  // console.log("done login",data);
-  //     if (!data.token) {
-  //       throw new Error('Token not received from server');
-  //     }
-  
-  //     // Use the context to handle login
-  //     loginWithRole(data.token, rememberMe);
-  
-  //     setShowSuccess(true);
-  
-  //     // Decode token to get role for redirection
-  //     const decodedToken = jwtDecode(data.token);
-  //     const role = decodedToken.role;
-      
-  //     setTimeout(() => {
-  //       router.push(
-  //         role === 'admin' ? '/admin' : 
-  //         role === 'professional' ? '/professional' : 
-  //         role === 'customer' ? '/customers' : '/'
-  //       );
-  //     }, 1500);
-  
-  //     // If the user is a customer, fetch customer data
-  //     if (role === 'customer') {
-  //       try {
-  //         const res = await fetch(`${API_URL}/customers/me`, {
-  //           headers: {
-  //             Authorization: `Bearer ${data.token}`,
-  //           },
-  //         });
-  
-  //         const customerData = await res.json();
-  //         if (customerData.success) {
-  //           localStorage.setItem('customerId', customerData.data._id);
-  //         }
-  //       } catch (customerErr) {
-  //         console.error('Error fetching customer data:', customerErr);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Login error:', error);
-  //     setShowError(error.message || 'Login failed');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
   
 // LoginPage.jsx updates
 const handleSubmit = async (e) => {
@@ -158,17 +90,13 @@ const handleSubmit = async (e) => {
     const { token } = await response.json();
     if (!token) throw new Error('No token received');
 
-    // Wait for login to complete
     const userData = await loginWithRole(token, rememberMe);
-
     setShowSuccess(true);
+
     setTimeout(() => {
-      router.push(
-        userData.role === 'admin' ? '/admin' :
-        userData.role === 'professional' ? '/professional' :
-        '/customers'
-      );
+      router.push(redirectPath); // redirect to query param or /dashboard
     }, 1500);
+
   } catch (error) {
     setShowError(error.message || 'Login failed');
     console.error('Login error:', error);
@@ -176,6 +104,7 @@ const handleSubmit = async (e) => {
     setIsLoading(false);
   }
 };
+
 
   const handleSocialLogin = (provider) => {
     console.log(`Login with ${provider}`);
