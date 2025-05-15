@@ -11,7 +11,7 @@ import AnnouncementBanner from '@/components/home/AnnouncementBanner';
 import { motion } from 'framer-motion';
 // import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-
+// k
 const Hero = () => {
   const { userData, isLoading } = useDashboard();
   const router = useRouter();
