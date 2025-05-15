@@ -357,10 +357,9 @@ useEffect(() => {
         </div>
 
          <div className="flex items-center justify-between">
- 
-  <Link 
+  <Link
     href="/customers/edit"
-    className="text-black hover:text-green-600 font-medium text-lg flex items-center"
+    className="ml-96 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition-all border border-green-700 hover:border-green-800 shadow-sm"
   >
     Edit
     <ChevronRight size={16} className="ml-1" />

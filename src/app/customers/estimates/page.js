@@ -178,7 +178,7 @@ export default function EstimatesPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      {/* <div className="grid grid-cols-2 gap-4">
                         <div className="bg-emerald-50 rounded-lg p-4">
                           <h3 className="font-medium text-emerald-800 mb-1 text-sm flex items-center">
                             <CheckCircle className="mr-1" size={14} />
@@ -198,7 +198,7 @@ export default function EstimatesPage() {
                             {estimate.accessInfo || 'Standard'}
                           </p>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 

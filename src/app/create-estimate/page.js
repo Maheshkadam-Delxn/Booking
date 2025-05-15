@@ -2,8 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Container from '../../../components/ui/Container';
-import CreateEstimateForm from '../../../components/admin/CreateEstimateForm';
+import Container from '../../components/ui/Container';
+import CreateEstimateForm from '../../components/admin/CreateEstimateForm';
 
 // Create a separate component that uses useSearchParams
 const EstimateFormWithAppointment = () => {

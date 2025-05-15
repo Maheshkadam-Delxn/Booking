@@ -297,7 +297,7 @@ useEffect(() => {
                       >
                         Schedule Consultation
                       </motion.button>
-                      <Link href="/admin/create-estimate">
+                      <Link href="/create-estimate">
                         <motion.button 
                           className="bg-white text-green-700 border border-green-600 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors duration-300 w-full"
                           whileHover={{ scale: 1.03 }}
