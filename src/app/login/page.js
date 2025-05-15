@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter,useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AuthFormContainer from '../../components/auth/AuthFormContainer';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -10,14 +10,13 @@ import SocialButton from '../../components/auth/SocialButton';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { jwtDecode } from 'jwt-decode';
 
-
-
-export default function LoginPage() {
+// Create a client component that safely uses useSearchParams
+function LoginContent() {
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const router = useRouter();
   const { loginWithRole } = useDashboard();
   const searchParams = useSearchParams();
-const redirectPath = searchParams.get('redirect') || '/dashboard';
+  const redirectPath = searchParams.get('redirect') || '/dashboard';
   
   const [formData, setFormData] = useState({
     email: '',
@@ -64,57 +63,51 @@ const redirectPath = searchParams.get('redirect') || '/dashboard';
     return Object.keys(newErrors).length === 0;
   };
 
-  
-  
-// LoginPage.jsx updates
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  setIsLoading(true);
-  setShowError(false);
-  setShowSuccess(false);
+    setIsLoading(true);
+    setShowError(false);
+    setShowSuccess(false);
 
-  try {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
+      }
+
+      const { token } = await response.json();
+      if (!token) throw new Error('No token received');
+
+      const userData = await loginWithRole(token, rememberMe);
+      setShowSuccess(true);
+
+      setTimeout(() => {
+        if (redirectPath !== '/dashboard') {
+          router.push(redirectPath); // Use query param redirect if provided
+        } else {
+          router.push(
+            userData.role === 'admin' ? '/admin' :
+            userData.role === 'professional' ? '/professional' :
+            '/customers'
+          );
+        }
+      }, 1500);
+
+    } catch (error) {
+      setShowError(error.message || 'Login failed');
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
     }
-
-    const { token } = await response.json();
-    if (!token) throw new Error('No token received');
-
-    const userData = await loginWithRole(token, rememberMe);
-    setShowSuccess(true);
-
-setTimeout(() => {
-  if (redirectPath !== '/dashboard') {
-    router.push(redirectPath); // Use query param redirect if provided
-  } else {
-    router.push(
-      userData.role === 'admin' ? '/admin' :
-      userData.role === 'professional' ? '/professional' :
-      '/customers'
-    );
-  }
-}, 1500);
-
-
-
-  } catch (error) {
-    setShowError(error.message || 'Login failed');
-    console.error('Login error:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  };
 
   const handleSocialLogin = (provider) => {
     console.log(`Login with ${provider}`);
@@ -180,7 +173,6 @@ setTimeout(() => {
           required
         />
         <div>
-
           <div className="flex items-center">
             <input
               id="rememberMe"
@@ -235,5 +227,27 @@ setTimeout(() => {
         </div>
       </form>
     </AuthFormContainer>
+  );
+}
+
+// Loading fallback for the Suspense boundary
+function LoginLoading() {
+  return (
+    <AuthFormContainer 
+      title="Log in to your account" 
+      subtitle="Welcome back to Gildordo Rochin"
+    >
+      <div className="flex justify-center items-center py-10">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
+      </div>
+    </AuthFormContainer>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
   );
 }
