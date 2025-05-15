@@ -4,60 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Container from '../ui/Container';
 import Card from '../ui/Card';
-// import { jwtDecode } from 'jwt-decode';
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-// Static dummy data
-// const dummyServices = [
-//   {
-//     id: 1,
-//     name: 'Lawn Mowing',
-//     description: 'Professional lawn cutting and edging service for a pristine look',
-//     image: 'lawn-mowing.jpg',
-//     price: 50,
-//     duration: 60
-//   },
-//   {
-//     id: 2,
-//     name: 'Garden Design',
-//     description: 'Custom landscape design and planting services',
-//     image: 'garden-design.jpg',
-//     price: 200,
-//     duration: 120
-//   },
-//   {
-//     id: 3,
-//     name: 'Tree Trimming',
-//     description: 'Expert tree pruning and maintenance',
-//     image: 'tree-trimming.jpg',
-//     price: 150,
-//     duration: 90
-//   },
-//   {
-//     id: 4,
-//     name: 'Irrigation Setup',
-//     description: 'Smart watering system installation',
-//     image: 'irrigation.jpg',
-//     price: 300,
-//     duration: 180
-//   },
-//   {
-//     id: 5,
-//     name: 'Seasonal Cleanup',
-//     description: 'Spring/Fall yard cleanup and preparation',
-//     image: 'seasonal-cleanup.jpg',
-//     price: 100,
-//     duration: 120
-//   },
-//   {
-//     id: 6,
-//     name: 'Patio Installation',
-//     description: 'Custom stone or paver patio construction',
-//     image: 'patio-installation.jpg',
-//     price: 2500,
-//     duration: 480
-//   }
-// ];
+
 const ServicesGrid = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,211 +35,118 @@ const ServicesGrid = () => {
     fetchServices();
   }, []);
 
-  // const handleBookClick = (serviceId) => {
-  //   // const token = localStorage.getItem('authToken');
-
-  //   // if (!token) {
-  //   //   router.push('/login');
-  //   //   return;
-  //   // }
-
-  //   // try {
-  //   //   const decoded = jwtDecode(token);
-  //   //   const role = decoded.role;
-
-  //   //   if (role === 'customer') {
-  //   //     // Navigate directly to the date-time selection page with service ID
-  //   //     router.push(`/booking`);
-  //   //   } else {
-  //   //     alert('Access Denied: Only customers can book a service.');
-  //   //   }
-  //   // } catch (error) {
-  //   //   console.error("Token decoding failed", error);
-  //   //   router.push('/login');
-  //   // }
-  // };
+  const navigateToServiceDetail = (serviceId) => {
+    router.push(`/services/${serviceId}`);
+  };
 
   return (
-    <section className="py-5 bg-white">
+    <section className="py-12 bg-gradient-to-b from-white to-gray-50">
       <Container>
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Services</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We offer a comprehensive range of landscaping and lawn care services to keep your
-            outdoor spaces looking beautiful year-round.
+        <div className="text-center mb-16">
+          <span className="inline-block px-4 py-1 rounded-full bg-green-100 text-green-700 font-medium text-sm mb-3">
+            Our Expertise
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Professional Landscaping Services</h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Transform your outdoor spaces with our comprehensive range of premium landscaping and lawn care services.
           </p>
         </div>
 
         {loading ? (
-          <p className="text-center text-gray-500">Loading services...</p>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+          </div>
         ) : error ? (
-          <p className="text-center text-red-500">Error: {error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600 font-medium">Error: {error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-3 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition"
+            >
+              Try Again
+            </button>
+          </div>
         ) : services.length === 0 ? (
-          <p className="text-center text-gray-500">No services available at the moment.</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+            <p className="text-gray-500 font-medium">No services available at the moment.</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-  {services.slice(0, 6).map((service, index) => (
-    <Card key={index} hoverable className="h-full flex flex-col">
-      <div className="aspect-[16/9] bg-gray-200 relative">
-        <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-          <img
-            src={service.image.url}
-            alt={service.name}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        </div>
-      </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {services.slice(0, 6).map((service, index) => (
+              <div 
+                key={index}
+                onClick={() => navigateToServiceDetail(service._id)}
+                className="group cursor-pointer transition-all duration-300 hover:translate-y-[-5px]"
+              >
+                <Card 
+                  hoverable 
+                  className="h-full flex flex-col overflow-hidden border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="aspect-[16/9] relative overflow-hidden">
+                    {service.image?.url ? (
+                      <img
+                        src={service.image.url}
+                        alt={service.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <svg className="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <span className="text-sm font-semibold text-green-700">
+                        {service.price ? `$${service.price}` : 'Contact for pricing'}
+                      </span>
+                    </div>
+                  </div>
 
-      <Card.Content className="flex-grow">
-        <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
-        <p className="text-gray-600 mb-4">{service.description}</p>
-        {/* <button
-          onClick={() => handleBookClick(service._id)} // Note: use `_id` not `id`
-          className="text-green-600 font-medium hover:text-green-700 hover:underline inline-flex items-center"
-        >
-          Learn More
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </button> */}
-      </Card.Content>
-    </Card>
-  ))}
-</div>
-
-
-
-
-
+                  <Card.Content className="flex-grow p-5">
+                    <h3 className="text-xl font-semibold mb-2 text-gray-900">{service.name}</h3>
+                    <p className="text-gray-600 mb-4 line-clamp-3">
+                      {service.description}
+                    </p>
+                    <div className="mt-auto pt-2 flex items-center justify-between">
+                      {service.duration && (
+                        <span className="text-sm text-gray-500 flex items-center">
+                          <svg className="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {service.duration} min
+                        </span>
+                      )}
+                      <span className="text-green-600 font-medium group-hover:text-green-700 inline-flex items-center">
+                        Learn More
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 group-hover:ml-2 transition-all" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    </div>
+                  </Card.Content>
+                </Card>
+              </div>
+            ))}
+          </div>
         )}
-        {/* ✅ View More Button */}
-{services.length > 6 && (
-  <div className="text-center mt-8">
-    <button
-      onClick={() => router.push('/services')}
-      className="px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
-    >
-      View More Services
-    </button>
-  </div>
-)}
+        
+        {services.length > 6 && (
+          <div className="text-center mt-12">
+            <button
+              onClick={() => router.push('/services')}
+              className="px-8 py-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors shadow-md hover:shadow-lg flex items-center mx-auto"
+            >
+              <span>View All Services</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
       </Container>
     </section>
   );
 };
 
 export default ServicesGrid;
-
-
-// "use client";
-
-// import React from 'react';
-// import { useRouter } from 'next/navigation';
-// import Container from '../ui/Container';
-// import Card from '../ui/Card';
-
-// const ServicesGrid = () => {
-//   const router = useRouter();
-  
-//   // Static dummy data
-//   const dummyServices = [
-//     {
-//       id: 1,
-//       name: 'Lawn Mowing',
-//       description: 'Professional lawn cutting and edging service for a pristine look',
-//       image: 'https://img.freepik.com/free-photo/gardener-with-weedwacker-cutting-grass-garden_329181-20539.jpg?t=st=1746721892~exp=1746725492~hmac=5cceb6e0efec0861008b518ed446f58fb437f4d4add5d4ab293fdc9c155bdb51&w=1380',
-      
-//       price: 50,
-//       duration: 60
-//     },
-//     {
-//       id: 2,
-//       name: 'Garden Design',
-//       description: 'Custom landscape design and planting services',
-//       image: 'https://img.freepik.com/free-photo/beautiful-green-park_1417-1447.jpg?t=st=1746722067~exp=1746725667~hmac=b00992c0ccc370295d7b212e9b30e96e74e22c79f22ad0dc3f2535b8c2ed597f&w=1380',
-//       price: 200,
-//       duration: 120
-//     },
-//     {
-//       id: 3,
-//       name: 'Tree Trimming',
-//       description: 'Expert tree pruning and maintenance',
-//       image: 'https://img.freepik.com/free-photo/close-up-gardener-taking-care-plants_23-2148905240.jpg?t=st=1746722124~exp=1746725724~hmac=98671029baa4a8cbe91baa0d64eeee4e0261ffaf43c84d42a9f8e7163b65fe13&w=1380',
-//       price: 150,
-//       duration: 90
-//     },
-//     {
-//       id: 4,
-//       name: 'Irrigation Setup',
-//       description: 'Smart watering system installation',
-//       image: 'https://img.freepik.com/free-photo/greenhouse-still-life_23-2148127861.jpg?t=st=1746722177~exp=1746725777~hmac=b0378fb4351bd1d94961f82cb31860cef599fad386162d87f5dde76e55a3fa15&w=1380',
-//       price: 300,
-//       duration: 180
-//     },
-//     {
-//       id: 5,
-//       name: 'Seasonal Cleanup',
-//       description: 'Spring/Fall yard cleanup and preparation',
-//       image: 'https://img.freepik.com/premium-photo/low-section-person-standing-field-autumn_1048944-11624616.jpg?w=1380',
-//       price: 100,
-//       duration: 120
-//     },
-//     {
-//       id: 6,
-//       name: 'Patio Installation',
-//       description: 'Custom stone or paver patio construction',
-//       image: 'https://img.freepik.com/free-photo/construction-worker-sanding-down-wood-piece_23-2148748861.jpg?t=st=1746722288~exp=1746725888~hmac=fb264c7e75558e94a5d7fd068502f44bac39d3c4d7a5dd8082806932cdc8551b&w=1380',
-//       price: 2500,
-//       duration: 480
-//     }
-//   ];
-
-//   const handleBookClick = (serviceId) => {
-//     // Your existing booking logic
-//   };
-
-//   return (
-//     <section className="py-5 bg-white">
-//       <Container>
-//         <div className="text-center mb-12">
-//           <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Services</h2>
-//           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-//             We offer a comprehensive range of landscaping and lawn care services to keep your
-//             outdoor spaces looking beautiful year-round.
-//           </p>
-//         </div>
-
-//         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 lg:gap-8 gap-2">
-//           {dummyServices.map((service) => (
-//             <Card key={service.id} hoverable className="h-full flex flex-col">
-//               <div className="lg:aspect-[16/9] aspect-[3/4] bg-gray-200 relative">
-//                 <img
-//                   src={`${service.image}`}
-//                   alt={service.name}
-//                   className="absolute inset-0 w-full h-full object-cover"
-//                 />
-//               </div>
-
-//               <Card.Content className="flex-grow">
-//                 <h3 className="lg:text-xl text-md font-semibold mb-2">{service.name}</h3>
-//                 <p className="text-gray-600 lg:mb-4 mb-0 text-xs">{service.description}</p>
-//                 {/* <button
-//                   onClick={() => handleBookClick(service.id)}
-//                   className="text-green-600 font-medium hover:text-green-700 hover:underline inline-flex items-center"
-//                 >
-//                   Learn More
-//                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
-//                     <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-//                   </svg>
-//                 </button> */}
-//               </Card.Content>
-//             </Card>
-//           ))}
-//         </div>
-//       </Container>
-//     </section>
-//   );
-// };
-
-// export default ServicesGrid;
-
