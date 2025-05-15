@@ -8,29 +8,41 @@ import { jwtDecode } from 'jwt-decode';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { ArrowRight, Leaf, Calendar, Star, ChevronDown } from 'lucide-react';
 import AnnouncementBanner from '@/components/home/AnnouncementBanner';
+import { motion } from 'framer-motion';
+// import { useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 
 const Hero = () => {
   const { userData, isLoading } = useDashboard();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeFeature, setActiveFeature] = useState(0);
 
   const features = [
-    // { icon: <Leaf className="w-6 h-6" />, title: "Landscaping Excellence", description: "Expert design and installation for stunning outdoor" },
-    { icon: <Calendar className="w-6 h-6" />, title: "Budgeted Maintenance", description: "Consistent care to keep your yard pristine" },
-    { icon: <Star className="w-6 h-6" />, title: "Premium Service", description: "Good quality with attention to each detail" }
-  ];
+  {
+    icon: <Calendar className="w-6 h-6" />,
+    title: "Budgeted Maintenance",
+    description: "Consistent care to keep your yard pristine"
+  },
+  {
+    icon: <Star className="w-6 h-6" />,
+    title: "Premium Service",
+    description: "Good quality with attention to each detail"
+  }
+];
+const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+
+// Auto-rotate every 4 seconds
+useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentFeatureIndex((prevIndex) => (prevIndex + 1) % features.length);
+  }, 4000);
+  return () => clearInterval(interval);
+}, [features.length]);
+
 
   useEffect(() => {
     const token = userData?.token || null;
     setIsLoggedIn(!!token);
-
-    // Rotate through features
-    const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % features.length);
-    }, 4000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const goToBookingDetail = () => {
@@ -55,149 +67,256 @@ const Hero = () => {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.3
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
-    <>       <AnnouncementBanner />
-<section className="relative h-[80vh] w-full overflow-hidden">
-      {/* Background Video/Image */}
-      <div className="absolute inset-0 z-0">
-        <div className="relative h-full w-full">
-          {/* Image option with modern parallax effect */}
-          <div
-            className="absolute inset-0 bg-cover bg-center h-full w-full transform scale-110"
-            style={{
-              backgroundImage: 'url(/images/landscaping-image.png)',
-              animation: 'subtle-zoom 20s infinite alternate',
-            }}
-          ></div>
+    <>
+      <AnnouncementBanner />
+      <section className="relative h-[80vh] w-full overflow-hidden">
+        {/* Background Video/Image */}
+        <div className="absolute inset-0 z-0">
+          <div className="relative h-full w-full">
+            {/* Animated background image */}
+            <motion.div
+              className="absolute inset-0 bg-cover bg-center h-full w-full transform scale-110"
+              style={{
+                backgroundImage: 'url(/images/landscaping-image.png)',
+              }}
+              initial={{ scale: 1.1 }}
+              animate={{ scale: 1.15, x: -5, y: -5 }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                repeatType: "reverse",
+                ease: "linear"
+              }}
+            ></motion.div>
 
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
+          </div>
         </div>
-      </div>
 
-      {/* Content area */}
-      <div className="relative z-10 h-full flex flex-col justify-center pt-16">
-        <div className="container mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 items-start">
-          {/* Left side - Text content */}
-          <div className="text-white space-y-5 max-w-xl mt-10">
-
-            <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-              Transform Your <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-green-500">
-                Outdoor Space
-              </span>
-            </h1>
-
-            <p className="text-lg md:text-xl text-white/80 leading-relaxed">
-              Professional landscaping and lawn care services customized to your needs.
-              From regular maintenance to complete redesigns, we'll keep your yard
-              looking its best all year round.
-            </p>
-
-            {/* Static Feature Card */}
-            <div className="mt-1">
-              <div className="bg-white rounded-lg p-4 border-2 border-green-200 inline-block">
-                <div className="flex items-center space-x-3">
-                  <div className="text-green-600 p-2 bg-green-50 rounded-full flex-shrink-0">
-                    {features[activeFeature].icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-green-800">{features[activeFeature].title}</h3>
-                    <p className="text-sm text-green-600">{features[activeFeature].description}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <Button
-                onClick={goToBookingDetail}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 group">
-                Book Now
-              </Button>
-              <Link
-                href="/admin/create-estimate"
+        {/* Content area */}
+        <div className="relative z-10 h-full flex flex-col justify-center pt-16">
+          <div className="container mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 items-start">
+            {/* Left side - Text content */}
+            <motion.div 
+              className="text-white space-y-5 max-w-xl mt-10"
+              initial="hidden"
+              animate="visible"
+              variants={containerVariants}
+            >
+              <motion.h1 
+                className="text-5xl md:text-6xl font-bold leading-tight"
+                variants={itemVariants}
               >
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="hover:scale-105 transition-transform bg-white px-6 py-3"
+                Transform Your <br />
+                <motion.span 
+                  className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-green-500"
+                  initial={{ backgroundPosition: "0% 50%" }}
+                  animate={{ backgroundPosition: "100% 50%" }}
+                  transition={{
+                    duration: 5,
+                    repeat: Infinity,
+                    repeatType: "reverse",
+                    ease: "linear"
+                  }}
                 >
-                  Request Estimate
-                </Button>
-              </Link>
-            </div>
-          </div>
+                  Outdoor Space
+                </motion.span>
+              </motion.h1>
 
-          {/* Right side - Visual element */}
-          <div className="hidden md:block">
-            <div className="relative mt-10">
-              {/* Decorative elements */}
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-green-500 rounded-full opacity-20 blur-3xl"></div>
-              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-green-300 rounded-full opacity-20 blur-2xl"></div>
+              <motion.p 
+                className="text-lg md:text-xl text-white/80 leading-relaxed"
+                variants={itemVariants}
+              >
+                Professional landscaping and lawn care services customized to your needs.
+                From regular maintenance to complete redesigns, we'll keep your yard
+                looking its best all year round.
+              </motion.p>
 
-              {/* Card element - changed to light green background with border */}
-              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-green-400/20 rounded-full blur-xl"></div>
+             {/* Dynamic Feature Cards */}
+<AnimatePresence mode="wait">
+  <motion.div
+    key={currentFeatureIndex}
+    className="bg-white rounded-lg p-4 border-2 border-green-200 inline-block mt-1"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.6 }}
+  >
+    <div className="flex items-center space-x-3">
+      <div className="text-green-600 p-2 bg-green-50 rounded-full flex-shrink-0">
+        {features[currentFeatureIndex].icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-medium text-green-800">
+          {features[currentFeatureIndex].title}
+        </h3>
+        <p className="text-sm text-green-600">
+          {features[currentFeatureIndex].description}
+        </p>
+      </div>
+    </div>
+  </motion.div>
+</AnimatePresence>
 
-                {/* Sample content - replace with relevant info */}
-                <div className="space-y-6">
-                  <h3 className="text-2xl font-semibold text-green-800">Ready for a beautiful yard?</h3>
 
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100">
-                      <div className="bg-green-100 p-2 rounded-full text-green-600">
-                        <Calendar className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-green-800 font-medium">Fast Scheduling</h4>
-                        <p className="text-sm text-green-600">Book your service in just minutes</p>
-                      </div>
+            </motion.div>
+
+            {/* Right side - Visual element */}
+            <div className="hidden md:block">
+              <motion.div 
+                className="relative mt-10"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                {/* Animated decorative elements */}
+                <motion.div 
+                  className="absolute -top-10 -right-10 w-40 h-40 bg-green-500 rounded-full opacity-20 blur-3xl"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.2, 0.3, 0.2]
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                ></motion.div>
+                <motion.div 
+                  className="absolute -bottom-10 -left-10 w-32 h-32 bg-green-300 rounded-full opacity-20 blur-2xl"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.2, 0.25, 0.2]
+                  }}
+                  transition={{
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 1
+                  }}
+                ></motion.div>
+
+                {/* Card element */}
+                <motion.div 
+                  className="bg-green-50 border-2 border-green-200 rounded-2xl p-6 shadow-xl relative overflow-hidden"
+                  whileHover={{ y: -5 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <motion.div 
+                    className="absolute -right-10 -bottom-10 w-32 h-32 bg-green-400/20 rounded-full blur-xl"
+                    animate={{
+                      x: [0, -10, 0],
+                      y: [0, -10, 0]
+                    }}
+                    transition={{
+                      duration: 10,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  ></motion.div>
+
+                  <div className="space-y-6">
+                    <motion.h3 
+                      className="text-2xl font-semibold text-green-800"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      Ready for a beautiful yard?
+                    </motion.h3>
+
+                    <div className="space-y-4">
+                      <motion.div 
+                        className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100"
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <motion.div 
+                          className="bg-green-100 p-2 rounded-full text-green-600"
+                          whileHover={{ rotate: 15 }}
+                        >
+                          <Calendar className="w-5 h-5" />
+                        </motion.div>
+                        <div>
+                          <h4 className="text-green-800 font-medium">Fast Scheduling</h4>
+                          <p className="text-sm text-green-600">Book your service in just minutes</p>
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100"
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <motion.div 
+                          className="bg-green-100 p-2 rounded-full text-green-600"
+                          whileHover={{ rotate: 15 }}
+                        >
+                          <Star className="w-5 h-5" />
+                        </motion.div>
+                        <div>
+                          <h4 className="text-green-800 font-medium">Top-Rated Service</h4>
+                          <p className="text-sm text-green-600">Trusted by homeowners across the region</p>
+                        </div>
+                      </motion.div>
                     </div>
 
-                    <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-green-100">
-                      <div className="bg-green-100 p-2 rounded-full text-green-600">
-                        <Star className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-green-800 font-medium">Top-Rated Service</h4>
-                        <p className="text-sm text-green-600">Trusted by homeowners across the region</p>
-                      </div>
+                    {/* Two-button layout */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <motion.button
+                        onClick={goToBookingDetail}
+                        className="bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors duration-300"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Schedule Consultation
+                      </motion.button>
+                      <Link href="/admin/create-estimate">
+                        <motion.button 
+                          className="bg-white text-green-700 border border-green-600 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors duration-300 w-full"
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          Request Estimate
+                        </motion.button>
+                      </Link>
                     </div>
                   </div>
-
-                  <button
-                    onClick={goToBookingDetail}
-                    className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors duration-300"
-                  >
-                    Schedule Consultation
-                  </button>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 animate-bounce">
-        <ChevronDown className="w-6 h-6 text-white/50" />
-      </div>
-
-      {/* Add custom keyframes animation */}
-      <style jsx>{`
-        @keyframes subtle-zoom {
-          0% {
-            transform: scale(1.1) translate(0, 0);
-          }
-          100% {
-            transform: scale(1.15) translate(-5px, -5px);
-          }
-        }
-      `}</style>
-    </section></>
-   
+      
+      </section>
+    </>
   );
 };
 
