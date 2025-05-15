@@ -19,7 +19,7 @@ const CreateEstimateForm = ({ appointmentId }) => {
   const [photos, setPhotos] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState([]);
-
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const appointment = appointmentId
     ? appointments.find(app => app.id === parseInt(appointmentId))
     : null;
@@ -88,7 +88,7 @@ const CreateEstimateForm = ({ appointmentId }) => {
       });
       
       const res = await axios.post(
-        `http://localhost:5000/api/v1/estimates/${estimateId}/photos`,
+        `${API_URL}/estimates/${estimateId}/photos`,
         formData,
         {
           headers: {
@@ -111,7 +111,7 @@ const CreateEstimateForm = ({ appointmentId }) => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/v1/services', {
+        const res = await axios.get(`${API_URL}/services`, {
           headers: {
             Authorization: `Bearer ${userData?.token}`
           }
@@ -214,7 +214,7 @@ const CreateEstimateForm = ({ appointmentId }) => {
     try {
       // First create the estimate
       const res = await axios.post(
-        'http://localhost:5000/api/v1/estimates/request',
+        `${API_URL}/estimates/request`,
         requestData,
         {
           headers: {
