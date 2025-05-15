@@ -279,7 +279,7 @@ export default function ServiceDetail() {
 
                 {/* Action buttons */}
                 <div className=" flex flex-col gap-2 items-center w-full  ">
-                  <Link href="/schedule">
+                  <Link href="">
                     <span className="block w-full  py-4 px-24 bg-green-600 hover:bg-green-700 text-white text-center font-semibold  rounded-lg transition-colors">
                       Schedule Service
                     </span>

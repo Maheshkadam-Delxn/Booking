@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useDashboard } from '../../contexts/DashboardContext';
+import { useDashboard } from '../../../contexts/DashboardContext';
 import Container from '../../components/ui/Container';
-import { toast } from 'react-hot-toast';
+
 import axios from 'axios';
 
 const GalleryManager = () => {
