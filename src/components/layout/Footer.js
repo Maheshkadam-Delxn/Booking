@@ -126,7 +126,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center group">
                 <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
-                  (555) 123-4567
+                  (626) 354-4593
                 </span>
               </li>
               <li className="flex items-center group">
