@@ -67,11 +67,54 @@ const [rescheduleError, setRescheduleError] = useState(null);
   }, [userData, isLoading]); // Add dependencies to re-fetch when userData changes
 
  
+
+
+const canRescheduleAppointment = (appointment) => {
+  const now = new Date();
+  const appointmentDate = new Date(appointment.date);
+  
+  // Check if appointment is in the past
+  if (appointmentDate < now) {
+    return { canReschedule: false, reason: "Past appointments cannot be rescheduled" };
+  }
+  
+  // Check if appointment is within the minimum reschedule window (e.g., 24 hours)
+  const hoursBeforeAppointment = (appointmentDate - now) / (1000 * 60 * 60);
+  const MIN_RESCHEDULE_HOURS = 24; // Minimum hours before appointment to allow rescheduling
+  
+  if (hoursBeforeAppointment < MIN_RESCHEDULE_HOURS) {
+    return { 
+      canReschedule: false, 
+      reason: `Appointments cannot be rescheduled within ${MIN_RESCHEDULE_HOURS} hours of the scheduled time` 
+    };
+  }
+  
+  return { canReschedule: true };
+};
+
+
+
+
+
  
 
 const handleReschedule = async () => {
   if (!selectedDate || !selectedSlot) {
     setRescheduleError("Please select both date and time slot");
+    return;
+  }
+
+  // Additional validation
+  const { canReschedule, reason } = canRescheduleAppointment(selectedAppointment);
+  if (!canReschedule) {
+    setRescheduleError(reason);
+    return;
+  }
+
+  // Check if the new date is in the past
+  const newAppointmentDate = new Date(selectedDate);
+  if (newAppointmentDate < new Date()) {
+    setRescheduleError("Cannot reschedule to a past date");
     return;
   }
 
@@ -276,13 +319,23 @@ const handleReschedule = async () => {
 
 <button
   onClick={() => {
+    const { canReschedule, reason } = canRescheduleAppointment(appointment);
+    if (!canReschedule) {
+      alert(reason);
+      return;
+    }
     setSelectedAppointment(appointment);
     setShowRescheduleModal(true);
-    setSelectedDate("");  // clear previous
+    setSelectedDate("");
     setAvailableSlots([]);
     setSelectedSlot(null);
   }}
-  className="ml-4 flex items-center text-sm text-blue-600 hover:underline focus:outline-none"
+  className={`ml-4 flex items-center text-sm focus:outline-none ${
+    canRescheduleAppointment(appointment).canReschedule 
+      ? 'text-blue-600 hover:underline' 
+      : 'text-gray-400 cursor-not-allowed'
+  }`}
+  disabled={!canRescheduleAppointment(appointment).canReschedule}
 >
   <span>Reschedule</span>
 </button>

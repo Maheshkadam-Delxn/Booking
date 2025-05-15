@@ -5,6 +5,7 @@ import { User, MapPin, Mail, Phone, Home, Save, X } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation'; // Changed to the correct import
 import { useDashboard } from '@/contexts/DashboardContext';
+import CustomerLayout from "../../../components/customer/CustomerLayout";
 
 export default function EditProfilePage() {
   const router = useRouter(); // Now this will work correctly
@@ -180,6 +181,7 @@ useEffect(() => {
   }
 
   return (
+    <CustomerLayout>
     <div className="min-h-screen bg-green-50 py-8">
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-green-100 overflow-hidden">
         <div className="bg-green-600 text-white p-6">
@@ -216,24 +218,23 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="text-gray-400" size={18} />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="pl-10 w-full p-2 border rounded focus:ring-green-500 focus:border-green-500"
-                    required
-                  />
-                </div>
-              </div>
+             <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Email
+  </label>
+  <div className="relative">
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <Mail className="text-gray-400" size={18} />
+    </div>
+    <input
+      type="email"
+      name="email"
+      value={formData.email}
+      readOnly  // 👈 This prevents editing
+      className="pl-10 w-full p-2 border rounded bg-gray-100 cursor-not-allowed" // Gray background to indicate disabled state
+    />
+  </div>
+</div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -258,7 +259,7 @@ useEffect(() => {
           {/* Address Section */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-green-600 border-b pb-2">
-              Address
+              Property Address
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -418,5 +419,6 @@ useEffect(() => {
         </form>
       </div>
     </div>
+    </CustomerLayout>
   );
 }
