@@ -99,29 +99,7 @@ const Header = () => {
 
   return (
     <>
-      {/* Top Contact Bar */}
-      <div className="hidden lg:block bg-gray-50 text-black border-b border-gray-100 py-2">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4 text-sm text-gray-600">
-            <div className="flex items-center">
-              <Phone className="w-4 h-4 mr-2 text-green-600" />
-              <span>(555) 123-4567</span>
-            </div>
-            <div className="flex items-center">
-              <Mail className="w-4 h-4 mr-2 text-green-600" />
-              <span>contact@gildordorochin.com</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-6">
-            <Link href="/booking" className="flex items-center text-sm text-gray-600 hover:text-green-600 transition-colors">
-              <Calendar className="w-4 h-4 mr-2" />
-              <span>Schedule a Consultation</span>
-            </Link>
-            <div className="h-4 w-px bg-gray-300"></div>
-            
-          </div>
-        </div>
-      </div>
+    
       
       {/* Main Header */}
       <header 
