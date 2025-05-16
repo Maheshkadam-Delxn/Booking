@@ -77,6 +77,7 @@ const useStore = create((set) => ({
   // Current Booking (multi-step form data)
   currentBooking: {
     serviceId: null,
+    selectedService: null,
     appointmentDate: null,
     startTime: null,
     endTime: null,
@@ -99,6 +100,7 @@ const useStore = create((set) => ({
     set({
       currentBooking: {
         serviceId: null,
+        selectedService: null,
         appointmentDate: null,
         startTime: null,
         endTime: null,

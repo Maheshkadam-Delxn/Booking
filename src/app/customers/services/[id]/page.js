@@ -20,7 +20,7 @@ export default function ServiceDetailPage() {
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+ const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
   useEffect(() => {
     const fetchService = async () => {
       try {
@@ -28,7 +28,7 @@ export default function ServiceDetailPage() {
           localStorage.getItem("authToken") ||
           sessionStorage.getItem("authToken");
         const response = await axios.get(
-          `http://localhost:5000/api/v1/services/${id}`,
+          `${API_URL}/services/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

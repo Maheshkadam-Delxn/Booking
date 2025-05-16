@@ -24,7 +24,24 @@ const DateTimeSelection = ({ onNext, onBack }) => {
   useEffect(() => {
   const urlDate = searchParams.get('appointmentDate');
   const urlSlot = searchParams.get('timeSlot');
+  const urlServiceId = searchParams.get('serviceId');
 
+  // Reset if a different service is being selected
+  if (urlServiceId && urlServiceId !== currentBooking.serviceId) {
+    updateCurrentBooking({
+      serviceId: urlServiceId,
+      appointmentDate: '',
+      timeSlot: '',
+      startTime: '',
+      endTime: '',
+      frequency: 'one-time'
+    });
+    setSelectedDate('');
+    setSelectedFrequency('one-time');
+    return; // Exit early to avoid applying old slot/date
+  }
+
+  // Apply from URL if booking not already filled
   if (urlDate && !currentBooking.appointmentDate) {
     setSelectedDate(urlDate);
     updateCurrentBooking({ appointmentDate: urlDate });
@@ -34,16 +51,15 @@ const DateTimeSelection = ({ onNext, onBack }) => {
     updateCurrentBooking({ timeSlot: urlSlot });
   }
 
- if (
-  urlDate && urlSlot &&
-  !currentBooking.appointmentDate &&
-  !currentBooking.timeSlot
-) {
-  updateCurrentBooking({ appointmentDate: urlDate, timeSlot: urlSlot });
-  // Do NOT call onNext() here automatically — let the user proceed manually
-}
+  if (
+    urlDate && urlSlot &&
+    !currentBooking.appointmentDate &&
+    !currentBooking.timeSlot
+  ) {
+    updateCurrentBooking({ appointmentDate: urlDate, timeSlot: urlSlot });
+  }
+}, [searchParams, currentBooking, updateCurrentBooking]);
 
-}, [searchParams, currentBooking, updateCurrentBooking, onNext]);
 
 
   const handleTimeSelect = (startTime, endTime) => {

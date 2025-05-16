@@ -15,42 +15,46 @@ export default function EstimatesPage() {
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  useEffect(() => {
-    const fetchEstimates = async () => {
-      const token = userData.token; // Retrieve token from localStorage
+ useEffect(() => {
+  const fetchEstimates = async () => {
+    if (!userData || !userData.token) {
+      setErrorMsg('Unauthorized: No token found. Please log in.');
+      setLoading(false);
+      return;
+    }
 
-      if (!token) {
-        setErrorMsg('Unauthorized: No token found. Please log in.');
-        setLoading(false);
-        return;
+    const token = userData.token;
+
+    try {
+      const res = await fetch(`${API_URL}/estimates/my-estimates`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setEstimates(data.data);
+      } else {
+        setErrorMsg(data.message || 'Failed to fetch estimates.');
       }
+    } catch (error) {
+      console.error('Fetch error:', error);
+      setErrorMsg('Something went wrong while fetching estimates.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      try {
-        const res = await fetch(`${API_URL}/estimates/my-estimates`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-          setEstimates(data.data);
-        } else {
-          setErrorMsg(data.message || 'Failed to fetch estimates.');
-        }
-      } catch (error) {
-        console.error('Fetch error:', error);
-        setErrorMsg('Something went wrong while fetching estimates.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  // Only fetch when userData is ready and not loading
+  if (!isLoading) {
     fetchEstimates();
-  }, []);
+  }
+}, [userData, isLoading]); // <-- Add these dependencies
+
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -211,11 +215,33 @@ export default function EstimatesPage() {
                           <div key={s._id} className="border rounded-lg p-3 hover:bg-emerald-50 transition-colors">
                             <h4 className="font-medium text-gray-900">{s.service?.name}</h4>
                             <p className="text-sm text-gray-500 mt-1">{s.service?.description}</p>
+                            <p className="text-sm text-gray-500 mt-1">Quantity:{s.quantity}</p>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+                  {/* Photos Section */}
+{estimate.photos && estimate.photos.length > 0 && (
+  <div className="mt-6">
+    <h3 className="font-medium text-emerald-800 mb-3 border-b pb-2">Photos</h3>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {estimate.photos.map((photo) => (
+        <div key={photo._id} className="rounded overflow-hidden shadow-sm border border-gray-200">
+          <img
+            src={photo.url}
+            alt={photo.caption || "Estimate photo"}
+            className="w-full h-32 object-cover"
+          />
+          {photo.caption && (
+            <p className="text-xs text-gray-500 p-1">{photo.caption}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 
                   <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
                     {/* <button

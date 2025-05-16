@@ -1,85 +1,154 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import AdminLayout from '../../../components/admin/AdminLayout';
-import Button from '../../../components/ui/Button';
-import useStore from '../../../lib/store';
-
-// Extract unique customers from appointments
-const extractCustomers = (appointments) => {
-  const customersMap = appointments.reduce((acc, appointment) => {
-    const { id, customerName, customerEmail, customerPhone, address } = appointment;
-    
-    if (!acc[customerEmail]) {
-      acc[customerEmail] = {
-        id: customerEmail, // Use email as ID since we don't have customer IDs in mock data
-        name: customerName,
-        email: customerEmail,
-        phone: customerPhone,
-        address,
-        appointments: [],
-      };
-    }
-    
-    acc[customerEmail].appointments.push(id);
-    return acc;
-  }, {});
-  
-  return Object.values(customersMap);
-};
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import AdminLayout from "../../../components/admin/AdminLayout";
+import Button from "../../../components/ui/Button";
+import { useDashboard } from "@/contexts/DashboardContext";
+import { motion } from "framer-motion";
 
 const CustomersPage = () => {
-  const { appointments } = useStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState('name');
-  const [sortDirection, setSortDirection] = useState('asc');
-  
-  // Get unique customers from appointments
-  const customers = extractCustomers(appointments);
-  
+  const { userData } = useDashboard();
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState("name");
+  const [sortDirection, setSortDirection] = useState("asc");
+
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  // Fetch customers from API
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        if (!userData || !userData.token) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/customers`, {
+          headers: {
+            Authorization: `Bearer ${userData.token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch customers");
+        }
+
+        const data = await response.json();
+        setCustomers(data.data || []);
+      } catch (err) {
+        setError(err.message || "Failed to load customers");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, [userData]);
+
   // Handle search
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
-  
+
   // Handle sort
   const handleSort = (field) => {
     if (sortField === field) {
-      // Toggle direction if clicking the same field
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // Default to ascending for a new field
       setSortField(field);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
   };
-  
+
   // Filter and sort customers
   const filteredCustomers = [...customers]
-    .filter(customer => {
+    .filter((customer) => {
+      const searchLower = searchTerm.toLowerCase();
       return (
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.address.toLowerCase().includes(searchTerm.toLowerCase())
+        (customer.user?.name &&
+          customer.user.name.toLowerCase().includes(searchLower)) ||
+        (customer.user?.email &&
+          customer.user.email.toLowerCase().includes(searchLower)) ||
+        (customer.user?.phone &&
+          customer.user.phone.toLowerCase().includes(searchLower)) ||
+        (customer.address &&
+          ((customer.address.street &&
+            customer.address.street.toLowerCase().includes(searchLower)) ||
+            (customer.address.city &&
+              customer.address.city.toLowerCase().includes(searchLower)) ||
+            (customer.address.country &&
+              customer.address.country.toLowerCase().includes(searchLower))))
       );
     })
     .sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      
-      if (typeof aValue === 'string') {
-        return sortDirection === 'asc'
+      // Handle sorting by user fields
+      let aValue, bValue;
+
+      if (sortField === "name" || sortField === "email") {
+        aValue = a.user?.[sortField] || "";
+        bValue = b.user?.[sortField] || "";
+      } else {
+        aValue = a[sortField];
+        bValue = b[sortField];
+      }
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortDirection === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
-      } else {
-        return sortDirection === 'asc'
-          ? aValue - bValue
-          : bValue - aValue;
+      } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
+        return sortDirection === "asc"
+          ? aValue.length - bValue.length
+          : bValue.length - aValue.length;
       }
+      return 0;
     });
-  
+
+  // Loading state
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-red-500"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -93,109 +162,153 @@ const CustomersPage = () => {
           </Link>
         </div>
       </div>
-      
+
       {/* Search */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white p-4 rounded-lg shadow mb-6"
+      >
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            <svg
+              className="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
           <input
             type="text"
-            name="search"
-            id="search"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
             placeholder="Search customers by name, email, phone, or address..."
             value={searchTerm}
             onChange={handleSearch}
           />
         </div>
-      </div>
-      
+      </motion.div>
+
       {/* Customers Table */}
       <div className="bg-white shadow overflow-hidden rounded-lg">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('name')}
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort("name")}
                 >
                   <div className="flex items-center">
                     Name
-                    {sortField === 'name' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
+                    {sortField === "name" && (
+                      <svg
+                        className="ml-1 w-4 h-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                       >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        {sortDirection === "asc" ? (
+                          <path
+                            fillRule="evenodd"
+                            d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                            clipRule="evenodd"
+                          />
                         ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
                         )}
                       </svg>
                     )}
                   </div>
                 </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('email')}
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort("email")}
                 >
                   <div className="flex items-center">
                     Email
-                    {sortField === 'email' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
+                    {sortField === "email" && (
+                      <svg
+                        className="ml-1 w-4 h-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                       >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        {sortDirection === "asc" ? (
+                          <path
+                            fillRule="evenodd"
+                            d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                            clipRule="evenodd"
+                          />
                         ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
                         )}
                       </svg>
                     )}
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Phone
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Address
                 </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('appointments')}
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort("appointments")}
                 >
                   <div className="flex items-center">
                     Appointments
-                    {sortField === 'appointments' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
+                    {sortField === "appointments" && (
+                      <svg
+                        className="ml-1 w-4 h-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                       >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        {sortDirection === "asc" ? (
+                          <path
+                            fillRule="evenodd"
+                            d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                            clipRule="evenodd"
+                          />
                         ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
                         )}
                       </svg>
                     )}
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Actions
                 </th>
               </tr>
@@ -203,59 +316,76 @@ const CustomersPage = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    No customers found. Try adjusting your search or add a new customer.
+                  <td
+                    colSpan={6}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
+                    No customers found. Try adjusting your search or add a new
+                    customer.
                   </td>
                 </tr>
               ) : (
                 filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
+                  <motion.tr
+                    key={customer._id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    whileHover={{ backgroundColor: "rgba(209, 250, 229, 0.3)" }}
+                    className="transition-colors"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <span className="text-lg font-medium text-green-800">
-                              {customer.name.charAt(0)}
+                          <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                            <span className="text-lg font-medium text-emerald-800">
+                              {customer.user?.name?.charAt(0) || "?"}
                             </span>
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {customer.user?.name || "No name"}
+                          </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {customer.email}
+                      {customer.user?.email || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {customer.phone}
+                      {customer.user?.phone || "N/A"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {customer.address}
+                      {customer.address
+                        ? `${customer.address.street}, ${customer.address.city}, ${customer.address.state} ${customer.address.zipCode}, ${customer.address.country}`
+                        : "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.appointments.length}
+                      {customer.appointments?.length || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <Link 
-                          href={`/admin/customers/${encodeURIComponent(customer.id)}`}
-                          className="text-green-600 hover:text-green-900"
+                      <div className="flex justify-end space-x-4">
+                        <Link
+                          href={`/admin/customers/${customer._id}`}
+                          className="text-green-600 hover:text-green-900 transition-colors"
                         >
                           View
                         </Link>
-                        <Link 
-                          href={`/admin/customers/${encodeURIComponent(customer.id)}/edit`}
-                          className="text-blue-600 hover:text-blue-900"
+                        <Link
+                          href={`/admin/customers/${customer._id}/edit`}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
                         >
                           Edit
                         </Link>
-                        <button 
-                          className="text-red-600 hover:text-red-900"
+                        <button
+                          className="text-red-600 hover:text-red-900 transition-colors"
                           onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this customer? This will also delete all of their appointments.')) {
-                              // Delete customer action would go here
-                              console.log('Delete customer:', customer.id);
+                            if (
+                              window.confirm(
+                                "Are you sure you want to delete this customer?"
+                              )
+                            ) {
+                              console.log("Delete customer:", customer._id);
                             }
                           }}
                         >
@@ -263,7 +393,7 @@ const CustomersPage = () => {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))
               )}
             </tbody>
@@ -274,4 +404,4 @@ const CustomersPage = () => {
   );
 };
 
-export default CustomersPage; 
+export default CustomersPage;
