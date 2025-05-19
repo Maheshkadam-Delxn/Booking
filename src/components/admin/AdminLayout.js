@@ -39,7 +39,7 @@ const AdminLayout = ({ children }) => {
           <div className="flex flex-col h-0 flex-1 bg-white border-r border-gray-200">
             <div className="flex items-center h-16 flex-shrink-0 px-4 bg-green-600">
               <Link href="/admin" className="text-lg font-semibold text-white">
-              Gildordo Rochin
+              Gildardo Rochin
               </Link>
             </div>
             <div className="flex-1 flex flex-col overflow-y-auto">
@@ -138,7 +138,7 @@ const AdminLayout = ({ children }) => {
 
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
-              <span className="text-lg font-semibold text-green-600">Gildordo Rochin</span>
+              <span className="text-lg font-semibold text-green-600">Gildardo Rochin</span>
             </div>
             <nav className="mt-5 px-2 space-y-1">
               {navigationItems.map((item) => {
@@ -219,7 +219,7 @@ const AdminLayout = ({ children }) => {
             </svg>
           </button>
           <div className="flex-1 px-4 flex justify-center">
-            <h1 className="text-lg font-semibold text-green-600">Gildordo Rochin</h1>
+            <h1 className="text-lg font-semibold text-green-600">Gildardo Rochin</h1>
           </div>
         </div>
 

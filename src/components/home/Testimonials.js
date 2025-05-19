@@ -12,7 +12,7 @@ const Testimonials = () => {
           <div className="w-20 h-1 bg-green-600 mx-auto mb-6"></div>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Don't just take our word for it - hear from our satisfied customers about 
-            their experience with Gildordo Rochin.
+            their experience with Gildardo Rochin.
           </p>
         </div>
         

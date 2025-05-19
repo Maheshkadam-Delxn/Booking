@@ -7,7 +7,7 @@ export default function AboutPage() {
     {
       name: 'John Smith',
       position: 'Founder & CEO',
-      bio: "With over 20 years in landscaping, John founded Gildordo Rochin with a vision to transform outdoor spaces while respecting nature.",
+      bio: "With over 20 years in landscaping, John founded Gildardo Rochin with a vision to transform outdoor spaces while respecting nature.",
       image: 'https://i.pinimg.com/736x/18/5e/e1/185ee1d096cb22636da348cf1636a855.jpg'
     },
     {
@@ -33,7 +33,7 @@ export default function AboutPage() {
   return (
     <>
       <PageHeader
-        title="About Gildordo Rochin"
+        title="About Gildardo Rochin"
         description="Our story, our values, our team"
         backgroundImage="/images/about-header.jpg"
       />
@@ -45,7 +45,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-center">
             <div>
               <p className="text-gray-700 mb-3 sm:mb-4 text-sm sm:text-base">
-                Gildordo Rochin Landscaping began in 2005 with a simple mission: to create beautiful,
+                Gildardo Rochin Landscaping began in 2005 with a simple mission: to create beautiful,
                 sustainable outdoor spaces that enhance the lives of our clients while respecting the environment.
               </p>
               <p className="text-gray-700 mb-3 sm:mb-4 text-sm sm:text-base">
