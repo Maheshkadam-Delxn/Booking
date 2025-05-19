@@ -10,8 +10,11 @@ const PortfolioManager = () => {
   const { userData } = useDashboard();
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState([]);
+  const [deletingImageId, setDeletingImageId] = useState(null);
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const [formData, setFormData] = useState({
@@ -73,6 +76,70 @@ const PortfolioManager = () => {
     }));
   };
 
+  // Handle image preview
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...files]
+    }));
+
+    // Create preview URLs for new images
+    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+    setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
+  };
+
+  // Remove image from preview and form data
+  const handleRemoveImage = async (index) => {
+    // If we're in edit mode and the image is an existing one (has publicId)
+    if (selectedPortfolio && formData.images[index]?._id) {
+      try {
+        setDeletingImageId(formData.images[index]._id);
+        const response = await axios.delete(
+          `${API_URL}/portfolio/${selectedPortfolio._id}/images/${formData.images[index]._id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${userData.token}`,
+            },
+          }
+        );
+
+        if (!response.data.success) {
+          toast.error('Failed to delete image from server');
+          return;
+        }
+
+        // Update the portfolio data with the server response
+        setSelectedPortfolio(response.data.data);
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        toast.error('Failed to delete image from server');
+        return;
+      } finally {
+        setDeletingImageId(null);
+      }
+    }
+
+    setFormData(prev => {
+      const newImages = [...prev.images];
+      newImages.splice(index, 1);
+      return {
+        ...prev,
+        images: newImages
+      };
+    });
+
+    setImagePreviewUrls(prev => {
+      const newUrls = [...prev];
+      // If it's a blob URL (new image), revoke it
+      if (newUrls[index].startsWith('blob:')) {
+        URL.revokeObjectURL(newUrls[index]);
+      }
+      newUrls.splice(index, 1);
+      return newUrls;
+    });
+  };
+
   // Handle portfolio creation
   const handleCreatePortfolio = async (e) => {
     e.preventDefault();
@@ -106,6 +173,7 @@ const PortfolioManager = () => {
     }
   
     try {
+      setIsCreating(true);
       const response = await axios.post(`${API_URL}/portfolio`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -135,6 +203,8 @@ const PortfolioManager = () => {
         console.log('Error message:', error.message);
         toast.error(error.message || 'Network error occurred');
       }
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -167,6 +237,7 @@ const PortfolioManager = () => {
     });
 
     try {
+      setIsCreating(true);
       const response = await axios.put(`${API_URL}/portfolio/${selectedPortfolio._id}`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -185,6 +256,8 @@ const PortfolioManager = () => {
     } catch (error) {
       console.error('Error updating portfolio:', error);
       toast.error(error.response?.data?.message || 'Failed to update portfolio');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -216,28 +289,6 @@ const PortfolioManager = () => {
     }
   };
 
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      location: '',
-      serviceType: 'landscaping',
-      projectDate: '',
-      clientName: '',
-      projectDuration: '',
-      projectCost: '',
-      projectSize: '',
-      challenges: '',
-      solutions: '',
-      customerFeedback: '',
-      tags: '',
-      status: 'draft',
-      images: []
-    });
-    setSelectedPortfolio(null);
-  };
-
   // Open modal for editing
   const handleEdit = (portfolio) => {
     setSelectedPortfolio(portfolio);
@@ -258,8 +309,51 @@ const PortfolioManager = () => {
       status: portfolio.status,
       images: portfolio.images
     });
+    // Set preview URLs for existing images
+    setImagePreviewUrls(portfolio.images.map(img => img.url));
     setIsModalOpen(true);
   };
+
+  // Reset form
+  const resetForm = () => {
+    // Revoke all blob URLs before resetting
+    imagePreviewUrls.forEach(url => {
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    
+    setFormData({
+      title: '',
+      description: '',
+      location: '',
+      serviceType: 'landscaping',
+      projectDate: '',
+      clientName: '',
+      projectDuration: '',
+      projectCost: '',
+      projectSize: '',
+      challenges: '',
+      solutions: '',
+      customerFeedback: '',
+      tags: '',
+      status: 'draft',
+      images: []
+    });
+    setSelectedPortfolio(null);
+    setImagePreviewUrls([]);
+  };
+
+  // Cleanup preview URLs when component unmounts or modal closes
+  useEffect(() => {
+    return () => {
+      imagePreviewUrls.forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [imagePreviewUrls]);
 
   return (
     <Container>
@@ -279,7 +373,10 @@ const PortfolioManager = () => {
         </div>
         {/* Portfolio Grid */}
         {loading ? (
-          <div className="text-center py-4">Loading...</div>
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <p className="mt-4 text-gray-600">Loading portfolios...</p>
+          </div>
         ) : portfolios.length === 0 ? (
           <div className="text-center py-4 text-gray-500">No portfolios found</div>
         ) : (
@@ -495,15 +592,45 @@ const PortfolioManager = () => {
                     <input
                       type="file"
                       multiple
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files);
-                        setFormData((prev) => ({
-                          ...prev,
-                          images: files
-                        }));
-                      }}
+                      onChange={handleImageChange}
                       className="mt-1 block w-full"
+                      accept="image/*"
                     />
+                    {/* Image Preview Grid */}
+                    {imagePreviewUrls.length > 0 && (
+                      <div className="mt-4 grid grid-cols-3 gap-4">
+                        {imagePreviewUrls.map((url, index) => (
+                          <div key={index} className="relative group">
+                            <div className="relative">
+                              <img
+                                src={url}
+                                alt={`Preview ${index + 1}`}
+                                className={`w-full h-32 object-cover rounded-lg ${
+                                  deletingImageId === formData.images[index]?._id ? 'opacity-50' : ''
+                                }`}
+                              />
+                              {deletingImageId === formData.images[index]?._id && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              disabled={deletingImageId === formData.images[index]?._id}
+                              className={`absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity ${
+                                deletingImageId === formData.images[index]?._id ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
@@ -514,14 +641,23 @@ const PortfolioManager = () => {
                       resetForm();
                     }}
                     className="bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    disabled={isCreating}
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     className="bg-green-600 text-white hover:bg-green-700"
+                    disabled={isCreating}
                   >
-                    {selectedPortfolio ? 'Update' : 'Create'}
+                    {isCreating ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        {selectedPortfolio ? 'Updating...' : 'Creating...'}
+                      </div>
+                    ) : (
+                      selectedPortfolio ? 'Update' : 'Create'
+                    )}
                   </Button>
                 </div>
               </form>
