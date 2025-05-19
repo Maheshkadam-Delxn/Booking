@@ -137,7 +137,7 @@ const Header = () => {
             >
               <Leaf className="w-8 h-8" />
               <span className="text-green-600">
-                Gildordo Rochin
+                Gildardo Rochin
               </span>
             </Link>
 
@@ -262,7 +262,7 @@ const Header = () => {
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <Link href="/" className="flex items-center space-x-2 text-xl font-bold text-green-600">
                 <Leaf className="w-6 h-6" />
-                <span>Gildordo Rochin</span>
+                <span>Gildardo Rochin</span>
               </Link>
               <button 
                 onClick={toggleMobileMenu}

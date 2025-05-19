@@ -76,7 +76,7 @@ const ContactForm = () => {
                   <div>
                     <p className="font-semibold">Phone</p>
                     <a href="tel:+15551234567" className="text-green-100 hover:text-white">
-                      (555) 123-4567
+                      602-793-0597
                     </a>
                   </div>
                 </div>
@@ -86,7 +86,7 @@ const ContactForm = () => {
                   <div>
                     <p className="font-semibold">Email</p>
                     <a href="mailto:info@greenscapes.com" className="text-green-100 hover:text-white">
-                      info@greenscapes.com
+                      grochin2@gmail.com
                     </a>
                   </div>
                 </div>
@@ -106,8 +106,8 @@ const ContactForm = () => {
               <div className="mt-12">
                 <h3 className="text-xl font-semibold mb-4">Business Hours</h3>
                 <ul className="space-y-2 text-green-100">
-                  <li>Monday - Friday: 8:00 AM - 6:00 PM</li>
-                  <li>Saturday: 9:00 AM - 4:00 PM</li>
+                  <li>Monday - Friday: 7:00 AM - 5:30 PM</li>
+                  <li>Saturday: 7:00 AM - 3:00 PM</li>
                   <li>Sunday: Closed</li>
                 </ul>
               </div>

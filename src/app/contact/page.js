@@ -274,7 +274,7 @@ export default function ContactPage() {
                 <div className="ml-3">
                   <h3 className="text-lg font-semibold text-gray-900">Phone</h3>
                   <p className="mt-1 text-gray-700">
-                    (555) 123-4567
+                    602-793-0597
                   </p>
                   <p className="mt-1 text-sm text-gray-500">
                     Monday-Friday, 8am-6pm
@@ -291,7 +291,7 @@ export default function ContactPage() {
                 <div className="ml-3">
                   <h3 className="text-lg font-semibold text-gray-900">Email</h3>
                   <p className="mt-1 text-gray-700">
-                    info@gildordorochin.com
+                    grochin2@gmail.com
                   </p>
                   <p className="mt-1 text-sm text-gray-500">
                     We respond within 24 hours
