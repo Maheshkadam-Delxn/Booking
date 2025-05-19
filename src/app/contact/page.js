@@ -274,7 +274,7 @@ export default function ContactPage() {
                 <div className="ml-3">
                   <h3 className="text-lg font-semibold text-gray-900">Phone</h3>
                   <p className="mt-1 text-gray-700">
-                    (555) 123-4567
+                    602-793-0597
                   </p>
                   <p className="mt-1 text-sm text-gray-500">
                     Monday-Friday, 8am-6pm
@@ -291,7 +291,7 @@ export default function ContactPage() {
                 <div className="ml-3">
                   <h3 className="text-lg font-semibold text-gray-900">Email</h3>
                   <p className="mt-1 text-gray-700">
-                    info@gildordorochin.com
+                    grochin2@gmail.com
                   </p>
                   <p className="mt-1 text-sm text-gray-500">
                     We respond within 24 hours
@@ -306,10 +306,10 @@ export default function ContactPage() {
               <div className="bg-gray-50 rounded-lg p-6">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-gray-700">Monday - Friday</div>
-                  <div className="text-gray-700">8:00 AM - 6:00 PM</div>
+                  <div className="text-gray-700">7:00 AM - 5:30 PM</div>
                   
                   <div className="text-gray-700">Saturday</div>
-                  <div className="text-gray-700">9:00 AM - 3:00 PM</div>
+                  <div className="text-gray-700">7:00 AM - 3:00 PM</div>
                   
                   <div className="text-gray-700">Sunday</div>
                   <div className="text-gray-700">Closed</div>

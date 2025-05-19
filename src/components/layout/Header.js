@@ -420,7 +420,7 @@ const Header = () => {
     { path: '/', label: 'Home' },
     { path: '/about', label: 'About Us' },
     { path: '/services', label: 'Services' },
-    { path: '/gallery', label: 'Portfolio' },
+    { path: '/portfolio', label: 'Portfolio' },
     { path: '/ourgallery', label: 'Gallery' },
     { path: '/contact', label: 'Contact' },
   ];
@@ -507,12 +507,20 @@ const Header = () => {
             {/* Logo */}
             <Link 
               href="/" 
-              className="flex items-center space-x-2 text-2xl font-bold text-green-600"
+              className="flex flex-col items-start"
             >
-              <Leaf className="w-8 h-8" />
-              <span className="text-green-600">
-                Gildordo Rochin
+              <div className="flex items-center space-x-2 text-2xl font-bold text-green-600">
+                <Leaf className="w-8 h-8" />
+               <div className='flex flex-col items-start gap-1'>
+                 <span className="text-green-600">
+                  Gildardo Rochin
+                </span>
+                 <span className="text-xs text-green-700 font-medium  -mt-1">
+                Complete 360° Digital Landscaping Services
               </span>
+               </div>
+              </div>
+             
             </Link>
 
             {/* Desktop Navigation */}
@@ -642,7 +650,7 @@ const Header = () => {
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <Link href="/" className="flex items-center space-x-2 text-xl font-bold text-green-600">
                 <Leaf className="w-6 h-6" />
-                <span>Gildordo Rochin</span>
+                <span>Gildardo Rochin</span>
               </Link>
               <button 
                 onClick={toggleMobileMenu}

@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand and Social Icons */}
           <div>
-            <h3 className="text-2xl font-bold mb-4 text-green-600 hover:text-green-500 transition-colors duration-300">Gildordo Rochin</h3>
+            <h3 className="text-2xl font-bold mb-4 text-green-600 hover:text-green-500 transition-colors duration-300">Gildardo Rochin</h3>
             <p className="text-gray-400 mb-6 hover:text-green-100 transition-colors duration-300">
               Professional landscaping services to transform your outdoor space into a beautiful and functional environment.
             </p>
@@ -126,24 +126,29 @@ const Footer = () => {
               </li>
               <li className="flex items-center group">
                 <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
-                  (626) 354-4593
+                  602-793-0597
                 </span>
               </li>
               <li className="flex items-center group">
                 <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
-                  info@gildordorochin.com
+                  grochin2@gmail.com
                 </span>
               </li>
               <li className="flex items-center group">
                 <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
-                  Mon-Fri: 8am - 6pm
+                  Mon-Fri: 7:00 AM - 5:30 PM
                 </span>
               </li>
               <li className="flex items-center group">
                 <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
-                  Sat: 9am - 4pm
+                  Sat: 7:00 AM - 3:00 PM
                 </span>
               </li>
+               <li className="flex items-center group">
+                <span className="text-gray-400 group-hover:text-green-500 transition-colors duration-300">
+                  Sun: Closed
+                </span>
+                </li>
             </ul>
           </div>
         </div>
@@ -153,7 +158,7 @@ const Footer = () => {
       <div className="bg-gray-950 py-4">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-500 text-sm mb-4 md:mb-0 hover:text-green-500 transition-colors duration-300">
-            © {new Date().getFullYear()} Gildordo Rochin. All rights reserved.
+            © {new Date().getFullYear()} Gildardo Rochin. All rights reserved.
           </p>
           <div className="flex space-x-6">
             <Link href="/privacy-policy" className="text-gray-500 hover:text-green-500 text-sm transition-colors duration-300">

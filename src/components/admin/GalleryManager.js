@@ -10,8 +10,11 @@ const GalleryManager = () => {
   const { userData } = useDashboard();
   const [galleries, setGalleries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
   const [selectedGallery, setSelectedGallery] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState([]);
+  const [deletingImageId, setDeletingImageId] = useState(null);
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const [formData, setFormData] = useState({
@@ -68,39 +71,146 @@ const GalleryManager = () => {
     }));
   };
 
-  // Handle image upload
-  const handleImageUpload = async (e) => {
-    if (!userData?.token) {
-      toast.error('Authentication token missing. Please log in again.');
-      return;
-    }
-
+  // Handle image preview
+  const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...files]
+    }));
 
-    const formDataToSend = new FormData();
-    files.forEach((file) => {
-      formDataToSend.append('images', file);
-    });
+    // Create preview URLs for new images
+    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+    setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
+  };
 
+  // Remove image from preview and form data
+  const handleRemoveImage = async (index) => {
     try {
-      const response = await axios.post(`${API_URL}/gallery`, formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${userData.token}`,
-        },
-      });
+      const image = formData.images[index];
+      
+      // If we're in edit mode and the image is an existing one (has _id)
+      if (selectedGallery?._id && image?._id) {
+        setDeletingImageId(image._id);
+        
+        // Log the IDs for debugging
+        console.log('Deleting image:', {
+          galleryId: selectedGallery._id,
+          imageId: image._id
+        });
 
-      if (response.data.success) {
-        toast.success('Images uploaded successfully');
-        fetchGalleries();
+        const response = await axios.delete(
+          `${API_URL}/gallery/${selectedGallery._id}/images/${image._id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${userData.token}`,
+            },
+          }
+        );
+
+        if (!response.data.success) {
+          toast.error(response.data.message || 'Failed to delete image from server');
+          return;
+        }
+
+        // Update the gallery data with the server response
+        setSelectedGallery(response.data.data);
+        
+        // Update form data with the server response
+        setFormData(prev => ({
+          ...prev,
+          images: response.data.data.images
+        }));
+        
+        // Update preview URLs
+        setImagePreviewUrls(response.data.data.images.map(img => img.url));
       } else {
-        toast.error('Failed to upload images');
+        // For new images or when not in edit mode, just remove from local state
+        setFormData(prev => {
+          const newImages = [...prev.images];
+          newImages.splice(index, 1);
+          return {
+            ...prev,
+            images: newImages
+          };
+        });
+
+        setImagePreviewUrls(prev => {
+          const newUrls = [...prev];
+          // If it's a blob URL (new image), revoke it
+          if (newUrls[index]?.startsWith('blob:')) {
+            URL.revokeObjectURL(newUrls[index]);
+          }
+          newUrls.splice(index, 1);
+          return newUrls;
+        });
       }
     } catch (error) {
-      console.error('Error uploading images:', error);
-      toast.error(error.response?.data?.message || 'Failed to upload images');
+      console.error('Error deleting image:', error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to delete image. Please try again.');
+      }
+    } finally {
+      setDeletingImageId(null);
     }
+  };
+
+  // Cleanup preview URLs when component unmounts or modal closes
+  useEffect(() => {
+    return () => {
+      imagePreviewUrls.forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [imagePreviewUrls]);
+
+  // Reset form
+  const resetForm = () => {
+    // Revoke all blob URLs before resetting
+    imagePreviewUrls.forEach(url => {
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    
+    setFormData({
+      title: '',
+      description: '',
+      location: '',
+      category: 'residential',
+      projectDate: '',
+      clientName: '',
+      projectDuration: '',
+      tags: '',
+      status: 'draft',
+      images: []
+    });
+    setSelectedGallery(null);
+    setImagePreviewUrls([]);
+  };
+
+  // Handle edit gallery
+  const handleEdit = (gallery) => {
+    setSelectedGallery(gallery);
+    setFormData({
+      title: gallery.title,
+      description: gallery.description,
+      location: gallery.location,
+      category: gallery.category,
+      projectDate: new Date(gallery.projectDate).toISOString().split('T')[0],
+      clientName: gallery.clientName || '',
+      projectDuration: gallery.projectDuration || '',
+      tags: gallery.tags.join(', '),
+      status: gallery.status,
+      images: gallery.images
+    });
+    // Set preview URLs for existing images
+    setImagePreviewUrls(gallery.images.map(img => img.url));
+    setIsModalOpen(true);
   };
 
   // Handle gallery creation
@@ -136,6 +246,7 @@ const GalleryManager = () => {
     }
   
     try {
+      setIsCreating(true);
       const response = await axios.post(`${API_URL}/gallery`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -156,18 +267,17 @@ const GalleryManager = () => {
       console.error('Full error:', error);
       
       if (error.response) {
-        // The request was made and the server responded with a status code
         console.log('Error response data:', error.response.data);
         toast.error(error.response.data.message || 'Server error occurred');
       } else if (error.request) {
-        // The request was made but no response was received
         console.log('Error request:', error.request);
         toast.error('No response from server. Please try again.');
       } else {
-        // Something happened in setting up the request
         console.log('Error message:', error.message);
         toast.error(error.message || 'Network error occurred');
       }
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -200,6 +310,7 @@ const GalleryManager = () => {
     });
 
     try {
+      setIsCreating(true);
       const response = await axios.put(`${API_URL}/gallery/${selectedGallery._id}`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -218,6 +329,8 @@ const GalleryManager = () => {
     } catch (error) {
       console.error('Error updating gallery:', error);
       toast.error(error.response?.data?.message || 'Failed to update gallery');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -247,41 +360,6 @@ const GalleryManager = () => {
         toast.error(error.response?.data?.message || 'Failed to delete gallery');
       }
     }
-  };
-
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      location: '',
-      category: 'residential',
-      projectDate: '',
-      clientName: '',
-      projectDuration: '',
-      tags: '',
-      status: 'draft',
-      images: []
-    });
-    setSelectedGallery(null);
-  };
-
-  // Open modal for editing
-  const handleEdit = (gallery) => {
-    setSelectedGallery(gallery);
-    setFormData({
-      title: gallery.title,
-      description: gallery.description,
-      location: gallery.location,
-      category: gallery.category,
-      projectDate: new Date(gallery.projectDate).toISOString().split('T')[0],
-      clientName: gallery.clientName || '',
-      projectDuration: gallery.projectDuration || '',
-      tags: gallery.tags.join(', '),
-      status: gallery.status,
-      images: gallery.images
-    });
-    setIsModalOpen(true);
   };
 
   return (
@@ -343,139 +421,181 @@ const GalleryManager = () => {
         )}
         {/* Modal for Add/Edit Gallery */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-              <h3 className="text-xl font-semibold mb-4">
-                {selectedGallery ? 'Edit Gallery' : 'Add New Gallery'}
-              </h3>
-              <form onSubmit={selectedGallery ? handleUpdateGallery : handleCreateGallery}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Title</label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows="3"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {selectedGallery ? 'Edit Gallery' : 'Add New Gallery'}
+                </h3>
+              </div>
+
+              {/* Modal Body - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <form onSubmit={selectedGallery ? handleUpdateGallery : handleCreateGallery}>
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Location</label>
+                      <label className="block text-sm font-medium text-gray-700">Title</label>
                       <input
                         type="text"
-                        name="location"
-                        value={formData.location}
+                        name="title"
+                        value={formData.title}
                         onChange={handleInputChange}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Category</label>
-                      <select
-                        name="category"
-                        value={formData.category}
+                      <label className="block text-sm font-medium text-gray-700">Description</label>
+                      <textarea
+                        name="description"
+                        value={formData.description}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                        required
-                      >
-                        <option value="residential">Residential</option>
-                        <option value="commercial">Commercial</option>
-                        <option value="event">Event</option>
-                        <option value="landscaping">Landscaping</option>
-                        <option value="garden">Garden</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Project Date</label>
-                      <input
-                        type="date"
-                        name="projectDate"
-                        value={formData.projectDate}
-                        onChange={handleInputChange}
+                        rows="3"
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Status</label>
-                      <select
-                        name="status"
-                        value={formData.status}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                        <option value="archived">Archived</option>
-                      </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Location</label>
+                        <input
+                          type="text"
+                          name="location"
+                          value={formData.location}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Category</label>
+                        <select
+                          name="category"
+                          value={formData.category}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                          required
+                        >
+                          <option value="residential">Residential</option>
+                          <option value="commercial">Commercial</option>
+                          <option value="event">Event</option>
+                          <option value="landscaping">Landscaping</option>
+                          <option value="garden">Garden</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Project Date</label>
+                        <input
+                          type="date"
+                          name="projectDate"
+                          value={formData.projectDate}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <select
+                          name="status"
+                          value={formData.status}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                        >
+                          <option value="draft">Draft</option>
+                          <option value="published">Published</option>
+                          <option value="archived">Archived</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Client Name</label>
+                        <input
+                          type="text"
+                          name="clientName"
+                          value={formData.clientName}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Project Duration</label>
+                        <input
+                          type="text"
+                          name="projectDuration"
+                          value={formData.projectDuration}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                        />
+                      </div>
+                    </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Client Name</label>
+                      <label className="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
                       <input
                         type="text"
-                        name="clientName"
-                        value={formData.clientName}
+                        name="tags"
+                        value={formData.tags}
                         onChange={handleInputChange}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Project Duration</label>
+                      <label className="block text-sm font-medium text-gray-700">Images</label>
                       <input
-                        type="text"
-                        name="projectDuration"
-                        value={formData.projectDuration}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                        type="file"
+                        multiple
+                        onChange={handleImageChange}
+                        className="mt-1 block w-full"
+                        accept="image/*"
                       />
+                      {/* Image Preview Grid */}
+                      {imagePreviewUrls.length > 0 && (
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                          {imagePreviewUrls.map((url, index) => (
+                            <div key={index} className="relative group">
+                              <div className="relative">
+                                <img
+                                  src={url}
+                                  alt={`Preview ${index + 1}`}
+                                  className={`w-full h-32 object-cover rounded-lg ${
+                                    deletingImageId === formData.images[index]?._id ? 'opacity-50' : ''
+                                  }`}
+                                />
+                                {deletingImageId === formData.images[index]?._id && (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(index)}
+                                disabled={deletingImageId === formData.images[index]?._id}
+                                className={`absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity ${
+                                  deletingImageId === formData.images[index]?._id ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
-                    <input
-                      type="text"
-                      name="tags"
-                      value={formData.tags}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Images</label>
-                    <input
-  type="file"
-  multiple
-  onChange={(e) => {
-    const files = Array.from(e.target.files);
-    setFormData((prev) => ({
-      ...prev,
-      images: files // Make sure these are actual File objects
-    }));
-  }}
-/>
-                  </div>
-                </div>
-                <div className="mt-6 flex justify-end space-x-3">
+                </form>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex justify-end space-x-3">
                   <Button
                     type="button"
                     onClick={() => {
@@ -483,17 +603,27 @@ const GalleryManager = () => {
                       resetForm();
                     }}
                     className="bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    disabled={isCreating}
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     className="bg-green-600 text-white hover:bg-green-700"
+                    disabled={isCreating}
+                    onClick={selectedGallery ? handleUpdateGallery : handleCreateGallery}
                   >
-                    {selectedGallery ? 'Update' : 'Create'}
+                    {isCreating ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        {selectedGallery ? 'Updating...' : 'Creating...'}
+                      </div>
+                    ) : (
+                      selectedGallery ? 'Update' : 'Create'
+                    )}
                   </Button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
