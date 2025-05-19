@@ -1,6 +1,6 @@
 import Hero from '../components/home/Hero';
 import ServicesGrid from '../components/home/ServicesGrid';
-// import Testimonials from '../components/home/Testimonials';
+import Testimonials from '../components/home/Testimonials';
 import Gallery from '../components/home/Gallery';
 import ContactForm from '../components/home/ContactForm';
 
@@ -10,7 +10,7 @@ export default function Home() {
       <Hero />
       <ServicesGrid />
       <Gallery />
-      {/* <Testimonials /> */}
+      <Testimonials />
       <ContactForm />
     </>
   );

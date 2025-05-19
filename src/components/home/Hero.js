@@ -108,9 +108,10 @@ const Hero = () => {
 
   return (
     <>
-      <AnnouncementBanner />
+      
       {/* Removed h-[80vh] to prevent fixed height issues */}
       <section className="relative min-h-screen w-full overflow-hidden">
+        <AnnouncementBanner />
         {/* Background Video/Image */}
         <div className="absolute inset-0 z-0">
           <div className="relative h-full w-full">

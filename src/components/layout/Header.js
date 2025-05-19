@@ -132,12 +132,20 @@ const Header = () => {
             {/* Logo */}
             <Link 
               href="/" 
-              className="flex items-center space-x-2 text-2xl font-bold text-green-600"
+              className="flex flex-col items-start"
             >
-              <Leaf className="w-8 h-8" />
-              <span className="text-green-600">
-                Gildardo Rochin
+              <div className="flex items-center space-x-2 text-2xl font-bold text-green-600">
+                <Leaf className="w-8 h-8" />
+               <div className='flex flex-col items-start gap-1'>
+                 <span className="text-green-600">
+                  Gildardo Rochin
+                </span>
+                 <span className="text-xs text-green-700 font-medium  -mt-1">
+                Complete 360° Digital Landscaping Services
               </span>
+               </div>
+              </div>
+             
             </Link>
 
             {/* Desktop Navigation */}
