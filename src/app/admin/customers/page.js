@@ -50,6 +50,28 @@ const CustomersPage = () => {
     fetchCustomers();
   }, [userData]);
 
+  // Delete customer
+  const deleteCustomer = async (customerId) => {
+    try {
+      const response = await fetch(`${API_URL}/customers/${customerId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${userData.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete customer');
+      }
+
+      // Remove the deleted customer from state
+      setCustomers(customers.filter(customer => customer._id !== customerId));
+    } catch (err) {
+      setError(err.message || 'Failed to delete customer');
+    }
+  };
+
   // Handle search
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -377,20 +399,16 @@ const CustomersPage = () => {
                         >
                           Edit
                         </Link>
-                        <button
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "Are you sure you want to delete this customer?"
-                              )
-                            ) {
-                              console.log("Delete customer:", customer._id);
-                            }
-                          }}
-                        >
-                          Delete
-                        </button>
+                         <button
+        className="text-red-600 hover:text-red-900 transition-colors"
+        onClick={() => {
+          if (window.confirm("Are you sure you want to delete this customer?")) {
+            deleteCustomer(customer._id);
+          }
+        }}
+      >
+        Delete
+      </button>
                       </div>
                     </td>
                   </motion.tr>
