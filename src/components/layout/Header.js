@@ -139,7 +139,7 @@ const Header = () => {
                 <Leaf className="w-8 h-8" />
                <div className='flex flex-col items-start gap-1'>
                  <span className="text-green-600">
-                  Gildordo Rochin
+                  Gildardo Rochin
                 </span>
                  <span className="text-xs text-green-700 font-medium  -mt-1">
                 Complete 360° Digital Landscaping Services
