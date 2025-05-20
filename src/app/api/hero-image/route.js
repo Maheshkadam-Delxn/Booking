@@ -1,18 +1,59 @@
 import { NextResponse } from 'next/server';
-import { writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs/promises';
+import path from 'path';
 
-// Default hero image path
-const DEFAULT_HERO_IMAGE = '/images/landscaping-image.png';
+const HERO_IMAGE_FILE = path.join(process.cwd(), 'data', 'hero-image.json');
 
-// Store the current hero image path
-let currentHeroImage = DEFAULT_HERO_IMAGE;
-
-export async function GET() {
-  return NextResponse.json({ imageUrl: currentHeroImage });
+// Ensure data directory exists
+async function ensureDataDirectory() {
+  const dataDir = path.join(process.cwd(), 'data');
+  try {
+    await fs.access(dataDir);
+  } catch {
+    await fs.mkdir(dataDir, { recursive: true });
+  }
 }
 
+// Read hero image from file
+async function readHeroImage() {
+  try {
+    await ensureDataDirectory();
+    const data = await fs.readFile(HERO_IMAGE_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    // If file doesn't exist or is invalid, return default image
+    return { imageUrl: '/images/landscaping-image.png' };
+  }
+}
+
+// Write hero image to file
+async function writeHeroImage(imageUrl) {
+  try {
+    await ensureDataDirectory();
+    await fs.writeFile(HERO_IMAGE_FILE, JSON.stringify({ imageUrl }));
+    return true;
+  } catch (error) {
+    console.error('Error writing hero image:', error);
+    return false;
+  }
+}
+
+// Get hero image
+export async function GET() {
+  try {
+    const heroImage = await readHeroImage();
+    return NextResponse.json(heroImage);
+  } catch (error) {
+    console.error('Error getting hero image:', error);
+    return NextResponse.json(
+      { error: 'Failed to get hero image' },
+      { status: 500 }
+    );
+  }
+}
+
+// Update hero image
 export async function POST(request) {
   try {
     const formData = await request.formData();
@@ -20,76 +61,53 @@ export async function POST(request) {
 
     if (!file) {
       return NextResponse.json(
-        { error: 'No file uploaded' },
+        { error: 'No file provided' },
         { status: 400 }
       );
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json(
-        { error: 'File must be an image' },
-        { status: 400 }
-      );
-    }
-
-    // Generate unique filename
+    // Convert file to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const uniqueId = uuidv4();
-    const extension = file.name.split('.').pop();
-    const filename = `hero-${uniqueId}.${extension}`;
+    const base64Image = buffer.toString('base64');
+    const imageUrl = `data:${file.type};base64,${base64Image}`;
 
-    // Save to public directory
-    const publicDir = join(process.cwd(), 'public', 'uploads');
-    const filepath = join(publicDir, filename);
-    await writeFile(filepath, buffer);
-
-    // Delete the previous image if it's not the default
-    if (currentHeroImage !== DEFAULT_HERO_IMAGE) {
-      try {
-        const previousImagePath = join(process.cwd(), 'public', currentHeroImage);
-        await unlink(previousImagePath);
-      } catch (error) {
-        console.error('Error deleting previous image:', error);
-      }
+    // Save to file
+    const success = await writeHeroImage(imageUrl);
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Failed to save hero image' },
+        { status: 500 }
+      );
     }
 
-    // Update current hero image path
-    currentHeroImage = `/uploads/${filename}`;
-
-    return NextResponse.json({ 
-      message: 'Hero image updated successfully',
-      imageUrl: currentHeroImage 
-    });
+    return NextResponse.json({ imageUrl });
   } catch (error) {
-    console.error('Error uploading hero image:', error);
+    console.error('Error updating hero image:', error);
     return NextResponse.json(
-      { error: 'Error uploading hero image' },
+      { error: 'Failed to update hero image' },
       { status: 500 }
     );
   }
 }
 
+// Delete hero image
 export async function DELETE() {
   try {
-    // Only delete if it's not the default image
-    if (currentHeroImage !== DEFAULT_HERO_IMAGE) {
-      const imagePath = join(process.cwd(), 'public', currentHeroImage);
-      await unlink(imagePath);
+    // Reset to default image
+    const success = await writeHeroImage('/images/landscaping-image.png');
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Failed to delete hero image' },
+        { status: 500 }
+      );
     }
 
-    // Reset to default image
-    currentHeroImage = DEFAULT_HERO_IMAGE;
-
-    return NextResponse.json({ 
-      message: 'Hero image deleted successfully',
-      imageUrl: DEFAULT_HERO_IMAGE 
-    });
+    return NextResponse.json({ imageUrl: '/images/landscaping-image.png' });
   } catch (error) {
     console.error('Error deleting hero image:', error);
     return NextResponse.json(
-      { error: 'Error deleting hero image' },
+      { error: 'Failed to delete hero image' },
       { status: 500 }
     );
   }
