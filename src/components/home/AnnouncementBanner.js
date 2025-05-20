@@ -43,7 +43,7 @@ const AnnouncementBanner = () => {
     setIsExiting(true);
     setTimeout(() => {
       setIsVisible(false);
-    }, 300);
+    }, 10000);
   };
 
   if (!announcement || !isVisible) {
@@ -66,13 +66,14 @@ const AnnouncementBanner = () => {
           <motion.div
             className="flex items-center whitespace-nowrap"
             animate={{
-              x: ['-100%', '100vw'],
+              x: ['100%', '0%'],
               transition: {
                 x: {
-                  repeat: Infinity,
+                  repeat: true,
                   repeatType: "loop",
                   duration: 20,
-                  ease: "linear"
+                  ease: "linear",
+                  
                 }
               }
             }}
