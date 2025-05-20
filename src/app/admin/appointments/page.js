@@ -10,7 +10,7 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast } from 'react-toastify';
-import { Upload, Calendar as CalendarIcon, List, Grid } from 'lucide-react';
+import { Upload, Calendar as CalendarIcon, List, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import RecurringAppointmentModal from './components/RecurringAppointmentModal';
 import CrewAssignmentModal from './components/CrewAssignmentModal';
 import PaymentStatusModal from './components/PaymentStatusModal';
@@ -642,11 +642,233 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   );
 };
 
+// Add CustomToolbar component
+const CustomToolbar = (toolbar) => {
+  const goToToday = () => {
+    toolbar.onNavigate('TODAY');
+  };
+
+  const goToPrevious = () => {
+    toolbar.onNavigate('PREV');
+  };
+
+  const goToNext = () => {
+    toolbar.onNavigate('NEXT');
+  };
+
+  const goToView = (view) => {
+    toolbar.onView(view);
+  };
+
+  return (
+    <div className="flex items-center justify-between p-6 bg-white rounded-xl shadow-sm mb-6 border border-gray-100">
+      <div className="flex items-center space-x-6">
+        <button
+          onClick={goToToday}
+          className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
+        >
+          Today
+        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={goToPrevious}
+            className="p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={goToNext}
+            className="p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900">
+          {toolbar.label}
+        </h2>
+      </div>
+      <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 bg-gray-50 rounded-xl p-2 shadow-sm border border-gray-100">
+          <button
+            onClick={() => goToView('month')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
+              toolbar.view === 'month'
+                ? 'bg-white shadow-sm text-green-600 font-medium'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Month
+          </button>
+          <button
+            onClick={() => goToView('week')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
+              toolbar.view === 'week'
+                ? 'bg-white shadow-sm text-green-600 font-medium'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Week
+          </button>
+          <button
+            onClick={() => goToView('day')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
+              toolbar.view === 'day'
+                ? 'bg-white shadow-sm text-green-600 font-medium'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Day
+          </button>
+          <button
+            onClick={() => goToView('agenda')}
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
+              toolbar.view === 'agenda'
+                ? 'bg-white shadow-sm text-green-600 font-medium'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Agenda
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CustomEvent = ({ event }) => {
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return 'bg-gradient-to-r from-green-400 to-green-500';
+      case 'cancelled':
+      case 'canceled':
+        return 'bg-gradient-to-r from-red-400 to-red-500';
+      case 'scheduled':
+        return 'bg-gradient-to-r from-blue-400 to-blue-500';
+      default:
+        return 'bg-gradient-to-r from-yellow-400 to-yellow-500';
+    }
+  };
+
+  return (
+    <div className="p-2 h-full">
+      <div className="flex items-start space-x-2 h-full">
+        <div className={`w-1.5 rounded-full ${getStatusColor(event.status)} mt-1`} />
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm truncate text-white">
+            {event.title}
+          </div>
+          <div className="text-xs text-white/90 mt-1">
+            {moment(event.start).format('h:mm A')} - {moment(event.end).format('h:mm A')}
+          </div>
+          {event.customer?.address && (
+            <div className="text-xs text-white/80 truncate mt-1">
+              {`${event.customer.address.street || ''}, ${event.customer.address.city || ''}, ${event.customer.address.state || ''}, ${event.customer.address.zipCode || ''}`.trim()}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DateAppointmentsModal = ({ date, appointments, onClose }) => {
+  // Format the selected date to YYYY-MM-DD
+  const selectedDateStr = moment(date).format('YYYY-MM-DD');
+  
+  console.log('Selected Date:', selectedDateStr);
+  console.log('All Appointments:', appointments);
+  
+  // Filter appointments for the selected date
+  const filteredAppointments = appointments.filter(apt => {
+    const aptDateStr = moment(apt.date).format('YYYY-MM-DD');
+    console.log('Comparing:', {
+      appointmentDate: aptDateStr,
+      selectedDate: selectedDateStr,
+      matches: aptDateStr === selectedDateStr
+    });
+    return aptDateStr === selectedDateStr;
+  });
+
+  console.log('Filtered Appointments:', filteredAppointments);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Appointments for {moment(date).format('dddd, MMMM D, YYYY')}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {filteredAppointments.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No appointments scheduled for this date.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredAppointments.map((appointment) => (
+                <div 
+                  key={appointment.id}
+                  className="bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md transition-shadow duration-200"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{appointment.customerName}</h3>
+                      <p className="text-sm text-gray-500 mt-1">{appointment.serviceName}</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {appointment.timeSlot ? 
+                          `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
+                          `${appointment.startTime} - ${appointment.endTime}`
+                        }
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1 truncate max-w-md">
+                        {appointment.address}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <StatusBadge status={appointment.status} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-gray-100">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AppointmentsPage = () => {
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { userData, isLoading } = useDashboard();
-    const [pagination, setPagination] = useState({
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [viewType, setViewType] = useState('calendar');
+  const [pagination, setPagination] = useState({
     page: 1,
     limit: 25,
     total: 0,
@@ -654,33 +876,29 @@ const AppointmentsPage = () => {
   });
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [sortField, setSortField] = useState('date');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [viewType, setViewType] = useState('list');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [calendarEvents, setCalendarEvents] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
 
+  // Move getAuthHeaders before fetchAppointments
   const getAuthHeaders = useCallback(() => {
-    const token = userData?.token || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    
-    if (!token) {
-      console.error('No auth token available');
+    if (!userData?.token) {
+      console.error('No auth token available in context');
       return {};
     }
     
     return { 
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${userData.token}`,
       'Content-Type': 'application/json'
     };
   }, [userData]);
 
-  // Modified to handle pagination
+  // Define fetchAppointments first
   const fetchAppointments = useCallback(async (page = 1, limit = 25) => {
     setLoading(true);
     try {
@@ -690,10 +908,13 @@ const AppointmentsPage = () => {
         throw new Error('No authorization token available');
       }
       
+      console.log('Fetching appointments...');
       const appointmentsRes = await axios.get(
         `${API_URL}/appointments?page=${page}&limit=${limit}`,
         { headers }
       );
+
+      console.log('Appointments response:', appointmentsRes.data);
 
       if (!appointmentsRes.data.success) {
         throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
@@ -741,8 +962,15 @@ const AppointmentsPage = () => {
         }
       }));
 
+      console.log('Transformed Appointments:', transformedAppointments);
+
       // If it's the first page, replace the appointments, otherwise append
-      setAppointments(prev => page === 1 ? transformedAppointments : [...prev, ...transformedAppointments]);
+      setAppointments(prev => {
+        const updatedAppointments = page === 1 ? transformedAppointments : [...prev, ...transformedAppointments];
+        console.log('Updated appointments state:', updatedAppointments);
+        return updatedAppointments;
+      });
+      
       setError(null);
       
       // Update pagination state
@@ -761,15 +989,72 @@ const AppointmentsPage = () => {
     }
   }, [API_URL, getAuthHeaders]);
 
+  // Then define handleCalendarView
+  const handleCalendarView = useCallback(async (start, end) => {
+    if (!userData?.token) {
+      toast.error('Please log in to view appointments');
+      router.push('/login');
+      return;
+    }
 
-  // Add this function to load more appointments
+    try {
+      setLoading(true);
+      const headers = getAuthHeaders();
+      
+      // Fetch calendar events
+      const response = await axios.get(
+        `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
+        { headers }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to load calendar events');
+      }
+
+      const transformedEvents = response.data.data.map(event => ({
+        ...event,
+        title: `${event.title} - ${event.customer?.address ? 
+          `${event.customer.address.street || ''}, ${event.customer.address.city || ''}, ${event.customer.address.state || ''}, ${event.customer.address.zipCode || ''}`.trim() : 
+          'No Address'}`,
+        tooltip: `${event.title}\n${event.customer?.address ? 
+          `${event.customer.address.street || ''}, ${event.customer.address.city || ''}, ${event.customer.address.state || ''}, ${event.customer.address.zipCode || ''}`.trim() : 
+          'No Address'}\n${moment(event.start).format('h:mm A')} - ${moment(event.end).format('h:mm A')}`,
+      }));
+
+      setCalendarEvents(transformedEvents);
+      
+      // Also fetch all appointments for the date selection modal
+      await fetchAppointments(1, 100); // Fetch more appointments for the modal
+      
+      setError(null);
+    } catch (error) {
+      console.error('Calendar view error:', error);
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please log in again.');
+        router.push('/login');
+      } else {
+        toast.error(error.response?.data?.message || error.message || 'Failed to load calendar events');
+      }
+      setCalendarEvents([]);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL, getAuthHeaders, userData, router, fetchAppointments]);
+
+  // Add useEffect to load appointments when component mounts
+  useEffect(() => {
+    if (!isLoading && userData?.token) {
+      fetchAppointments();
+    }
+  }, [isLoading, userData, fetchAppointments]);
+
   const loadMoreAppointments = async () => {
     if (pagination.hasMore) {
       await fetchAppointments(pagination.page + 1, pagination.limit);
     }
   };
 
-  // Example implementation for a "Load More" button:
   const renderLoadMore = () => {
     if (!pagination.hasMore) return null;
     
@@ -817,19 +1102,6 @@ const AppointmentsPage = () => {
     }
   }, [API_URL, getAuthHeaders]);
 
-  useEffect(() => {
-    if (!isLoading && !userData?.token) {
-      router.push('/login');
-    }
-  }, [isLoading, userData, router]);
-
-  useEffect(() => {
-    if (!isLoading && userData?.token) {
-      fetchAppointments();
-      fetchServices();
-    }
-  }, [isLoading, userData, fetchAppointments, fetchServices]);
-
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
@@ -843,7 +1115,6 @@ const AppointmentsPage = () => {
     }
   };
 
-  // Modify your filteredAppointments calculation to use the full list
   const filteredAppointments = [...appointments]
     .filter(appointment => {
       const searchMatches = 
@@ -914,41 +1185,66 @@ const AppointmentsPage = () => {
     }
   };
 
-  const handleCalendarView = useCallback(async () => {
-    try {
-      const headers = getAuthHeaders();
-      
-      if (!headers.Authorization) {
-        throw new Error('No authorization token available');
-      }
-      
-      const start = moment().startOf('month').format('YYYY-MM-DD');
-      const end = moment().endOf('month').format('YYYY-MM-DD');
-      
-      const response = await axios.get(
-        `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
-        { headers }
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to load calendar events');
-      }
-
-      setCalendarEvents(response.data.data);
-    } catch (error) {
-      console.error('Calendar view error:', error);
-      toast.error(error.message || 'Failed to load calendar events');
-    }
-  }, [API_URL, getAuthHeaders]);
-
-  useEffect(() => {
-    if (viewType === 'calendar') {
-      handleCalendarView();
-    }
-  }, [viewType, handleCalendarView]);
-
   const renderCalendar = () => (
-    <div className="h-[600px]">
+    <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+      <style jsx global>{`
+        .modern-calendar {
+          .rbc-header {
+            padding: 12px 3px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #f3f4f6;
+          }
+          
+          .rbc-today {
+            background-color: #f0fdf4;
+          }
+          
+          .rbc-off-range-bg {
+            background-color: #f9fafb;
+          }
+          
+          .rbc-event {
+            border-radius: 8px;
+            padding: 0;
+            margin: 1px 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+          }
+          
+          .rbc-event:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+          
+          .rbc-time-view {
+            border-radius: 8px;
+            border: 1px solid #f3f4f6;
+          }
+          
+          .rbc-time-header {
+            border-radius: 8px 8px 0 0;
+            background-color: #f9fafb;
+          }
+          
+          .rbc-time-content {
+            border-radius: 0 0 8px 8px;
+          }
+          
+          .rbc-timeslot-group {
+            border-bottom: 1px solid #f3f4f6;
+          }
+          
+          .rbc-time-slot {
+            border-top: 1px solid #f3f4f6;
+          }
+          
+          .rbc-current-time-indicator {
+            background-color: #ef4444;
+            height: 2px;
+          }
+        }
+      `}</style>
       <Calendar
         localizer={localizer}
         events={calendarEvents}
@@ -957,8 +1253,21 @@ const AppointmentsPage = () => {
         style={{ height: '100%' }}
         eventPropGetter={(event) => ({
           style: {
-            backgroundColor: event.color,
-            borderRadius: '4px',
+            backgroundColor: 'transparent',
+            borderRadius: '8px',
+            opacity: event.status === 'Completed' ? 0.7 : 1,
+            border: 'none',
+            color: '#fff',
+            padding: '0',
+            display: 'block',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+            background: `linear-gradient(135deg, 
+              ${event.status === 'Completed' ? '#34D399' : 
+              event.status === 'Cancelled' ? '#F87171' : 
+              event.status === 'Scheduled' ? '#60A5FA' : '#FBBF24'} 0%, 
+              ${event.status === 'Completed' ? '#10B981' : 
+              event.status === 'Cancelled' ? '#EF4444' : 
+              event.status === 'Scheduled' ? '#3B82F6' : '#F59E0B'} 100%)`
           },
         })}
         onSelectEvent={(event) => {
@@ -968,6 +1277,35 @@ const AppointmentsPage = () => {
             setActiveModal('details');
           }
         }}
+        onSelectSlot={(slotInfo) => {
+          // Use moment to handle the date consistently
+          const selectedDate = moment(slotInfo.start).toDate();
+          setSelectedDate(selectedDate);
+        }}
+        selectable={true}
+        onNavigate={(date) => {
+          const start = moment(date).startOf('month').format('YYYY-MM-DD');
+          const end = moment(date).endOf('month').format('YYYY-MM-DD');
+          handleCalendarView(start, end);
+        }}
+        onView={(view) => {
+          const start = moment().startOf(view).format('YYYY-MM-DD');
+          const end = moment().endOf(view).format('YYYY-MM-DD');
+          handleCalendarView(start, end);
+        }}
+        components={{
+          toolbar: CustomToolbar,
+          event: CustomEvent
+        }}
+        views={['month', 'week', 'day', 'agenda']}
+        defaultView="month"
+        popup
+        step={30}
+        timeslots={2}
+        min={new Date(0, 0, 0, 8, 0, 0)}
+        max={new Date(0, 0, 0, 18, 0, 0)}
+        dayLayoutAlgorithm="no-overlap"
+        className="modern-calendar"
       />
     </div>
   );
@@ -1220,8 +1558,26 @@ const AppointmentsPage = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow p-4">
-            {renderCalendar()}
+            {loading ? (
+              <div className="flex items-center justify-center h-[800px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-[800px]">
+                <div className="text-red-600">{error}</div>
+              </div>
+            ) : (
+              renderCalendar()
+            )}
           </div>
+        )}
+
+        {selectedDate && (
+          <DateAppointmentsModal
+            date={selectedDate}
+            appointments={appointments}
+            onClose={() => setSelectedDate(null)}
+          />
         )}
 
         {selectedAppointment && activeModal === 'details' && (

@@ -1,8 +1,27 @@
-import React from 'react';
+"use client"
+import React, { useRef } from 'react';
 import Container from '../ui/Container';
 import { testimonials } from '../../lib/data/mockData';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Testimonials = () => {
+  const scrollContainerRef = useRef(null);
+
+  const scroll = (direction) => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 400; // Adjust this value based on your needs
+      const currentScroll = scrollContainerRef.current.scrollLeft;
+      const targetScroll = direction === 'left' 
+        ? currentScroll - scrollAmount 
+        : currentScroll + scrollAmount;
+      
+      scrollContainerRef.current.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <section className="py-20 bg-gray-50">
       <Container>
@@ -16,59 +35,86 @@ const Testimonials = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial) => (
-            <div 
-              key={testimonial.id} 
-              className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col p-8"
-            >
-              {/* Decorative quote mark */}
-              <div className="absolute -top-4 left-8 text-6xl text-green-600 opacity-20 font-serif">
-                "
-              </div>
-              
-              {/* Rating */}
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`h-5 w-5 ${
-                      i < testimonial.rating ? 'text-green-600' : 'text-gray-200'
-                    }`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              
-              <div className="mb-4">
-                <span className="inline-block px-3 py-1 text-xs font-semibold text-green-600 bg-green-100 rounded-full">
-                  Verified Client
-                </span>
-              </div>
-              
-              {/* Testimonial text */}
-              <blockquote className="text-gray-700 text-lg mb-8 leading-relaxed italic flex-grow">
-                "{testimonial.comment}"
-              </blockquote>
-              
-              {/* Author */}
-              <div className="flex items-center mt-auto">
-                <div className="h-12 w-12 rounded-full bg-gray-100 mr-4 flex items-center justify-center overflow-hidden border-2 border-green-600">
-                  <span className="text-lg font-medium text-gray-600">{testimonial.name.charAt(0)}</span>
+        <div className="relative">
+          {/* Navigation Buttons */}
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors duration-300"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-6 h-6 text-gray-600" />
+          </button>
+          
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors duration-300"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-6 h-6 text-gray-600" />
+          </button>
+
+          {/* Scrollable Container */}
+          <div 
+            ref={scrollContainerRef}
+            className="flex overflow-x-auto gap-8 pb-8 px-4 snap-x snap-mandatory scrollbar-hide"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+          >
+            {testimonials.map((testimonial) => (
+              <div 
+                key={testimonial.id} 
+                className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col p-8 min-w-[350px] max-w-[350px] snap-center"
+              >
+                {/* Decorative quote mark */}
+                <div className="absolute -top-4 left-8 text-6xl text-green-600 opacity-20 font-serif">
+                  "
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">{testimonial.name}</p>
-                  <p className="text-sm text-gray-500">{testimonial.role}</p>
+                
+                {/* Rating */}
+                <div className="flex mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <svg
+                      key={i}
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-5 w-5 ${
+                        i < testimonial.rating ? 'text-green-600' : 'text-gray-200'
+                      }`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                
+                <div className="mb-4">
+                  <span className="inline-block px-3 py-1 text-xs font-semibold text-green-600 bg-green-100 rounded-full">
+                    Verified Client
+                  </span>
+                </div>
+                
+                {/* Testimonial text */}
+                <blockquote className="text-gray-700 text-lg mb-8 leading-relaxed italic flex-grow">
+                  "{testimonial.comment}"
+                </blockquote>
+                
+                {/* Author */}
+                <div className="flex items-center mt-auto">
+                  <div className="h-12 w-12 rounded-full bg-gray-100 mr-4 flex items-center justify-center overflow-hidden border-2 border-green-600">
+                    <span className="text-lg font-medium text-gray-600">{testimonial.name.charAt(0)}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{testimonial.name}</p>
+                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-        
+
         {/* View more testimonials button */}
         {/* <div className="mt-16 text-center">
           <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-300 shadow-sm">

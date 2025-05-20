@@ -9,6 +9,7 @@ import AddStaffModal from './components/AddStaffModal';
 import EditStaffModal from './components/EditStaffModal';
 import WorkloadModal from './components/WorkloadModal';
 import { useDashboard } from '@/contexts/DashboardContext';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -125,7 +126,8 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+<AdminLayout>
+<div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Staff Management</h1>
         <button
@@ -270,5 +272,6 @@ export default function StaffPage() {
         />
       )}
     </div>
+</AdminLayout>
   );
 } 

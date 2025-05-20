@@ -9,6 +9,7 @@ export const services = [
     price: 75,
     image: "/images/lawn-care.jpg"
   },
+
   {
     id: 2,
     name: "Tree Pruning",
@@ -50,6 +51,14 @@ export const services = [
 export const testimonials = [
   {
     id: 1,
+    name: "John Smith",
+    role: "Homeowner",
+    comment: "Green Gardens transformed our backyard into a beautiful oasis. Their attention to detail is amazing!",
+    rating: 5,
+    image: "/images/testimonial-1.jpg"
+  },
+  {
+    id: 6,
     name: "John Smith",
     role: "Homeowner",
     comment: "Green Gardens transformed our backyard into a beautiful oasis. Their attention to detail is amazing!",
