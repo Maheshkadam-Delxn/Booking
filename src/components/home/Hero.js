@@ -16,6 +16,7 @@ const Hero = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [heroImage, setHeroImage] = useState('/images/landscaping-image.png');
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
   const features = [
     {
@@ -35,10 +36,10 @@ const Hero = () => {
     // Fetch current hero image
     const fetchHeroImage = async () => {
       try {
-        const response = await fetch('/api/hero-image');
+        const response = await fetch(`${API_URL}/hero-image`);
         const data = await response.json();
-        if (data.imageUrl) {
-          setHeroImage(data.imageUrl);
+        if (data.success && data.data?.url) {
+          setHeroImage(data.data.url);
         }
       } catch (error) {
         console.error('Error fetching hero image:', error);

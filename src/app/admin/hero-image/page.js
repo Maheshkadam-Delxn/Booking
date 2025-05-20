@@ -12,6 +12,7 @@ const HeroImagePage = () => {
   const [currentImage, setCurrentImage] = useState('/images/landscaping-image.png');
   const [isDeleting, setIsDeleting] = useState(false);
   const { userData } = useDashboard();
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
   useEffect(() => {
     fetchCurrentHeroImage();
@@ -19,10 +20,10 @@ const HeroImagePage = () => {
 
   const fetchCurrentHeroImage = async () => {
     try {
-      const response = await fetch('/api/hero-image');
+      const response = await fetch(`${API_URL}/hero-image`);
       const data = await response.json();
-      if (data.imageUrl) {
-        setCurrentImage(data.imageUrl);
+      if (data.success && data.data?.url) {
+        setCurrentImage(data.data.url);
       }
     } catch (error) {
       console.error('Error fetching hero image:', error);
@@ -58,11 +59,11 @@ const HeroImagePage = () => {
     }
 
     const formData = new FormData();
-    formData.append('heroImage', selectedFile);
+    formData.append('file', selectedFile);
 
     try {
-      const response = await fetch('/api/hero-image', {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/hero-image`, {
+        method: 'PUT',
         headers: {
           Authorization: `Bearer ${userData.token}`,
         },
@@ -71,10 +72,14 @@ const HeroImagePage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setCurrentImage(data.imageUrl);
-        toast.success('Hero image updated successfully');
-        setSelectedFile(null);
-        setPreview(null);
+        if (data.success && data.data?.url) {
+          setCurrentImage(data.data.url);
+          toast.success('Hero image updated successfully');
+          setSelectedFile(null);
+          setPreview(null);
+        } else {
+          toast.error('Failed to update hero image');
+        }
       } else {
         toast.error('Failed to update hero image');
       }
@@ -141,7 +146,7 @@ const HeroImagePage = () => {
   const deleteImage = async () => {
     setIsDeleting(true);
     try {
-      const response = await fetch('/api/hero-image', {
+      const response = await fetch(`${API_URL}/hero-image`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${userData.token}`,
@@ -150,8 +155,12 @@ const HeroImagePage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setCurrentImage(data.imageUrl);
-        toast.success('Hero image deleted successfully');
+        if (data.success) {
+          setCurrentImage('/images/landscaping-image.png');
+          toast.success('Hero image deleted successfully');
+        } else {
+          toast.error('Failed to delete hero image');
+        }
       } else {
         toast.error('Failed to delete hero image');
       }

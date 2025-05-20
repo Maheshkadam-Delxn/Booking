@@ -25,6 +25,9 @@ const SettingsPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [currentImage, setCurrentImage] = useState('/images/landscaping-image.png');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
   // Fetch settings on component mount
   React.useEffect(() => {
@@ -51,10 +54,10 @@ const SettingsPage = () => {
 
   const fetchCurrentHeroImage = async () => {
     try {
-      const response = await fetch('/api/hero-image');
+      const response = await fetch(`${API_URL}/hero-image`);
       const data = await response.json();
-      if (data.imageUrl) {
-        setCurrentImage(data.imageUrl);
+      if (data.success && data.data?.url) {
+        setCurrentImage(data.data.url);
       }
     } catch (error) {
       console.error('Error fetching hero image:', error);
@@ -122,12 +125,13 @@ const SettingsPage = () => {
       return;
     }
 
+    setIsUploading(true);
     const formData = new FormData();
-    formData.append('heroImage', selectedFile);
+    formData.append('image', selectedFile);
 
     try {
-      const response = await fetch('/api/hero-image', {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/hero-image`, {
+        method: 'PUT',
         headers: {
           Authorization: `Bearer ${userData.token}`,
         },
@@ -136,16 +140,22 @@ const SettingsPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setCurrentImage(data.imageUrl);
-        toast.success('Hero image updated successfully');
-        setSelectedFile(null);
-        setPreview(null);
+        if (data.success && data.data?.url) {
+          setCurrentImage(data.data.url);
+          toast.success('Hero image updated successfully');
+          setSelectedFile(null);
+          setPreview(null);
+        } else {
+          toast.error('Failed to update hero image');
+        }
       } else {
         toast.error('Failed to update hero image');
       }
     } catch (error) {
       console.error('Error uploading hero image:', error);
       toast.error('Error uploading hero image');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -204,8 +214,9 @@ const SettingsPage = () => {
   };
 
   const deleteHeroImage = async () => {
+    setIsDeleting(true);
     try {
-      const response = await fetch('/api/hero-image', {
+      const response = await fetch(`${API_URL}/hero-image`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${userData.token}`,
@@ -214,14 +225,20 @@ const SettingsPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setCurrentImage(data.imageUrl);
-        toast.success('Hero image deleted successfully');
+        if (data.success) {
+          setCurrentImage('/images/landscaping-image.png');
+          toast.success('Hero image deleted successfully');
+        } else {
+          toast.error('Failed to delete hero image');
+        }
       } else {
         toast.error('Failed to delete hero image');
       }
     } catch (error) {
       console.error('Error deleting hero image:', error);
       toast.error('Error deleting hero image');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -252,10 +269,23 @@ const SettingsPage = () => {
                 <div className="mt-4">
                   <button
                     onClick={handleHeroImageDelete}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    disabled={isDeleting}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Current Image
+                    {isDeleting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-red-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Current Image
+                      </>
+                    )}
                   </button>
                 </div>
               )}
@@ -284,6 +314,7 @@ const SettingsPage = () => {
                       className="hidden"
                       accept="image/*"
                       onChange={handleFileSelect}
+                      disabled={isUploading}
                     />
                   </label>
                 </div>
@@ -291,10 +322,20 @@ const SettingsPage = () => {
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={handleHeroImageUpload}
-                  disabled={!selectedFile}
+                  disabled={!selectedFile || isUploading}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Upload Image
+                  {isUploading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Image'
+                  )}
                 </button>
               </div>
             </div>
