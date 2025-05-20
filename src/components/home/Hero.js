@@ -15,6 +15,7 @@ const Hero = () => {
   const { userData, isLoading } = useDashboard();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [heroImage, setHeroImage] = useState('/images/landscaping-image.png');
 
   const features = [
     {
@@ -30,21 +31,36 @@ const Hero = () => {
   ];
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
 
+  useEffect(() => {
+    // Fetch current hero image
+    const fetchHeroImage = async () => {
+      try {
+        const response = await fetch('/api/hero-image');
+        const data = await response.json();
+        if (data.imageUrl) {
+          setHeroImage(data.imageUrl);
+        }
+      } catch (error) {
+        console.error('Error fetching hero image:', error);
+      }
+    };
 
-    const handleCreateEstimateClick = (e) => {
-  e.preventDefault();
+    fetchHeroImage();
+  }, []);
 
-  const token = userData?.token;
-  const role = userData?.role || '';
+  const handleCreateEstimateClick = (e) => {
+    e.preventDefault();
 
-  if (token && role === 'customer') {
-    router.push('/create-estimate');
-  } else {
-    // Append redirect query
-    router.push('/login?redirect=/create-estimate');
-  }
-};
+    const token = userData?.token;
+    const role = userData?.role || '';
 
+    if (token && role === 'customer') {
+      router.push('/create-estimate');
+    } else {
+      // Append redirect query
+      router.push('/login?redirect=/create-estimate');
+    }
+  };
 
   // Auto-rotate every 4 seconds
   useEffect(() => {
@@ -53,7 +69,6 @@ const Hero = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, [features.length]);
-
 
   useEffect(() => {
     const token = userData?.token || null;
@@ -119,7 +134,7 @@ const Hero = () => {
             <motion.div
               className="absolute inset-0 bg-cover bg-center h-full w-full transform scale-110"
               style={{
-                backgroundImage: 'url(/images/landscaping-image.png)',
+                backgroundImage: `url(${heroImage})`,
               }}
               initial={{ scale: 1.1 }}
               animate={{ scale: 1.15, x: -5, y: -5 }}
