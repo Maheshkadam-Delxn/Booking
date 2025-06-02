@@ -15,40 +15,104 @@ const CustomersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("name");
   const [sortDirection, setSortDirection] = useState("asc");
+  const [pagination, setPagination] = useState({
+    hasMore: false,
+    nextPage: 1,
+    limit: 25
+  });
+  const [isFetchingAll, setIsFetchingAll] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // Fetch customers from API
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        if (!userData || !userData.token) {
-          setLoading(false);
-          return;
-        }
+  // Fetch customers from API with pagination
+  const fetchCustomers = async (page = 1, limit = 25, append = false) => {
+    try {
+      if (!userData || !userData.token) {
+        setLoading(false);
+        return;
+      }
 
-        const response = await fetch(`${API_URL}/customers`, {
-          headers: {
-            Authorization: `Bearer ${userData.token}`,
-            "Content-Type": "application/json",
-          },
-        });
+      const response = await fetch(`${API_URL}/customers?page=${page}&limit=${limit}`, {
+        headers: {
+          Authorization: `Bearer ${userData.token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch customers");
+      }
+
+      const data = await response.json();
+      
+      if (append) {
+        setCustomers(prev => [...prev, ...(data.data || [])]);
+      } else {
+        setCustomers(data.data || []);
+      }
+      
+      setPagination({
+        hasMore: !!data.pagination?.next,
+        nextPage: data.pagination?.next?.page || page + 1,
+        limit: data.pagination?.next?.limit || limit
+      });
+      
+    } catch (err) {
+      setError(err.message || "Failed to load customers");
+    } finally {
+      setLoading(false);
+      setIsFetchingAll(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchCustomers();
+  }, [userData]);
+
+  // Fetch all customers
+  const fetchAllCustomers = async () => {
+    setIsFetchingAll(true);
+    let allCustomers = [];
+    let currentPage = 1;
+    let hasMore = true;
+    const limit = 100; // You can adjust this based on your API's max limit
+
+    try {
+      while (hasMore) {
+        const response = await fetch(
+          `${API_URL}/customers?page=${currentPage}&limit=${limit}`,
+          {
+            headers: {
+              Authorization: `Bearer ${userData.token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch customers");
         }
 
         const data = await response.json();
-        setCustomers(data.data || []);
-      } catch (err) {
-        setError(err.message || "Failed to load customers");
-      } finally {
-        setLoading(false);
-      }
-    };
+        allCustomers = [...allCustomers, ...(data.data || [])];
 
-    fetchCustomers();
-  }, [userData]);
+        hasMore = !!data.pagination?.next;
+        currentPage = data.pagination?.next?.page || currentPage + 1;
+      }
+
+      setCustomers(allCustomers);
+      setPagination({
+        hasMore: false,
+        nextPage: currentPage,
+        limit
+      });
+    } catch (err) {
+      setError(err.message || "Failed to load all customers");
+    } finally {
+      setIsFetchingAll(false);
+    }
+  };
 
   // Delete customer
   const deleteCustomer = async (customerId) => {
@@ -65,7 +129,6 @@ const CustomersPage = () => {
         throw new Error('Failed to delete customer');
       }
 
-      // Remove the deleted customer from state
       setCustomers(customers.filter(customer => customer._id !== customerId));
     } catch (err) {
       setError(err.message || 'Failed to delete customer');
@@ -108,7 +171,6 @@ const CustomersPage = () => {
       );
     })
     .sort((a, b) => {
-      // Handle sorting by user fields
       let aValue, bValue;
 
       if (sortField === "name" || sortField === "email") {
@@ -178,10 +240,17 @@ const CustomersPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-gray-600 mt-1">Manage your customer database</p>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <Link href="/admin/customers/new">
+        <div className="mt-4 sm:mt-0 flex space-x-2">
+          <Button 
+            variant="secondary" 
+            onClick={fetchAllCustomers}
+            disabled={isFetchingAll || !pagination.hasMore}
+          >
+            {isFetchingAll ? 'Loading...' : 'Load All Customers'}
+          </Button>
+          {/* <Link href="/admin/customers/new">
             <Button variant="primary">Add Customer</Button>
-          </Link>
+          </Link> */}
         </div>
       </div>
 
@@ -298,37 +367,6 @@ const CustomersPage = () => {
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSort("appointments")}
-                >
-                  <div className="flex items-center">
-                    Appointments
-                    {sortField === "appointments" && (
-                      <svg
-                        className="ml-1 w-4 h-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        {sortDirection === "asc" ? (
-                          <path
-                            fillRule="evenodd"
-                            d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
-                            clipRule="evenodd"
-                          />
-                        ) : (
-                          <path
-                            fillRule="evenodd"
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                </th>
-                <th
-                  scope="col"
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Actions
@@ -339,7 +377,7 @@ const CustomersPage = () => {
               {filteredCustomers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     No customers found. Try adjusting your search or add a new
@@ -382,9 +420,6 @@ const CustomersPage = () => {
                         ? `${customer.address.street}, ${customer.address.city}, ${customer.address.state} ${customer.address.zipCode}, ${customer.address.country}`
                         : "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.appointments?.length || 0}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-4">
                         <Link
@@ -399,16 +434,16 @@ const CustomersPage = () => {
                         >
                           Edit
                         </Link>
-                         <button
-        className="text-red-600 hover:text-red-900 transition-colors"
-        onClick={() => {
-          if (window.confirm("Are you sure you want to delete this customer?")) {
-            deleteCustomer(customer._id);
-          }
-        }}
-      >
-        Delete
-      </button>
+                        <button
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to delete this customer?")) {
+                              deleteCustomer(customer._id);
+                            }
+                          }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </motion.tr>
@@ -417,6 +452,25 @@ const CustomersPage = () => {
             </tbody>
           </table>
         </div>
+        
+        {/* Load More Button */}
+        {pagination.hasMore && !isFetchingAll && (
+          <div className="px-6 py-4 bg-gray-50 text-right">
+            <Button
+              variant="secondary"
+              onClick={() => fetchCustomers(pagination.nextPage, pagination.limit, true)}
+            >
+              Load More
+            </Button>
+          </div>
+        )}
+        
+        {isFetchingAll && (
+          <div className="px-6 py-4 bg-gray-50 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 inline-block"></div>
+            <span className="ml-2">Loading all customers...</span>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

@@ -254,11 +254,11 @@ const [message, setMessage] = useState("");
           <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your business.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
-          <Link href="/admin/appointments/new">
+          {/* <Link href="/admin/appointments/new">
             <Button variant="primary" size="sm" className="w-full sm:w-auto">
               New Appointment
             </Button>
-          </Link>
+          </Link> */}
           {isAdmin && (
     <Link href="/admin/services/new">
       <Button variant="secondary" size="sm">Add Service</Button>

@@ -79,7 +79,7 @@ const Hero = () => {
   const goToBookingDetail = () => {
     const token = userData?.token;
     if (!token) {
-      router.push("/login");
+      router.push("/signup");
       return;
     }
 

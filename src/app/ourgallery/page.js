@@ -164,23 +164,23 @@ const GalleryManager = () => {
           // Grid View
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredGalleries.map((gallery) => (
-              <div 
-                key={gallery._id} 
-                className="bg-white rounded-lg shadow-lg overflow-hidden transition transform hover:scale-[1.02] hover:shadow-xl cursor-pointer"
-                onClick={() => openGallery(gallery)}
-              >
-                <div className="relative h-56 overflow-hidden">
-                  {gallery.images && gallery.images[0] ? (
-                    <img
-                      src={gallery.images[0].url}
-                      alt={gallery.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <span className="text-gray-400">No image</span>
-                    </div>
-                  )}
+    <div 
+      key={gallery._id} 
+      className="bg-white rounded-lg shadow-lg overflow-hidden transition transform hover:scale-[1.02] hover:shadow-xl cursor-pointer"
+      onClick={() => openGallery(gallery)}
+    >
+      <div className="relative h-56 overflow-hidden">
+        {gallery.images && gallery.images.length > 0 ? (
+  <img
+    src={gallery.images[gallery.thumbnailIndex || 0].url}
+    alt={gallery.title}
+    className="w-full h-full object-cover"
+  />
+) : (
+  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+    <span className="text-gray-400">No image</span>
+  </div>
+)}
                   {gallery.category && (
                     <span className="absolute top-4 left-4 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium">
                       {gallery.category}
@@ -215,24 +215,24 @@ const GalleryManager = () => {
           // List View
           <div className="space-y-4">
             {filteredGalleries.map((gallery) => (
-              <div 
-                key={gallery._id} 
-                className="bg-white rounded-lg shadow-md overflow-hidden transition hover:shadow-lg cursor-pointer"
-                onClick={() => openGallery(gallery)}
-              >
-                <div className="flex flex-col sm:flex-row">
-                  <div className="relative sm:w-48 h-40">
-                    {gallery.images && gallery.images[0] ? (
-                      <img
-                        src={gallery.images[0].url}
-                        alt={gallery.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <span className="text-gray-400">No image</span>
-                      </div>
-                    )}
+    <div 
+      key={gallery._id} 
+      className="bg-white rounded-lg shadow-md overflow-hidden transition hover:shadow-lg cursor-pointer"
+      onClick={() => openGallery(gallery)}
+    >
+      <div className="flex flex-col sm:flex-row">
+        <div className="relative sm:w-48 h-40">
+          {gallery.images && gallery.images.length > 0 ? (
+  <img
+    src={gallery.images[gallery.thumbnailIndex || 0].url}
+    alt={gallery.title}
+    className="w-full h-full object-cover"
+  />
+) : (
+  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+    <span className="text-gray-400">No image</span>
+  </div>
+)}
                     {gallery.images && gallery.images.length > 1 && (
                       <span className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs">
                         +{gallery.images.length - 1} photos

@@ -940,11 +940,11 @@ export default function ProfilePage() {
                 <span className="text-sm font-medium text-gray-700">Contact Support</span>
               </Link>
 
-              <Link href="/customers/payment" className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-                <button className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-                  <CreditCard className="text-green-600 mb-2" size={24} />
-                  <span className="text-sm font-medium text-gray-700">Make Payment</span>
-                </button>
+              
+
+               <Link href="/customers/payment" className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <CreditCard className="text-green-600 mb-2" size={24} />
+                <span className="text-sm font-medium text-gray-700">Make Payment</span>
               </Link>
 
               <Link href="/customers/settings" className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">

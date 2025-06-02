@@ -1,400 +1,1328 @@
-'use client';
+// "use client";
+// import React, { useState, useEffect } from "react";
+// import axios from "axios";
+// import { useDashboard } from "@/contexts/DashboardContext";
+// import AdminLayout from "../../../components/admin/AdminLayout";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import AdminLayout from '../../../components/admin/AdminLayout';
-import Button from '../../../components/ui/Button';
-import useStore from '../../../lib/store';
+// const EstimatesTable = () => {
+//   const { userData } = useDashboard();
+//   const [estimates, setEstimates] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [editingEstimate, setEditingEstimate] = useState(null);
+//   const [viewingEstimate, setViewingEstimate] = useState(null);
+//   const [availableServices, setAvailableServices] = useState([]);
+//   const [formData, setFormData] = useState({
+//     services: [],
+//     budget: { min: 0, max: 0 },
+//     status: "pending",
+//     notes: ""
+//   });
 
-// Status badge component with appropriate colors
-const StatusBadge = ({ status }) => {
-  let bgColor = 'bg-gray-100';
-  let textColor = 'text-gray-800';
+//   // Fetch estimates AND services from API
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         // Fetch estimates
+//         const estimatesResponse = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/estimates`,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${userData?.token}`,
+//             },
+//           }
+//         );
+//         setEstimates(estimatesResponse.data.data);
 
-  switch (status) {
-    case 'pending':
-      bgColor = 'bg-yellow-100';
-      textColor = 'text-yellow-800';
-      break;
-    case 'approved':
-      bgColor = 'bg-green-100';
-      textColor = 'text-green-800';
-      break;
-    case 'rejected':
-      bgColor = 'bg-red-100';
-      textColor = 'text-red-800';
-      break;
-    case 'expired':
-      bgColor = 'bg-gray-100';
-      textColor = 'text-gray-800';
-      break;
-    default:
-      break;
-  }
+//         // Fetch services
+//         const servicesResponse = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/services`,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${userData?.token}`,
+//             },
+//           }
+//         );
+//         setAvailableServices(servicesResponse.data.data);
+//       } catch (error) {
+//         console.error("Error fetching data:", error);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
 
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor} ${textColor}`}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
-  );
-};
+//     if (userData?.token) {
+//       fetchData();
+//     }
+//   }, [userData]);
 
-const EstimatesPage = () => {
-  const { estimates, appointments } = useStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortField, setSortField] = useState('createdAt');
-  const [sortDirection, setSortDirection] = useState('desc');
+//   const handleEdit = (estimate) => {
+//     setEditingEstimate(estimate);
+//     setFormData({
+//       services: estimate.services.map(service => ({
+//         service: service.service || { name: "", price: 0 },
+//         price: service.price || 0,
+//         quantity: service.quantity || 1
+//       })),
+//       status: estimate.status || "pending",
+//       notes: estimate.notes || "",
+//       budget: estimate.budget || { min: 0, max: 0 }
+//     });
+//   };
 
-  // Handle search
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
+//   const handleBudgetChange = (field, value) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       budget: {
+//         ...prev.budget,
+//         [field]: Number(value)
+//       }
+//     }));
+//   };
 
-  // Handle sort
-  const handleSort = (field) => {
-    if (sortField === field) {
-      // Toggle direction if clicking the same field
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Default to ascending for a new field
-      setSortField(field);
-      setSortDirection('asc');
+//   const handleInputChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//   };
+
+//   const handleServiceChange = (index, field, value) => {
+//     setFormData(prev => {
+//       const updatedServices = [...prev.services];
+//       updatedServices[index] = {
+//         ...updatedServices[index],
+//         [field]: field === "price" || field === "quantity" ? Number(value) : value
+//       };
+//       return { ...prev, services: updatedServices };
+//     });
+//   };
+
+//   const addService = () => {
+//     setFormData(prev => ({
+//       ...prev,
+//       services: [
+//         ...prev.services,
+//         { service: { name: "", price: 0 }, price: 0, quantity: 1 }
+//       ]
+//     }));
+//   };
+
+//   const removeService = (index) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       services: prev.services.filter((_, i) => i !== index)
+//     }));
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     try {
+//       const payload = {
+//         services: formData.services.map(service => ({
+//           service: {
+//             _id: service.service._id,
+//             name: service.service.name
+//           },
+//           price: service.price,
+//           quantity: service.quantity
+//         })),
+//         status: formData.status,
+//         notes: formData.notes,
+//         budget: formData.budget
+//       };
+
+//       const response = await axios.put(
+//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/estimates/${editingEstimate._id}`,
+//         payload,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${userData?.token}`,
+//           },
+//         }
+//       );
+
+//       const updatedEstimate = {
+//         ...response.data.data,
+//         customer: editingEstimate.customer
+//       };
+
+//       setEstimates(prev => 
+//         prev.map(est => 
+//           est._id === editingEstimate._id ? updatedEstimate : est
+//         )
+//       );
+      
+//       setEditingEstimate(null);
+//     } catch (error) {
+//       console.error("Error updating estimate:", error);
+//       alert("Failed to update estimate. Please check console for details.");
+//     }
+//   };
+
+//   const formatDate = (dateString) => {
+//     if (!dateString) return "N/A";
+//     const options = { year: 'numeric', month: 'long', day: 'numeric' };
+//     return new Date(dateString).toLocaleDateString(undefined, options);
+//   };
+
+//   if (loading) return (
+//     <AdminLayout>
+//       <div className="flex justify-center items-center h-64">
+//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+//       </div>
+//     </AdminLayout>
+//   );
+
+//   return (
+//     <AdminLayout>
+//       <div className="container mx-auto px-4 py-6">
+//         <div className="flex justify-between items-center mb-8">
+//           <h1 className="text-3xl font-bold text-gray-800">Estimates Management</h1>
+//         </div>
+        
+//         {/* Estimates Table */}
+//         <div className="bg-white rounded-xl shadow-md overflow-hidden">
+//           <div className="overflow-x-auto">
+//             <table className="min-w-full divide-y divide-gray-200">
+//               <thead className="bg-green-600">
+//                 <tr>
+//                   <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Estimate #</th>
+//                   <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Customer</th>
+//                   <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Services</th>
+//                   <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Budget Range</th>
+//                   <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Status</th>
+//                   <th className="px-6 py-4 text-right text-xs font-semibold text-white uppercase tracking-wider">Actions</th>
+//                 </tr>
+//               </thead>
+//               <tbody className="bg-white divide-y divide-gray-200">
+//                 {estimates.map((estimate) => (
+//                   <tr key={estimate._id} className="hover:bg-green-50 transition-colors">
+//                     <td className="px-6 py-4 whitespace-nowrap">
+//                       <div className="text-sm font-medium text-gray-900">
+//                         #{estimate.estimateNumber || estimate._id.substring(0, 8)}
+//                       </div>
+//                     </td>
+//                     <td className="px-6 py-4 whitespace-nowrap">
+//                       <div className="flex items-center">
+//                         <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+//                           <span className="text-green-600 font-medium">
+//                             {estimate.customer?.user?.name?.charAt(0) || 'C'}
+//                           </span>
+//                         </div>
+//                         <div className="ml-4">
+//                           <div className="text-sm font-medium text-gray-900">{estimate.customer?.user?.name || "N/A"}</div>
+//                           <div className="text-sm text-gray-500">{estimate.customer?.user?.email || "N/A"}</div>
+//                         </div>
+//                       </div>
+//                     </td>
+//                     <td className="px-6 py-4 whitespace-nowrap">
+//                       <div className="text-sm text-gray-900">
+//                         {estimate.services?.length || 0} services
+//                       </div>
+//                       <div className="text-sm text-gray-500">
+//                         ${estimate.services?.reduce((total, service) => total + (service.price || 0) * (service.quantity || 1), 0)?.toFixed(2) || "0.00"}
+//                       </div>
+//                     </td>
+//                     <td className="px-6 py-4 whitespace-nowrap">
+//                       <div className="text-sm text-gray-900">
+//                         {estimate.budget ? `$${estimate.budget.min} - $${estimate.budget.max}` : "Not specified"}
+//                       </div>
+//                     </td>
+//                     <td className="px-6 py-4 whitespace-nowrap">
+//                       <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+//                         estimate.status === "approved" ? "bg-green-100 text-green-800" :
+//                         estimate.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+//                         "bg-red-100 text-red-800"
+//                       }`}>
+//                         {estimate.status}
+//                       </span>
+//                     </td>
+//                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+//                       <button
+//                         onClick={() => setViewingEstimate(estimate)}
+//                         className="text-green-600 hover:text-green-900 mr-4"
+//                       >
+//                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+//                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+//                         </svg>
+//                       </button>
+//                       <button
+//                         onClick={() => handleEdit(estimate)}
+//                         className="text-green-600 hover:text-green-900"
+//                       >
+//                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+//                         </svg>
+//                       </button>
+//                     </td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         </div>
+
+//         {/* View Modal */}
+//         {viewingEstimate && (
+//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+//             <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+//               <div className="flex justify-between items-center border-b px-6 py-4 sticky top-0 bg-white z-10">
+//                 <h2 className="text-xl font-semibold text-gray-900">
+//                   Estimate Details #{viewingEstimate.estimateNumber || viewingEstimate._id.substring(0, 8)}
+//                 </h2>
+//                 <button 
+//                   onClick={() => setViewingEstimate(null)}
+//                   className="text-gray-400 hover:text-gray-500"
+//                 >
+//                   <span className="sr-only">Close</span>
+//                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+//                   </svg>
+//                 </button>
+//               </div>
+
+//               <div className="p-6">
+//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+//                   <div className="bg-green-50 p-4 rounded-lg">
+//                     <h3 className="text-lg font-medium text-green-800 mb-3">Customer Information</h3>
+//                     <div className="space-y-3">
+//                       <div>
+//                         <p className="text-sm font-medium text-gray-500">Name</p>
+//                         <p className="text-gray-900">{viewingEstimate.customer?.user?.name || "N/A"}</p>
+//                       </div>
+//                       <div>
+//                         <p className="text-sm font-medium text-gray-500">Email</p>
+//                         <p className="text-gray-900">{viewingEstimate.customer?.user?.email || "N/A"}</p>
+//                       </div>
+//                       <div>
+//                         <p className="text-sm font-medium text-gray-500">Phone</p>
+//                         <p className="text-gray-900">{viewingEstimate.customer?.phone || "N/A"}</p>
+//                       </div>
+//                     </div>
+//                   </div>
+//                   <div className="bg-green-50 p-4 rounded-lg">
+//                     <h3 className="text-lg font-medium text-green-800 mb-3">Estimate Details</h3>
+//                     <div className="space-y-3">
+//                       <div>
+//                         <p className="text-sm font-medium text-gray-500">Date Created</p>
+//                         <p className="text-gray-900">{formatDate(viewingEstimate.createdAt)}</p>
+//                       </div>
+//                       <div>
+//                         <p className="text-sm font-medium text-gray-500">Status</p>
+//                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+//                           viewingEstimate.status === "approved" ? "bg-green-100 text-green-800" :
+//                           viewingEstimate.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+//                           "bg-red-100 text-red-800"
+//                         }`}>
+//                           {viewingEstimate.status}
+//                         </span>
+//                       </div>
+//                       <div>
+//                         <p className="text-sm font-medium text-gray-500">Budget Range</p>
+//                         <p className="text-gray-900">
+//                           {viewingEstimate.budget ? `$${viewingEstimate.budget.min} - $${viewingEstimate.budget.max}` : "Not specified"}
+//                         </p>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 {/* Photos Section */}
+//                 {viewingEstimate.photos?.length > 0 && (
+//                   <div className="mb-6">
+//                     <h3 className="text-lg font-medium text-green-800 mb-3">Property Photos</h3>
+//                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+//                       {viewingEstimate.photos.map((photo, index) => (
+//                         <div key={photo._id || index} className="relative group rounded-lg overflow-hidden border border-gray-200">
+//                           <img
+//                             src={photo.url}
+//                             alt={`Property photo ${index + 1}`}
+//                             className="w-full h-48 object-cover hover:opacity-90 transition-opacity"
+//                           />
+//                           {photo.caption && (
+//                             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-2 text-sm">
+//                               {photo.caption}
+//                             </div>
+//                           )}
+//                           <a 
+//                             href={photo.url} 
+//                             target="_blank" 
+//                             rel="noopener noreferrer"
+//                             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-30 transition-opacity"
+//                             title="View full size"
+//                           >
+//                             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+//                             </svg>
+//                           </a>
+//                         </div>
+//                       ))}
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {/* Services Section */}
+//                 <div className="mb-6">
+//                   <h3 className="text-lg font-medium text-green-800 mb-3">Services</h3>
+//                   <div className="overflow-x-auto border border-gray-200 rounded-lg">
+//                     <table className="min-w-full divide-y divide-gray-200">
+//                       <thead className="bg-green-600">
+//                         <tr>
+//                           <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Service</th>
+//                           <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Unit Price</th>
+//                           <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Quantity</th>
+//                           <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Total</th>
+//                         </tr>
+//                       </thead>
+//                       <tbody className="bg-white divide-y divide-gray-200">
+//                         {viewingEstimate.services?.map((service, index) => (
+//                           <tr key={index} className="hover:bg-green-50">
+//                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+//                               {service.service?.name || "N/A"}
+//                             </td>
+//                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+//                               ${service.price?.toFixed(2) || "0.00"}
+//                             </td>
+//                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+//                               {service.quantity || 1}
+//                             </td>
+//                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+//                               ${((service.price || 0) * (service.quantity || 1)).toFixed(2)}
+//                             </td>
+//                           </tr>
+//                         ))}
+//                       </tbody>
+//                       <tfoot className="bg-green-50">
+//                         <tr>
+//                           <td colSpan="3" className="px-6 py-4 text-right text-sm font-medium text-gray-700">Subtotal</td>
+//                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">
+//                             ${viewingEstimate.services?.reduce((total, service) => total + (service.price || 0) * (service.quantity || 1), 0)?.toFixed(2) || "0.00"}
+//                           </td>
+//                         </tr>
+//                       </tfoot>
+//                     </table>
+//                   </div>
+//                 </div>
+
+//                 {/* Notes Section */}
+//                 <div className="mb-6">
+//                   <h3 className="text-lg font-medium text-green-800 mb-2">Notes</h3>
+//                   <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+//                     {viewingEstimate.notes || "No notes available"}
+//                   </div>
+//                 </div>
+
+//                 <div className="flex justify-end border-t pt-4">
+//                   <button
+//                     onClick={() => setViewingEstimate(null)}
+//                     className="px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+//                   >
+//                     Close Estimate
+//                   </button>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Edit Modal */}
+//         {editingEstimate && (
+//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+//             <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+//               <div className="flex justify-between items-center border-b px-6 py-4">
+//                 <h2 className="text-xl font-semibold text-gray-900">
+//                   Edit Estimate #{editingEstimate._id.substring(0, 8)}
+//                 </h2>
+//                 <button 
+//                   onClick={() => setEditingEstimate(null)}
+//                   className="text-gray-400 hover:text-gray-500"
+//                 >
+//                   <span className="sr-only">Close</span>
+//                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+//                   </svg>
+//                 </button>
+//               </div>
+
+//               <form onSubmit={handleSubmit} className="p-6">
+//                 {/* Customer Information */}
+//                 <div className="mb-6 bg-green-50 p-4 rounded-lg">
+//                   <h3 className="text-lg font-medium text-green-800 mb-3">Customer Information</h3>
+//                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-500 mb-1">Name</label>
+//                       <input
+//                         type="text"
+//                         value={editingEstimate.customer?.user?.name || "N/A"}
+//                         className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+//                         disabled
+//                       />
+//                     </div>
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+//                       <input
+//                         type="text"
+//                         value={editingEstimate.customer?.user?.email || "N/A"}
+//                         className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+//                         disabled
+//                       />
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 {/* Services Section */}
+//                 <div className="mb-6">
+//                   <div className="flex justify-between items-center mb-3">
+//                     <h3 className="text-lg font-medium text-green-800">Services</h3>
+//                     <button
+//                       type="button"
+//                       onClick={addService}
+//                       className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200 transition-colors"
+//                     >
+//                       + Add Service
+//                     </button>
+//                   </div>
+                  
+//                   {formData.services.map((service, index) => (
+//                     <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 border border-gray-200 rounded-lg relative bg-white">
+//                       <div>
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+//                         <select
+//                           value={service.service?._id || ""}
+//                           onChange={(e) => {
+//                             const selectedService = availableServices.find(s => s._id === e.target.value);
+//                             handleServiceChange(index, "service", {
+//                               _id: selectedService?._id,
+//                               name: selectedService?.name,
+//                               price: selectedService?.price || 0
+//                             });
+//                             if (selectedService) {
+//                               handleServiceChange(index, "price", selectedService.price || 0);
+//                             }
+//                           }}
+//                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+//                           required
+//                         >
+//                           <option value="">Select a service</option>
+//                           {availableServices.map((serviceOption) => (
+//                             <option key={serviceOption._id} value={serviceOption._id}>
+//                               {serviceOption.name} (${serviceOption.price})
+//                             </option>
+//                           ))}
+//                         </select>
+//                       </div>
+//                       <div>
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+//                         <input
+//                           type="number"
+//                           value={service.price || 0}
+//                           onChange={(e) => handleServiceChange(index, "price", e.target.value)}
+//                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+//                           placeholder="Price"
+//                           min="0"
+//                           step="0.01"
+//                           required
+//                         />
+//                       </div>
+//                       <div>
+//                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+//                         <input
+//                           type="number"
+//                           value={service.quantity || 1}
+//                           onChange={(e) => handleServiceChange(index, "quantity", e.target.value)}
+//                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+//                           placeholder="Quantity"
+//                           min="1"
+//                           required
+//                         />
+//                       </div>
+//                       <div className="flex items-end">
+//                         <button
+//                           type="button"
+//                           onClick={() => removeService(index)}
+//                           className="px-3 py-2 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 transition-colors w-full"
+//                         >
+//                           Remove
+//                         </button>
+//                       </div>
+//                     </div>
+//                   ))}
+//                 </div>
+
+//                 {/* Budget Section */}
+//                 <div className="mb-6 bg-green-50 p-4 rounded-lg">
+//                   <h3 className="text-lg font-medium text-green-800 mb-3">Budget Range</h3>
+//                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-1">Minimum ($)</label>
+//                       <input
+//                         type="number"
+//                         value={formData.budget?.min || 0}
+//                         onChange={(e) => handleBudgetChange("min", e.target.value)}
+//                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+//                         placeholder="Minimum budget"
+//                         min="0"
+//                         step="0.01"
+//                         required
+//                       />
+//                     </div>
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-1">Maximum ($)</label>
+//                       <input
+//                         type="number"
+//                         value={formData.budget?.max || 0}
+//                         onChange={(e) => handleBudgetChange("max", e.target.value)}
+//                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+//                         placeholder="Maximum budget"
+//                         min={formData.budget?.min || 0}
+//                         step="0.01"
+//                         required
+//                       />
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 {/* Status and Notes */}
+//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+//                   <div>
+//                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+//                     <select
+//                       name="status"
+//                       value={formData.status}
+//                       onChange={handleInputChange}
+//                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+//                       required
+//                     >
+//                       <option value="pending">Pending</option>
+//                       <option value="approved">Approved</option>
+//                       <option value="rejected">Rejected</option>
+//                     </select>
+//                   </div>
+//                   <div>
+//                     <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+//                     <textarea
+//                       name="notes"
+//                       value={formData.notes}
+//                       onChange={handleInputChange}
+//                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+//                       rows="3"
+//                       placeholder="Add any additional notes here..."
+//                     />
+//                   </div>
+//                 </div>
+
+//                 <div className="flex justify-end space-x-3 border-t pt-4">
+//                   <button
+//                     type="button"
+//                     onClick={() => setEditingEstimate(null)}
+//                     className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+//                   >
+//                     Cancel
+//                   </button>
+//                   <button
+//                     type="submit"
+//                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+//                   >
+//                     Save Changes
+//                   </button>
+//                 </div>
+//               </form>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </AdminLayout>
+//   );
+// };
+
+// export default EstimatesTable;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"use client";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useDashboard } from "@/contexts/DashboardContext";
+import AdminLayout from "../../../components/admin/AdminLayout";
+
+const EstimatesTable = () => {
+  const { userData } = useDashboard();
+  const [estimates, setEstimates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [editingEstimate, setEditingEstimate] = useState(null);
+  const [viewingEstimate, setViewingEstimate] = useState(null);
+  const [availableServices, setAvailableServices] = useState([]);
+  const [formData, setFormData] = useState({
+    services: [],
+    budget: { min: 0, max: 0 },
+    status: "pending",
+    notes: ""
+  });
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch first page of estimates
+        const estimatesResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/estimates?page=1&limit=25`,
+          {
+            headers: {
+              Authorization: `Bearer ${userData?.token}`,
+            },
+          }
+        );
+        setEstimates(estimatesResponse.data.data);
+        setHasMore(estimatesResponse.data.pagination?.next ? true : false);
+
+        // Fetch services
+        const servicesResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/services`,
+          {
+            headers: {
+              Authorization: `Bearer ${userData?.token}`,
+            },
+          }
+        );
+        setAvailableServices(servicesResponse.data.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userData?.token) {
+      fetchData();
+    }
+  }, [userData]);
+
+  // Load more estimates
+  const loadMoreEstimates = async () => {
+    if (!hasMore || loadingMore) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/estimates?page=${nextPage}&limit=25`,
+        {
+          headers: {
+            Authorization: `Bearer ${userData?.token}`,
+          },
+        }
+      );
+
+      setEstimates(prev => [...prev, ...response.data.data]);
+      setHasMore(response.data.pagination?.next ? true : false);
+      setPage(nextPage);
+    } catch (error) {
+      console.error("Error loading more estimates:", error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
-  // Enrich estimates with customer info from appointments
-  const enrichedEstimates = estimates.map(estimate => {
-    const appointment = appointments.find(a => a.id === estimate.appointmentId);
-    return {
-      ...estimate,
-      customerName: appointment?.customerName || 'Unknown Customer',
-      customerEmail: appointment?.customerEmail || 'N/A',
-      serviceName: appointment?.serviceName || 'Unknown Service'
-    };
+
+  // Handle edit button click
+  const handleEdit = (estimate) => {
+  setEditingEstimate(estimate);
+  setFormData({
+    services: estimate.services.map(service => ({
+      service: service.service || { name: "", price: 0 },
+      price: service.price || 0,
+      quantity: service.quantity || 1
+    })),
+    status: estimate.status || "pending",
+    notes: estimate.notes || "",
+    budget: estimate.budget || { min: 0, max: 0 }
   });
+};
 
-  // Filter and sort estimates
-  const filteredEstimates = [...enrichedEstimates]
-    .filter(estimate => {
-      // Text search filter
-      const searchMatches = 
-        estimate.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        estimate.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        estimate.id.toString().includes(searchTerm);
-      
-      // Status filter
-      const statusMatches = statusFilter === 'all' || estimate.status === statusFilter;
-      
-      return searchMatches && statusMatches;
-    })
-    .sort((a, b) => {
-      const aValue = sortField === 'createdAt' || sortField === 'expiresAt' 
-        ? new Date(a[sortField]) 
-        : a[sortField];
-      
-      const bValue = sortField === 'createdAt' || sortField === 'expiresAt' 
-        ? new Date(b[sortField]) 
-        : b[sortField];
-      
-      if (sortField === 'createdAt' || sortField === 'expiresAt') {
-        return sortDirection === 'asc'
-          ? aValue - bValue
-          : bValue - aValue;
-      } else if (typeof aValue === 'string') {
-        return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      } else {
-        return sortDirection === 'asc'
-          ? aValue - bValue
-          : bValue - aValue;
+
+const handleBudgetChange = (field, value) => {
+  setFormData(prev => ({
+    ...prev,
+    budget: {
+      ...prev.budget,
+      [field]: Number(value)
+    }
+  }));
+};
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle service field changes
+ const handleServiceChange = (index, field, value) => {
+  setFormData(prev => {
+    const updatedServices = [...prev.services];
+    updatedServices[index] = {
+      ...updatedServices[index],
+      [field]: field === "price" || field === "quantity" ? Number(value) : value
+    };
+    return { ...prev, services: updatedServices };
+  });
+};
+
+  // Add new service
+  const addService = () => {
+    setFormData(prev => ({
+      ...prev,
+      services: [
+        ...prev.services,
+        { service: { name: "", price: 0 }, price: 0, quantity: 1 }
+      ]
+    }));
+  };
+
+  // Remove service
+  const removeService = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      services: prev.services.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Submit updated estimate
+  // In your handleSubmit function
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const payload = {
+      services: formData.services.map(service => ({
+        service: {
+          _id: service.service._id,
+          name: service.service.name
+        },
+        price: service.price,
+        quantity: service.quantity
+      })),
+      status: formData.status,
+      notes: formData.notes,
+      budget: formData.budget
+    };
+
+    const response = await axios.put(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/estimates/${editingEstimate._id}`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${userData?.token}`,
+        },
       }
-    });
+    );
 
-  // List of unique statuses for the filter
-  const statuses = ['all', ...new Set(estimates.map(e => e.status))];
+    // Preserve the existing customer data in the updated estimate
+    const updatedEstimate = {
+      ...response.data.data,
+      customer: editingEstimate.customer // Keep the original customer data
+    };
 
+    setEstimates(prev => 
+      prev.map(est => 
+        est._id === editingEstimate._id ? updatedEstimate : est
+      )
+    );
+    
+    setEditingEstimate(null);
+  } catch (error) {
+    console.error("Error updating estimate:", error);
+    alert("Failed to update estimate. Please check console for details.");
+  }
+};
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // if (loading) return <div className="text-center py-8">Loading estimates...</div>;
+if (loading) return (
+    <AdminLayout>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+      </div>
+    </AdminLayout>
+  );
   return (
     <AdminLayout>
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Estimates</h1>
-          <p className="text-gray-600 mt-1">Manage customer estimates and quotes</p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <Link href="/admin/create-estimate">
-            <Button variant="primary">Create Estimate</Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Filters and search */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              name="search"
-              id="search"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-              placeholder="Search estimates..."
-              value={searchTerm}
-              onChange={handleSearch}
-            />
-          </div>
-
-          <div className="flex items-center space-x-4">
-            {/* Status Filter */}
-            <div>
-              <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 sr-only">
-                Status
-              </label>
-              <select
-                id="status-filter"
-                name="status-filter"
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                {statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status === 'all' 
-                      ? 'All Statuses' 
-                      : status.charAt(0).toUpperCase() + status.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Estimates Table */}
-      <div className="bg-white shadow overflow-hidden rounded-lg">
-        <div className="overflow-x-auto">
+       <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-6">Estimates</h1>
+        
+        {/* Estimates Table */}
+        <div className="overflow-x-auto bg-white rounded-lg shadow mb-4">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('id')}
-                >
-                  <div className="flex items-center">
-                    ID
-                    {sortField === 'id' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                      >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('customerName')}
-                >
-                  <div className="flex items-center">
-                    Customer
-                    {sortField === 'customerName' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                      >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('serviceName')}
-                >
-                  <div className="flex items-center">
-                    Service
-                    {sortField === 'serviceName' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                      >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('total')}
-                >
-                  <div className="flex items-center">
-                    Amount
-                    {sortField === 'total' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                      >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('createdAt')}
-                >
-                  <div className="flex items-center">
-                    Created
-                    {sortField === 'createdAt' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                      >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('expiresAt')}
-                >
-                  <div className="flex items-center">
-                    Expires
-                    {sortField === 'expiresAt' && (
-                      <svg 
-                        className="ml-1 w-4 h-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                      >
-                        {sortDirection === 'asc' ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
+            {/* ... [keep your existing table header] */}
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEstimates.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
-                    No estimates found. Try adjusting your filters or create a new estimate.
+              {estimates.map((estimate) => (
+                <tr key={estimate._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {estimate.estimateNumber || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {estimate.customer?.user?.name || "N/A"}
+                      
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">
+                     
+                       {estimate.customer?.user?.email || "N/A"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {estimate.services?.length || 0} services
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                   {estimate.budget ? `$${estimate.budget.min} - $${estimate.budget.max}`: "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      estimate.status === "approved" ? "bg-green-100 text-green-800" :
+                      estimate.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                      "bg-red-100 text-red-800"
+                    }`}>
+                      {estimate.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => setViewingEstimate(estimate)}
+                      className="text-green-600 hover:text-green-900 mr-3"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleEdit(estimate)}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredEstimates.map((estimate) => (
-                  <tr key={estimate.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{estimate.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{estimate.customerName}</div>
-                      <div className="text-sm text-gray-500">{estimate.customerEmail}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {estimate.serviceName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${estimate.total.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(estimate.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(estimate.expiresAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge status={estimate.status} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <Link 
-                          href={`/admin/estimates/${estimate.id}`}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          View
-                        </Link>
-                        <Link 
-                          href={`/admin/estimates/${estimate.id}/edit`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Edit
-                        </Link>
-                        {estimate.status === 'pending' && (
-                          <button
-                            className="text-green-600 hover:text-green-900"
-                            onClick={() => {
-                              // Mark as approved logic would go here
-                              console.log('Approve estimate:', estimate.id);
-                            }}
-                          >
-                            Approve
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
+           {/* Load More Button */}
+        {hasMore && (
+          <div className="text-center mt-4">
+            <button
+              onClick={loadMoreEstimates}
+              disabled={loadingMore}
+              className={`px-4 py-2 rounded-md text-white ${loadingMore ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}
+            >
+              {loadingMore ? 'Loading...' : 'Load More'}
+            </button>
+          </div>
+        )}
+
+       
+
+
+        {/* View Modal */}
+        {viewingEstimate && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="flex justify-between items-center border-b px-6 py-4 sticky top-0 bg-white z-10">
+        <h2 className="text-xl font-semibold text-gray-900">
+          Estimate Details #{viewingEstimate.estimateNumber || viewingEstimate._id.substring(0, 8)}
+        </h2>
+        <button 
+          onClick={() => setViewingEstimate(null)}
+          className="text-gray-400 hover:text-gray-500"
+        >
+          <span className="sr-only">Close</span>
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Customer Information</h3>
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Name:</span> {viewingEstimate.customer?.user?.name || "N/A"}</p>
+                      <p><span className="font-medium">Email:</span> {viewingEstimate.customer?.user?.email || "N/A"}</p>
+                      <p><span className="font-medium">Phone:</span> {viewingEstimate.customer?.phone || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Estimate Details</h3>
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Date:</span> {formatDate(viewingEstimate.createdAt)}</p>
+                      <p><span className="font-medium">Status:</span> 
+                        <span className={`ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          viewingEstimate.status === "approved" ? "bg-green-100 text-green-800" :
+                          viewingEstimate.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                          "bg-red-100 text-red-800"
+                        }`}>
+                          {viewingEstimate.status}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  {/* Add Photos Section */}
+        {viewingEstimate.photos?.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Property Photos</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {viewingEstimate.photos.map((photo, index) => (
+                <div key={photo._id || index} className="relative group">
+                  <img
+                    src={photo.url}
+                    alt={`Property photo ${index + 1}`}
+                    className="w-full h-48 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                  />
+                  {photo.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-sm">
+                      {photo.caption}
+                    </div>
+                  )}
+                  <a 
+                    href={photo.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-30 transition-opacity rounded-lg"
+                  >
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+                   
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Services</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {viewingEstimate.services?.map((service, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {service.service?.name || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              ${service.price?.toFixed(2) || "0.00"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {service.quantity || 1}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              ${((service.price || 0) * (service.quantity || 1)).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan="3" className="px-6 py-4 text-right text-sm font-medium text-gray-500">Total</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${viewingEstimate.services?.reduce((total, service) => total + (service.price || 0) * (service.quantity || 1), 0)?.toFixed(2) || "0.00"}
+                          </td>
+                        </tr>
+                      </tfoot>
+                     
+                    </table>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Notes</h3>
+                  <div className="bg-gray-50 p-4 rounded">
+                    {viewingEstimate.notes || "No notes available"}
+                  </div>
+                </div>
+
+                <div className="flex justify-end border-t pt-4">
+                  <button
+                    onClick={() => setViewingEstimate(null)}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {/* Edit Modal - Updated with scrollable content */}
+        {editingEstimate && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center border-b px-6 py-4 sticky top-0 bg-white z-10">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Edit Estimate #{editingEstimate._id.substring(0, 8)}
+                </h2>
+                <button 
+                  onClick={() => setEditingEstimate(null)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="overflow-y-auto flex-1 p-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Customer Information Section */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Customer Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={editingEstimate.customer?.user?.name || "N/A"}
+                          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+                          disabled
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                        <input
+                          type="text"
+                          value={editingEstimate.customer?.user?.email || "N/A"}
+                          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+                          disabled
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                        <input
+                          type="text"
+                          value={editingEstimate.customer?.phone || "N/A"}
+                          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+                          disabled
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Estimate Date</label>
+                        <input
+                          type="text"
+                          value={formatDate(editingEstimate.createdAt)}
+                          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+                          disabled
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Services Section */}
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-lg font-medium text-gray-900">Services</h3>
+                      <button
+                        type="button"
+                        onClick={addService}
+                        className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-md text-sm hover:bg-indigo-200"
+                      >
+                        Add Service
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {formData.services.map((service, index) => (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg relative">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                            <select
+                              value={service.service?._id || ""}
+                              onChange={(e) => {
+                                const selectedService = availableServices.find(s => s._id === e.target.value);
+                                handleServiceChange(index, "service", {
+                                  _id: selectedService?._id,
+                                  name: selectedService?.name,
+                                  price: selectedService?.price || 0
+                                });
+                                if (selectedService) {
+                                  handleServiceChange(index, "price", selectedService.price || 0);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              required
+                            >
+                              <option value="">Select a service</option>
+                              {availableServices.map((serviceOption) => (
+                                <option key={serviceOption._id} value={serviceOption._id}>
+                                  {serviceOption.name} (${serviceOption.price})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                            <input
+                              type="number"
+                              value={service.price || 0}
+                              onChange={(e) => handleServiceChange(index, "price", e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              placeholder="Price"
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                            <input
+                              type="number"
+                              value={service.quantity || 1}
+                              onChange={(e) => handleServiceChange(index, "quantity", e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              placeholder="Quantity"
+                              min="1"
+                              required
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <button
+                              type="button"
+                              onClick={() => removeService(index)}
+                              className="px-3 py-2 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 w-full"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Budget Section */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Budget</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Budget</label>
+                        <input
+                          type="number"
+                          value={formData.budget?.min || 0}
+                          onChange={(e) => handleBudgetChange("min", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="Minimum budget"
+                          min="0"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Budget</label>
+                        <input
+                          type="number"
+                          value={formData.budget?.max || 0}
+                          onChange={(e) => handleBudgetChange("max", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="Maximum budget"
+                          min={formData.budget?.min || 0}
+                          step="0.01"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status and Notes */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        name="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        required
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                      <textarea
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        rows="3"
+                      />
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* Fixed Footer */}
+              <div className="flex justify-end space-x-3 border-t p-4 bg-white sticky bottom-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingEstimate(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleSubmit}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
 };
 
-export default EstimatesPage; 
+export default EstimatesTable;
