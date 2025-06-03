@@ -643,21 +643,55 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
 };
 
 // Add CustomToolbar component
-const CustomToolbar = (toolbar) => {
+const CustomToolbar = ({ onNavigate, onView, view, date }) => {
   const goToToday = () => {
-    toolbar.onNavigate('TODAY');
+    const today = new Date();
+    onNavigate('DATE', today);
   };
 
   const goToPrevious = () => {
-    toolbar.onNavigate('PREV');
+    let newDate;
+    if (view === 'month') {
+      newDate = moment(date).subtract(1, 'month').toDate();
+    } else if (view === 'week') {
+      newDate = moment(date).subtract(1, 'week').toDate();
+    } else {
+      newDate = moment(date).subtract(1, 'day').toDate();
+    }
+    onNavigate('DATE', newDate);
   };
 
   const goToNext = () => {
-    toolbar.onNavigate('NEXT');
+    let newDate;
+    if (view === 'month') {
+      newDate = moment(date).add(1, 'month').toDate();
+    } else if (view === 'week') {
+      newDate = moment(date).add(1, 'week').toDate();
+    } else {
+      newDate = moment(date).add(1, 'day').toDate();
+    }
+    onNavigate('DATE', newDate);
   };
 
   const goToView = (view) => {
-    toolbar.onView(view);
+    onView(view);
+  };
+
+  // Format the label based on the current view
+  const getLabel = () => {
+    const currentDate = moment(date);
+    switch (view) {
+      case 'month':
+        return currentDate.format('MMMM YYYY');
+      case 'week':
+        return `${currentDate.startOf('week').format('MMM D')} - ${currentDate.endOf('week').format('MMM D, YYYY')}`;
+      case 'day':
+        return currentDate.format('dddd, MMMM D, YYYY');
+      case 'agenda':
+        return `${currentDate.startOf('month').format('MMM D')} - ${currentDate.endOf('month').format('MMM D, YYYY')}`;
+      default:
+        return currentDate.format('MMMM YYYY');
+    }
   };
 
   return (
@@ -684,7 +718,7 @@ const CustomToolbar = (toolbar) => {
           </button>
         </div>
         <h2 className="text-2xl font-bold text-gray-900">
-          {toolbar.label}
+          {getLabel()}
         </h2>
       </div>
       <div className="flex items-center space-x-2">
@@ -692,7 +726,7 @@ const CustomToolbar = (toolbar) => {
           <button
             onClick={() => goToView('month')}
             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              toolbar.view === 'month'
+              view === 'month'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
@@ -702,7 +736,7 @@ const CustomToolbar = (toolbar) => {
           <button
             onClick={() => goToView('week')}
             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              toolbar.view === 'week'
+              view === 'week'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
@@ -712,7 +746,7 @@ const CustomToolbar = (toolbar) => {
           <button
             onClick={() => goToView('day')}
             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              toolbar.view === 'day'
+              view === 'day'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
@@ -722,7 +756,7 @@ const CustomToolbar = (toolbar) => {
           <button
             onClick={() => goToView('agenda')}
             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              toolbar.view === 'agenda'
+              view === 'agenda'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
@@ -772,25 +806,14 @@ const CustomEvent = ({ event }) => {
   );
 };
 
-const DateAppointmentsModal = ({ date, appointments, onClose }) => {
-  // Format the selected date to YYYY-MM-DD
+const DateAppointmentsModal = ({ date, appointments, onClose, onEdit }) => {
   const selectedDateStr = moment(date).format('YYYY-MM-DD');
-  
-  console.log('Selected Date:', selectedDateStr);
-  console.log('All Appointments:', appointments);
   
   // Filter appointments for the selected date
   const filteredAppointments = appointments.filter(apt => {
     const aptDateStr = moment(apt.date).format('YYYY-MM-DD');
-    console.log('Comparing:', {
-      appointmentDate: aptDateStr,
-      selectedDate: selectedDateStr,
-      matches: aptDateStr === selectedDateStr
-    });
     return aptDateStr === selectedDateStr;
   });
-
-  console.log('Filtered Appointments:', filteredAppointments);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -821,10 +844,10 @@ const DateAppointmentsModal = ({ date, appointments, onClose }) => {
               {filteredAppointments.map((appointment) => (
                 <div 
                   key={appointment.id}
-                  className="bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md transition-shadow duration-200"
+                  className="bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md transition-shadow duration-200 relative"
                 >
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{appointment.customerName}</h3>
                       <p className="text-sm text-gray-500 mt-1">{appointment.serviceName}</p>
                       <p className="text-sm text-gray-500 mt-1">
@@ -840,6 +863,17 @@ const DateAppointmentsModal = ({ date, appointments, onClose }) => {
                     <div className="flex items-center space-x-2">
                       <StatusBadge status={appointment.status} />
                     </div>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={() => {
+                        onEdit(appointment);
+                        onClose();
+                      }}
+                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
+                    >
+                      Edit Appointment
+                    </button>
                   </div>
                 </div>
               ))}
@@ -884,6 +918,7 @@ const AppointmentsPage = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // Move getAuthHeaders before fetchAppointments
   const getAuthHeaders = useCallback(() => {
@@ -900,147 +935,157 @@ const AppointmentsPage = () => {
 
   // Define fetchAppointments first
   const fetchAppointments = useCallback(async (page = 1, limit = 25) => {
-    setLoading(true);
-    try {
-      const headers = getAuthHeaders();
-      
-      if (!headers.Authorization) {
-        throw new Error('No authorization token available');
-      }
-      
-      console.log('Fetching appointments...');
-      const appointmentsRes = await axios.get(
-        `${API_URL}/appointments?page=${page}&limit=${limit}`,
-        { headers }
-      );
-
-      console.log('Appointments response:', appointmentsRes.data);
-
-      if (!appointmentsRes.data.success) {
-        throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
-      }
-
-      const newAppointments = appointmentsRes.data?.data || [];
-      const paginationData = appointmentsRes.data?.pagination || {};
-
-      // Transform appointments with customer names (if available in your context)
-      const transformedAppointments = newAppointments.map((app) => ({
-        id: app._id,
-        customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
-        customerPhone: app.customer?.phone || "N/A",
-        address: app.customer?.address ? 
-          `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() : 
-          'N/A',
-        serviceName: app.service?.name || "N/A",
-        serviceId: app.service?._id || "",
-        date: app.date,
-        timeSlot: {
-          startTime: app.timeSlot?.startTime || 'N/A',
-          endTime: app.timeSlot?.endTime || 'N/A'
-        },
-        startTime: app.timeSlot?.startTime || 'N/A',
-        endTime: app.timeSlot?.endTime || 'N/A',
-        status: app.status || 'Pending',
-        frequency: app.recurringType || 'One-time',
-        payment: app.payment || {
-          status: 'Pending',
-          amount: 0,
-          paymentMethod: 'Cash'
-        },
-        crew: app.crew || {
-          leadProfessional: null,
-          assignedTo: []
-        },
-        notes: app.notes || {
-          customer: '',
-          professional: '',
-          internal: ''
-        },
-        photos: app.photos || {
-          beforeService: [],
-          afterService: []
-        }
-      }));
-
-      console.log('Transformed Appointments:', transformedAppointments);
-
-      // If it's the first page, replace the appointments, otherwise append
-      setAppointments(prev => {
-        const updatedAppointments = page === 1 ? transformedAppointments : [...prev, ...transformedAppointments];
-        console.log('Updated appointments state:', updatedAppointments);
-        return updatedAppointments;
-      });
-      
-      setError(null);
-      
-      // Update pagination state
-      setPagination({
-        page,
-        limit,
-        total: paginationData.total || 0,
-        hasMore: !!paginationData.next
-      });
-    } catch (err) {
-      console.error("Error fetching appointments:", err);
-      setError(err.response?.data?.message || err.message);
-      toast.error(err.response?.data?.message || err.message || 'Failed to load appointments');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const headers = getAuthHeaders();
+    
+    if (!headers.Authorization) {
+      throw new Error('No authorization token available');
     }
-  }, [API_URL, getAuthHeaders]);
+    
+    const appointmentsRes = await axios.get(
+      `${API_URL}/appointments?page=${page}&limit=${limit}`,
+      { headers }
+    );
+
+    if (!appointmentsRes.data.success) {
+      throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
+    }
+
+    const newAppointments = appointmentsRes.data?.data || [];
+    const paginationData = appointmentsRes.data?.pagination || {};
+
+    const transformedAppointments = newAppointments.map((app) => ({
+      id: app._id,
+      customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
+      customerPhone: app.customer?.phone || "N/A",
+      address: app.customer?.address ? 
+        `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() : 
+        'N/A',
+      serviceName: app.service?.name || "N/A",
+      serviceId: app.service?._id || "",
+      date: app.date,
+      start: app.date, // For calendar view
+      end: app.date,   // For calendar view
+      timeSlot: {
+        startTime: app.timeSlot?.startTime || 'N/A',
+        endTime: app.timeSlot?.endTime || 'N/A'
+      },
+      startTime: app.timeSlot?.startTime || 'N/A',
+      endTime: app.timeSlot?.endTime || 'N/A',
+      status: app.status || 'Pending',
+      frequency: app.recurringType || 'One-time',
+      payment: app.payment || {
+        status: 'Pending',
+        amount: 0,
+        paymentMethod: 'Cash'
+      },
+      crew: app.crew || {
+        leadProfessional: null,
+        assignedTo: []
+      },
+      notes: app.notes || {
+        customer: '',
+        professional: '',
+        internal: ''
+      },
+      photos: app.photos || {
+        beforeService: [],
+        afterService: []
+      }
+    }));
+
+    setAppointments(prev => {
+      return page === 1 ? transformedAppointments : [...prev, ...transformedAppointments];
+    });
+    
+    setError(null);
+    
+    setPagination({
+      page,
+      limit,
+      total: paginationData.total || 0,
+      hasMore: !!paginationData.next
+    });
+  } catch (err) {
+    console.error("Error fetching appointments:", err);
+    setError(err.response?.data?.message || err.message);
+    toast.error(err.response?.data?.message || err.message || 'Failed to load appointments');
+  } finally {
+    setLoading(false);
+  }
+}, [API_URL, getAuthHeaders]);
 
   // Then define handleCalendarView
-  const handleCalendarView = useCallback(async (start, end) => {
-    if (!userData?.token) {
-      toast.error('Please log in to view appointments');
-      router.push('/login');
-      return;
+ const handleCalendarView = useCallback(async (date, view) => {
+  if (!userData?.token) {
+    toast.error('Please log in to view appointments');
+    router.push('/login');
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const headers = getAuthHeaders();
+    
+    // Calculate start and end based on current view
+    let start, end;
+    const currentView = view || viewType;
+    
+    if (currentView === 'month') {
+      start = moment(date).startOf('month').format('YYYY-MM-DD');
+      end = moment(date).endOf('month').format('YYYY-MM-DD');
+    } else if (currentView === 'week') {
+      start = moment(date).startOf('week').format('YYYY-MM-DD');
+      end = moment(date).endOf('week').format('YYYY-MM-DD');
+    } else { // day view
+      start = moment(date).format('YYYY-MM-DD');
+      end = start;
     }
 
-    try {
-      setLoading(true);
-      const headers = getAuthHeaders();
+    const response = await axios.get(
+      `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
+      { headers }
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to load calendar events');
+    }
+
+    const transformedEvents = response.data.data.map(event => {
+      const startDate = new Date(event.start);
+      const endDate = new Date(event.end);
       
-      // Fetch calendar events
-      const response = await axios.get(
-        `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
-        { headers }
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to load calendar events');
-      }
-
-      const transformedEvents = response.data.data.map(event => ({
+      return {
         ...event,
-        title: `${event.title} - ${event.customer?.address ? 
-          `${event.customer.address.street || ''}, ${event.customer.address.city || ''}, ${event.customer.address.state || ''}, ${event.customer.address.zipCode || ''}`.trim() : 
-          'No Address'}`,
-        tooltip: `${event.title}\n${event.customer?.address ? 
-          `${event.customer.address.street || ''}, ${event.customer.address.city || ''}, ${event.customer.address.state || ''}, ${event.customer.address.zipCode || ''}`.trim() : 
-          'No Address'}\n${moment(event.start).format('h:mm A')} - ${moment(event.end).format('h:mm A')}`,
-      }));
+        id: event._id,
+        title: `${event.serviceName || 'Appointment'} - ${event.customerName || 'Customer'}`,
+        start: startDate,
+        end: endDate,
+        status: event.status,
+        customer: event.customer,
+        serviceName: event.serviceName,
+        tooltip: `${event.serviceName || 'Appointment'}\n${event.customerName || 'Customer'}\n${moment(startDate).format('h:mm A')} - ${moment(endDate).format('h:mm A')}`,
+      };
+    });
 
-      setCalendarEvents(transformedEvents);
-      
-      // Also fetch all appointments for the date selection modal
-      await fetchAppointments(1, 100); // Fetch more appointments for the modal
-      
-      setError(null);
-    } catch (error) {
-      console.error('Calendar view error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please log in again.');
-        router.push('/login');
-      } else {
-        toast.error(error.response?.data?.message || error.message || 'Failed to load calendar events');
-      }
-      setCalendarEvents([]);
-      setError(error.message);
-    } finally {
-      setLoading(false);
+    setCalendarEvents(transformedEvents);
+    setCurrentDate(date);
+    setError(null);
+  } catch (error) {
+    console.error('Calendar view error:', error);
+    if (error.response?.status === 401) {
+      toast.error('Session expired. Please log in again.');
+      router.push('/login');
+    } else {
+      toast.error(error.response?.data?.message || error.message || 'Failed to load calendar events');
     }
-  }, [API_URL, getAuthHeaders, userData, router, fetchAppointments]);
+    setCalendarEvents([]);
+    setError(error.message);
+  } finally {
+    setLoading(false);
+  }
+}, [API_URL, getAuthHeaders, userData, router, viewType]);
 
   // Add useEffect to load appointments when component mounts
   useEffect(() => {
@@ -1185,130 +1230,69 @@ const AppointmentsPage = () => {
     }
   };
 
-  const renderCalendar = () => (
-    <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-      <style jsx global>{`
-        .modern-calendar {
-          .rbc-header {
-            padding: 12px 3px;
-            font-weight: 600;
-            color: #374151;
-            border-bottom: 2px solid #f3f4f6;
-          }
-          
-          .rbc-today {
-            background-color: #f0fdf4;
-          }
-          
-          .rbc-off-range-bg {
-            background-color: #f9fafb;
-          }
-          
-          .rbc-event {
-            border-radius: 8px;
-            padding: 0;
-            margin: 1px 2px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-          }
-          
-          .rbc-event:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-          }
-          
-          .rbc-time-view {
-            border-radius: 8px;
-            border: 1px solid #f3f4f6;
-          }
-          
-          .rbc-time-header {
-            border-radius: 8px 8px 0 0;
-            background-color: #f9fafb;
-          }
-          
-          .rbc-time-content {
-            border-radius: 0 0 8px 8px;
-          }
-          
-          .rbc-timeslot-group {
-            border-bottom: 1px solid #f3f4f6;
-          }
-          
-          .rbc-time-slot {
-            border-top: 1px solid #f3f4f6;
-          }
-          
-          .rbc-current-time-indicator {
-            background-color: #ef4444;
-            height: 2px;
-          }
+ const renderCalendar = () => (
+  <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+    <Calendar
+      localizer={localizer}
+      events={calendarEvents}
+      startAccessor="start"
+      endAccessor="end"
+      date={currentDate}
+      onNavigate={(newDate, view) => {
+        setCurrentDate(newDate);
+        handleCalendarView(newDate, view);
+      }}
+      onView={(view) => {
+        setViewType(view);
+        handleCalendarView(currentDate, view);
+      }}
+      style={{ height: '100%' }}
+      eventPropGetter={(event) => ({
+        style: {
+          backgroundColor: 'transparent',
+          borderRadius: '4px',
+          opacity: event.status === 'Completed' ? 0.7 : 1,
+          border: 'none',
+          color: '#fff',
+          padding: '2px 4px',
+          display: 'block',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+          background: `linear-gradient(135deg, 
+            ${event.status === 'Completed' ? '#34D399' : 
+            event.status === 'Cancelled' ? '#F87171' : 
+            event.status === 'Scheduled' ? '#60A5FA' : '#FBBF24'} 0%, 
+            ${event.status === 'Completed' ? '#10B981' : 
+            event.status === 'Cancelled' ? '#EF4444' : 
+            event.status === 'Scheduled' ? '#3B82F6' : '#F59E0B'} 100%)`
+        },
+      })}
+      onSelectEvent={(event) => {
+        const appointment = appointments.find(apt => apt.id === event.id);
+        if (appointment) {
+          setSelectedAppointment(appointment);
+          setActiveModal('details');
         }
-      `}</style>
-      <Calendar
-        localizer={localizer}
-        events={calendarEvents}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ height: '100%' }}
-        eventPropGetter={(event) => ({
-          style: {
-            backgroundColor: 'transparent',
-            borderRadius: '8px',
-            opacity: event.status === 'Completed' ? 0.7 : 1,
-            border: 'none',
-            color: '#fff',
-            padding: '0',
-            display: 'block',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-            background: `linear-gradient(135deg, 
-              ${event.status === 'Completed' ? '#34D399' : 
-              event.status === 'Cancelled' ? '#F87171' : 
-              event.status === 'Scheduled' ? '#60A5FA' : '#FBBF24'} 0%, 
-              ${event.status === 'Completed' ? '#10B981' : 
-              event.status === 'Cancelled' ? '#EF4444' : 
-              event.status === 'Scheduled' ? '#3B82F6' : '#F59E0B'} 100%)`
-          },
-        })}
-        onSelectEvent={(event) => {
-          const appointment = appointments.find(apt => apt.id === event.id);
-          if (appointment) {
-            setSelectedAppointment(appointment);
-            setActiveModal('details');
-          }
-        }}
-        onSelectSlot={(slotInfo) => {
-          // Use moment to handle the date consistently
-          const selectedDate = moment(slotInfo.start).toDate();
-          setSelectedDate(selectedDate);
-        }}
-        selectable={true}
-        onNavigate={(date) => {
-          const start = moment(date).startOf('month').format('YYYY-MM-DD');
-          const end = moment(date).endOf('month').format('YYYY-MM-DD');
-          handleCalendarView(start, end);
-        }}
-        onView={(view) => {
-          const start = moment().startOf(view).format('YYYY-MM-DD');
-          const end = moment().endOf(view).format('YYYY-MM-DD');
-          handleCalendarView(start, end);
-        }}
-        components={{
-          toolbar: CustomToolbar,
-          event: CustomEvent
-        }}
-        views={['month', 'week', 'day', 'agenda']}
-        defaultView="month"
-        popup
-        step={30}
-        timeslots={2}
-        min={new Date(0, 0, 0, 8, 0, 0)}
-        max={new Date(0, 0, 0, 18, 0, 0)}
-        dayLayoutAlgorithm="no-overlap"
-        className="modern-calendar"
-      />
-    </div>
-  );
+      }}
+      onSelectSlot={(slotInfo) => {
+        const selectedDate = moment(slotInfo.start).toDate();
+        setSelectedDate(selectedDate);
+      }}
+      selectable={true}
+      components={{
+        toolbar: CustomToolbar,
+        event: CustomEvent
+      }}
+      views={['month', 'week', 'day', 'agenda']}
+      defaultView="month"
+      popup
+      step={30}
+      timeslots={2}
+      min={new Date(0, 0, 0, 8, 0, 0)}
+      max={new Date(0, 0, 0, 18, 0, 0)}
+      dayLayoutAlgorithm="no-overlap"
+    />
+  </div>
+);
 
   const closeModal = () => {
     setSelectedAppointment(null);
@@ -1573,12 +1557,16 @@ const AppointmentsPage = () => {
         )}
 
         {selectedDate && (
-          <DateAppointmentsModal
-            date={selectedDate}
-            appointments={appointments}
-            onClose={() => setSelectedDate(null)}
-          />
-        )}
+  <DateAppointmentsModal
+    date={selectedDate}
+    appointments={appointments}
+    onClose={() => setSelectedDate(null)}
+    onEdit={(appointment) => {
+      setSelectedAppointment(appointment);
+      setActiveModal('details');
+    }}
+  />
+)}
 
         {selectedAppointment && activeModal === 'details' && (
           <AppointmentDetailsModal
