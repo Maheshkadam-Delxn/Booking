@@ -514,96 +514,100 @@ export default function ProfilePage() {
         </div>
 
         {/* Recent Services Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-green-100 overflow-hidden mb-6">
-          <div className="bg-green-600 text-white p-4">
-            <h2 className="text-lg font-semibold flex items-center">
-              <Calendar className="mr-2" size={18} />
-              Recent Service History
-            </h2>
-          </div>
-          <div className="p-4">
-            {pastAppointments.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-green-100">
-                  <thead className="bg-green-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Service</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Payment</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-green-100">
-                    {pastAppointments.map((service) => (
-                      <tr key={service._id}>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
-                              <img
-                                src={service.image}
-                                alt={service.packageType || 'Service'}
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{service.service?.name || 'Service'}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(service.date).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                          ${service.price || '0.00'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {service.paymentStatus === 'Paid' ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Paid
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setSelectedAppointment(service);
-                                setIsPaymentModalOpen(true);
-                              }}
-                              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-colors"
-                            >
-                              Pay Now
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+       <div className="bg-white rounded-xl shadow-sm border border-green-100 overflow-hidden mb-6">
+  <div className="bg-green-600 text-white p-4">
+    <h2 className="text-lg font-semibold flex items-center">
+      <Calendar className="mr-2" size={18} />
+      Recent Service History
+    </h2>
+  </div>
+  <div className="p-4">
+    {pastAppointments.length > 0 ? (
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-green-100">
+          <thead className="bg-green-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Sr.No.</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Service</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Amount</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Payment</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-green-100">
+            {pastAppointments.map((service, index) => (
+              <tr key={service._id}>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  {index + 1}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
+                      <img
+                        src={service.image}
+                        alt={service.packageType || 'Service'}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{service.service?.name || 'Service'}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(service.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  ${service.price || '0.00'}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {service.paymentStatus === 'Paid' ? (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      Paid
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSelectedAppointment(service);
+                        setIsPaymentModalOpen(true);
+                      }}
+                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-colors"
+                    >
+                      Pay Now
+                    </button>
+                  )}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                       ${service.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                                service.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' :
-                                  service.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
-                                    'bg-gray-100 text-gray-800'}`}>
-                            {service.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="bg-green-100 p-4 rounded-full inline-block mb-3">
-                  <Calendar className="text-green-600" size={24} />
-                </div>
-                <h3 className="text-gray-500">No recent services found</h3>
-              </div>
-            )}
-          </div>
+                        service.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                          service.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'}`}>
+                    {service.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="text-center py-8">
+        <div className="bg-green-100 p-4 rounded-full inline-block mb-3">
+          <Calendar className="text-green-600" size={24} />
         </div>
+        <h3 className="text-gray-500">No recent services found</h3>
+      </div>
+    )}
+  </div>
+</div>
 
         {/* Payment Modal */}
         {isPaymentModalOpen && selectedAppointment && (

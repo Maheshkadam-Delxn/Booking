@@ -3,6 +3,7 @@ import './globals.css';
 import { DashboardProvider } from '../contexts/DashboardContext';
 import LayoutWrapper from '../components/layout/LayoutWrapper'; // client component
 import { Toaster } from 'react-hot-toast';
+import Footer from '@/components/layout/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,6 +22,8 @@ export default function RootLayout({ children }) {
           </LayoutWrapper>
         </DashboardProvider>
         <Toaster position="top-center" />
+        <Footer/>
+
       </body>
     </html>
   );
