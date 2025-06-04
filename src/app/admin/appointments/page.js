@@ -645,10 +645,12 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
 };
 
 // Add CustomToolbar component
-const CustomToolbar = ({ onNavigate, onView, view, date }) => {
+const CustomToolbar = ({ onNavigate, onView, view, date, handleCalendarView }) => {
   const goToToday = () => {
     const today = new Date();
     onNavigate('DATE', today);
+    // Force refresh the view
+    handleCalendarView(today, view);
   };
 
   const goToPrevious = () => {
@@ -661,6 +663,7 @@ const CustomToolbar = ({ onNavigate, onView, view, date }) => {
       newDate = moment(date).subtract(1, 'day').toDate();
     }
     onNavigate('DATE', newDate);
+    handleCalendarView(newDate, view);
   };
 
   const goToNext = () => {
@@ -673,10 +676,12 @@ const CustomToolbar = ({ onNavigate, onView, view, date }) => {
       newDate = moment(date).add(1, 'day').toDate();
     }
     onNavigate('DATE', newDate);
+    handleCalendarView(newDate, view);
   };
 
-  const goToView = (view) => {
-    onView(view);
+  const goToView = (newView) => {
+    onView(newView);
+    handleCalendarView(date, newView);
   };
 
   // Format the label based on the current view
@@ -812,10 +817,12 @@ const DateAppointmentsModal = ({ date, appointments, onClose, onEdit }) => {
   const selectedDateStr = moment(date).format('YYYY-MM-DD');
   
   // Filter appointments for the selected date
-  const filteredAppointments = appointments.filter(apt => {
-    const aptDateStr = moment(apt.date).format('YYYY-MM-DD');
-    return aptDateStr === selectedDateStr;
-  });
+  // In DateAppointmentsModal component, update the filtering logic:
+const filteredAppointments = appointments.filter(apt => {
+  const aptDate = moment(apt.date).startOf('day');
+  const selectedDateMoment = moment(date).startOf('day');
+  return aptDate.isSame(selectedDateMoment);
+});
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -904,6 +911,7 @@ const AppointmentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewType, setViewType] = useState('calendar');
+  
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 25,
@@ -936,7 +944,7 @@ const AppointmentsPage = () => {
   }, [userData]);
 
   // Define fetchAppointments first
-  const fetchAppointments = useCallback(async (page = 1, limit = 25) => {
+const fetchAppointments = useCallback(async () => {
   setLoading(true);
   try {
     const headers = getAuthHeaders();
@@ -945,8 +953,9 @@ const AppointmentsPage = () => {
       throw new Error('No authorization token available');
     }
     
+    // Remove pagination parameters and fetch all appointments
     const appointmentsRes = await axios.get(
-      `${API_URL}/appointments?page=${page}&limit=${limit}`,
+      `${API_URL}/appointments?limit=1000`, // Set a high limit to get all appointments
       { headers }
     );
 
@@ -955,7 +964,6 @@ const AppointmentsPage = () => {
     }
 
     const newAppointments = appointmentsRes.data?.data || [];
-    const paginationData = appointmentsRes.data?.pagination || {};
 
     const transformedAppointments = newAppointments.map((app) => ({
       id: app._id,
@@ -966,9 +974,9 @@ const AppointmentsPage = () => {
         'N/A',
       serviceName: app.service?.name || "N/A",
       serviceId: app.service?._id || "",
-      date: app.date,
-      start: app.date, // For calendar view
-      end: app.date,   // For calendar view
+      date: moment(app.date).toISOString(),
+      start: moment(app.date).toISOString(),
+      end: moment(app.date).toISOString(),
       timeSlot: {
         startTime: app.timeSlot?.startTime || 'N/A',
         endTime: app.timeSlot?.endTime || 'N/A'
@@ -997,18 +1005,8 @@ const AppointmentsPage = () => {
       }
     }));
 
-    setAppointments(prev => {
-      return page === 1 ? transformedAppointments : [...prev, ...transformedAppointments];
-    });
-    
+    setAppointments(transformedAppointments);
     setError(null);
-    
-    setPagination({
-      page,
-      limit,
-      total: paginationData.total || 0,
-      hasMore: !!paginationData.next
-    });
   } catch (err) {
     console.error("Error fetching appointments:", err);
     setError(err.response?.data?.message || err.message);
@@ -1019,18 +1017,13 @@ const AppointmentsPage = () => {
 }, [API_URL, getAuthHeaders]);
 
   // Then define handleCalendarView
- const handleCalendarView = useCallback(async (date, view) => {
-  if (!userData?.token) {
-    toast.error('Please log in to view appointments');
-    router.push('/login');
-    return;
-  }
-
+const handleCalendarView = useCallback(async (date, view) => {
+  console.log('Loading calendar view for:', view, 'date:', date);
+  
   try {
     setLoading(true);
     const headers = getAuthHeaders();
     
-    // Calculate start and end based on current view
     let start, end;
     const currentView = view || viewType;
     
@@ -1045,31 +1038,36 @@ const AppointmentsPage = () => {
       end = start;
     }
 
+    console.log('Fetching appointments between:', start, 'and', end);
+    
     const response = await axios.get(
       `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
       { headers }
     );
 
+    console.log('Received', response.data.data.length, 'appointments');
+
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to load calendar events');
     }
 
-    const transformedEvents = response.data.data.map(event => {
-      const startDate = new Date(event.start);
-      const endDate = new Date(event.end);
-      
-      return {
-        ...event,
-        id: event._id,
-        title: `${event.serviceName || 'Appointment'} - ${event.customerName || 'Customer'}`,
-        start: startDate,
-        end: endDate,
-        status: event.status,
-        customer: event.customer,
-        serviceName: event.serviceName,
-        tooltip: `${event.serviceName || 'Appointment'}\n${event.customerName || 'Customer'}\n${moment(startDate).format('h:mm A')} - ${moment(endDate).format('h:mm A')}`,
-      };
-    });
+    // When creating calendar events:
+const transformedEvents = response.data.data.map(event => {
+  const startDate = moment(event.start).utc().toDate();
+  const endDate = moment(event.end).utc().toDate();
+  
+  return {
+    ...event,
+    id: event._id,
+    title: `${event.serviceName || 'Appointment'} - ${event.customerName || 'Customer'}`,
+    start: startDate,
+    end: endDate,
+    status: event.status,
+    customer: event.customer,
+    serviceName: event.serviceName,
+    tooltip: `${event.serviceName || 'Appointment'}\n${event.customerName || 'Customer'}\n${moment(startDate).format('h:mm A')} - ${moment(endDate).format('h:mm A')}`,
+  };
+});
 
     setCalendarEvents(transformedEvents);
     setCurrentDate(date);
@@ -1091,11 +1089,13 @@ const AppointmentsPage = () => {
 
   // Add useEffect to load appointments when component mounts
   useEffect(() => {
-    if (!isLoading && userData?.token) {
-      fetchAppointments();
-    }
-  }, [isLoading, userData, fetchAppointments]);
-
+  if (!isLoading && userData?.token) {
+    fetchAppointments();
+    // Load current month's appointments by default for calendar
+    const today = new Date();
+    handleCalendarView(today, 'month');
+  }
+}, [isLoading, userData, fetchAppointments, handleCalendarView]);
   const loadMoreAppointments = async () => {
     if (pagination.hasMore) {
       await fetchAppointments(pagination.page + 1, pagination.limit);
@@ -1203,7 +1203,6 @@ const handleUpdateAppointment = async (updatedAppointment) => {
       throw new Error('No authorization token available');
     }
 
-    // Use _id if that's what MongoDB uses
     const appointmentId = updatedAppointment._id || updatedAppointment.id;
     if (!appointmentId) {
       throw new Error('Appointment ID is missing');
@@ -1226,10 +1225,34 @@ const handleUpdateAppointment = async (updatedAppointment) => {
       throw new Error(response.data.message || 'Failed to update appointment');
     }
 
-    setAppointments(appointments.map(apt => 
+    // Update appointments list
+    const updatedAppointments = appointments.map(apt => 
       (apt._id === appointmentId || apt.id === appointmentId) ? response.data.data : apt
-    ));
+    );
+    setAppointments(updatedAppointments);
+
+    // Update calendar events
+    setCalendarEvents(prev => 
+      prev.map(event => 
+        event.id === appointmentId 
+          ? { 
+              ...event, 
+              start: new Date(response.data.data.date), 
+              end: new Date(response.data.data.date),
+              title: `${response.data.data.serviceName || 'Appointment'} - ${response.data.data.customerName || 'Customer'}`,
+              status: response.data.data.status
+            }
+          : event
+      ).filter(event => {
+        // Remove events that no longer exist in appointments
+        return updatedAppointments.some(apt => apt.id === event.id);
+      })
+    );
+
+    // Refresh calendar view
+    await handleCalendarView(currentDate, viewType);
     
+    toast.success('Appointment updated successfully');
     return response.data.data;
   } catch (error) {
     console.error('Update error:', error);
@@ -1238,14 +1261,14 @@ const handleUpdateAppointment = async (updatedAppointment) => {
   }
 };
 
- const renderCalendar = () => (
+const renderCalendar = () => (
   <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
     <Calendar
       localizer={localizer}
       events={calendarEvents}
-      startAccessor="start"
-      endAccessor="end"
-      date={currentDate}
+      startAccessor={(event) => new Date(event.start)}
+      endAccessor={(event) => new Date(event.end)}
+      defaultDate={currentDate}
       onNavigate={(newDate, view) => {
         setCurrentDate(newDate);
         handleCalendarView(newDate, view);
@@ -1287,7 +1310,12 @@ const handleUpdateAppointment = async (updatedAppointment) => {
       }}
       selectable={true}
       components={{
-        toolbar: CustomToolbar,
+        toolbar: (props) => (
+          <CustomToolbar 
+            {...props} 
+            handleCalendarView={handleCalendarView} 
+          />
+        ),
         event: CustomEvent
       }}
       views={['month', 'week', 'day', 'agenda']}
@@ -1552,7 +1580,7 @@ const handleUpdateAppointment = async (updatedAppointment) => {
               </td>
             </tr>
           ))}
-          {viewType === 'list' && renderLoadMore()}
+          
         </tbody>
       </table>
     </div>
