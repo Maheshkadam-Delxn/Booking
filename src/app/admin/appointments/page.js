@@ -122,50 +122,53 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     };
   };
 
-  const handleUpdate = async () => {
-    setLoading(true);
-    try {
-      const headers = getAuthHeaders();
-      
-      if (!headers.Authorization) {
-        throw new Error('No authorization token available');
-      }
-      
-      const updateData = {
-        date: editedAppointment.date,
-        timeSlot: {
-          startTime: editedAppointment.startTime,
-          endTime: editedAppointment.endTime
-        },
-        status: editedAppointment.status,
-        notes: editedAppointment.notes
-      };
-
-      const response = await axios.put(
-        `${API_URL}/appointments/${appointment.id}`,
-        updateData,
-        { headers }
-      );
-
-      if (response.data.success) {
-        onUpdate({
-          ...appointment,
-          ...editedAppointment
-        });
-        
-        setIsEditing(false);
-        toast.success('Appointment updated successfully');
-      } else {
-        throw new Error(response.data.message || 'Failed to update appointment');
-      }
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
-    } finally {
-      setLoading(false);
+ const handleUpdate = async () => {
+  setLoading(true);
+  try {
+    const headers = getAuthHeaders();
+    
+    if (!headers.Authorization) {
+      throw new Error('No authorization token available');
     }
-  };
+    
+    // Make sure we're using the correct ID field - use _id if that's what MongoDB uses
+    const appointmentId = appointment._id || appointment.id;
+    if (!appointmentId) {
+      throw new Error('Appointment ID is missing');
+    }
 
+    const updateData = {
+      date: editedAppointment.date,
+      timeSlot: {
+        startTime: editedAppointment.timeSlot?.startTime || editedAppointment.startTime,
+        endTime: editedAppointment.timeSlot?.endTime || editedAppointment.endTime
+      },
+      status: editedAppointment.status,
+      notes: editedAppointment.notes
+    };
+
+    const response = await axios.put(
+      `${API_URL}/appointments/${appointmentId}`,  // Use the properly extracted ID
+      updateData,
+      { headers }
+    );
+
+    if (response.data.success) {
+      onUpdate({
+        ...response.data.data,
+        _id: appointmentId,  // Make sure to include the ID in the updated data
+        id: appointmentId    // Include both id and _id for consistency
+      });
+      setIsEditing(false);
+      toast.success('Appointment updated successfully');
+    }
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+  } finally {
+    setLoading(false);
+  }
+};
   const handleDelete = async () => {
     setLoading(true);
     try {
@@ -1193,42 +1196,48 @@ const AppointmentsPage = () => {
 
   const statuses = ['all', ...new Set(appointments.map(a => a.status))];
 
-  const handleUpdateAppointment = async (updatedAppointment) => {
-    try {
-      const headers = getAuthHeaders();
-      
-      if (!headers.Authorization) {
-        throw new Error('No authorization token available');
-      }
-      
-      const response = await axios.put(
-        `${API_URL}/appointments/${updatedAppointment.id}`,
-        {
-          date: updatedAppointment.date,
-          timeSlot: {
-            startTime: updatedAppointment.startTime,
-            endTime: updatedAppointment.endTime,
-          },
-          status: updatedAppointment.status,
-        },
-        { headers }
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to update appointment');
-      }
-
-      setAppointments(appointments.map(apt => 
-        apt.id === updatedAppointment.id ? response.data.data : apt
-      ));
-      
-      return response.data.data;
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
-      throw error;
+const handleUpdateAppointment = async (updatedAppointment) => {
+  try {
+    const headers = getAuthHeaders();
+    
+    if (!headers.Authorization) {
+      throw new Error('No authorization token available');
     }
-  };
+
+    // Use _id if that's what MongoDB uses
+    const appointmentId = updatedAppointment._id || updatedAppointment.id;
+    if (!appointmentId) {
+      throw new Error('Appointment ID is missing');
+    }
+    
+    const response = await axios.put(
+      `${API_URL}/appointments/${appointmentId}`,
+      {
+        date: updatedAppointment.date,
+        timeSlot: {
+          startTime: updatedAppointment.timeSlot?.startTime || updatedAppointment.startTime,
+          endTime: updatedAppointment.timeSlot?.endTime || updatedAppointment.endTime,
+        },
+        status: updatedAppointment.status,
+      },
+      { headers }
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to update appointment');
+    }
+
+    setAppointments(appointments.map(apt => 
+      (apt._id === appointmentId || apt.id === appointmentId) ? response.data.data : apt
+    ));
+    
+    return response.data.data;
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+    throw error;
+  }
+};
 
  const renderCalendar = () => (
   <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
