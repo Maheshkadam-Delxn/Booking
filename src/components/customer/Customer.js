@@ -578,96 +578,47 @@ const handleImageClick = (images, index = 0) => {
           </div>
           <div className="p-4">
             {pastAppointments.length > 0 ? (
-  <div className="overflow-x-auto">
-    <table className="min-w-full divide-y divide-green-100">
-      <thead className="bg-green-50">
-        <tr>
-          <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">
-            Service
-          </th>
-          <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">
-            Date
-          </th>
-          <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">
-            Property Images
-          </th>
-          <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">
-            Amount
-          </th>
-          <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">
-            Payment
-          </th>
-          <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">
-            Status
-          </th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-green-100">
-        {pastAppointments.map((service) => (
-          <tr key={service._id}>
-            <td className="px-4 py-3 whitespace-nowrap">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
-                  {service.service?.image?.url ? (
-                    <img
-                      src={service.service.image.url}
-                      alt={service.service.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full bg-gray-200 flex items-center justify-center">
-                      <Calendar className="text-gray-400" size={20} />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {service.service?.name || "Service"}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {service.service?.category || "N/A"}
-                  </div>
-                </div>
-              </div>
-            </td>
-            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-              {new Date(service.date).toLocaleDateString("en-US", {
-                weekday: "short",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </td>
-           <td className="px-4 py-3 whitespace-nowrap">
-  {service.propertyImages?.length > 0 ? (
-    <button 
-      onClick={() => handleImageClick(service.propertyImages)}
-      className="flex space-x-2 hover:opacity-80 transition-opacity"
-    >
-      {service.propertyImages.slice(0, 3).map((image, idx) => (
-        <div key={idx} className="relative h-10 w-10 rounded-md overflow-hidden">
-          <img
-            src={image.url}
-            alt={`Property ${idx + 1}`}
-            className="h-full w-full object-cover"
-          />
-          {idx === 2 && service.propertyImages.length > 3 && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-xs">
-              +{service.propertyImages.length - 3}
-            </div>
-          )}
-        </div>
-      ))}
-    </button>
-  ) : (
-    <span className="text-xs text-gray-400">No images</span>
-  )}
-</td>
-            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-              ${service.price || "0.00"}
-            </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-green-100">
+                  <thead className="bg-green-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Service</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Payment</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-green-100">
+                    {pastAppointments.map((service) => (
+                      <tr key={service._id}>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          {service.paymentStatus === "Paid" ? (
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
+                              <img
+                                src={service.image}
+                                alt={service.packageType || 'Service'}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{service.service?.name || 'Service'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(service.date).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          ${service.price || '0.00'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {service.paymentStatus === 'Paid' ? (
                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                               Paid
                             </span>
@@ -686,16 +637,10 @@ const handleImageClick = (images, index = 0) => {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${
-                        service.status === "Completed"
-                          ? "bg-green-100 text-green-800"
-                          : service.status === "Scheduled"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : service.status === "Cancelled"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                          >
+                      ${service.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                service.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                                  service.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'}`}>
                             {service.status}
                           </span>
                         </td>

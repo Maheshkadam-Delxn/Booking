@@ -656,7 +656,6 @@
 
 
 
-
 "use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
@@ -745,32 +744,30 @@ const EstimatesTable = () => {
     }
   };
 
-
   // Handle edit button click
   const handleEdit = (estimate) => {
-  setEditingEstimate(estimate);
-  setFormData({
-    services: estimate.services.map(service => ({
-      service: service.service || { name: "", price: 0 },
-      price: service.price || 0,
-      quantity: service.quantity || 1
-    })),
-    status: estimate.status || "pending",
-    notes: estimate.notes || "",
-    budget: estimate.budget || { min: 0, max: 0 }
-  });
-};
+    setEditingEstimate(estimate);
+    setFormData({
+      services: estimate.services.map(service => ({
+        service: service.service || { name: "", price: 0 },
+        price: service.price || 0,
+        quantity: service.quantity || 1
+      })),
+      status: estimate.status || "pending",
+      notes: estimate.notes || "",
+      budget: estimate.budget || { min: 0, max: 0 }
+    });
+  };
 
-
-const handleBudgetChange = (field, value) => {
-  setFormData(prev => ({
-    ...prev,
-    budget: {
-      ...prev.budget,
-      [field]: Number(value)
-    }
-  }));
-};
+  const handleBudgetChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      budget: {
+        ...prev.budget,
+        [field]: Number(value)
+      }
+    }));
+  };
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -779,16 +776,16 @@ const handleBudgetChange = (field, value) => {
   };
 
   // Handle service field changes
- const handleServiceChange = (index, field, value) => {
-  setFormData(prev => {
-    const updatedServices = [...prev.services];
-    updatedServices[index] = {
-      ...updatedServices[index],
-      [field]: field === "price" || field === "quantity" ? Number(value) : value
-    };
-    return { ...prev, services: updatedServices };
-  });
-};
+  const handleServiceChange = (index, field, value) => {
+    setFormData(prev => {
+      const updatedServices = [...prev.services];
+      updatedServices[index] = {
+        ...updatedServices[index],
+        [field]: field === "price" || field === "quantity" ? Number(value) : value
+      };
+      return { ...prev, services: updatedServices };
+    });
+  };
 
   // Add new service
   const addService = () => {
@@ -810,52 +807,51 @@ const handleBudgetChange = (field, value) => {
   };
 
   // Submit updated estimate
-  // In your handleSubmit function
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const payload = {
-      services: formData.services.map(service => ({
-        service: {
-          _id: service.service._id,
-          name: service.service.name
-        },
-        price: service.price,
-        quantity: service.quantity
-      })),
-      status: formData.status,
-      notes: formData.notes,
-      budget: formData.budget
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        services: formData.services.map(service => ({
+          service: {
+            _id: service.service._id,
+            name: service.service.name
+          },
+          price: service.price,
+          quantity: service.quantity
+        })),
+        status: formData.status,
+        notes: formData.notes,
+        budget: formData.budget
+      };
 
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/estimates/${editingEstimate._id}`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${userData?.token}`,
-        },
-      }
-    );
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/estimates/${editingEstimate._id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${userData?.token}`,
+          },
+        }
+      );
 
-    // Preserve the existing customer data in the updated estimate
-    const updatedEstimate = {
-      ...response.data.data,
-      customer: editingEstimate.customer // Keep the original customer data
-    };
+      // Preserve the existing customer data in the updated estimate
+      const updatedEstimate = {
+        ...response.data.data,
+        customer: editingEstimate.customer // Keep the original customer data
+      };
 
-    setEstimates(prev => 
-      prev.map(est => 
-        est._id === editingEstimate._id ? updatedEstimate : est
-      )
-    );
-    
-    setEditingEstimate(null);
-  } catch (error) {
-    console.error("Error updating estimate:", error);
-    alert("Failed to update estimate. Please check console for details.");
-  }
-};
+      setEstimates(prev => 
+        prev.map(est => 
+          est._id === editingEstimate._id ? updatedEstimate : est
+        )
+      );
+      
+      setEditingEstimate(null);
+    } catch (error) {
+      console.error("Error updating estimate:", error);
+      alert("Failed to update estimate. Please check console for details.");
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -863,37 +859,48 @@ const handleSubmit = async (e) => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // if (loading) return <div className="text-center py-8">Loading estimates...</div>;
-if (loading) return (
+  if (loading) return (
     <AdminLayout>
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
       </div>
     </AdminLayout>
   );
+
   return (
     <AdminLayout>
-       <div className="container mx-auto p-4">
+      <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-6">Estimates</h1>
         
         {/* Estimates Table */}
         <div className="overflow-x-auto bg-white rounded-lg shadow mb-4">
           <table className="min-w-full divide-y divide-gray-200">
-            {/* ... [keep your existing table header] */}
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sr.No</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estimate #</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Services</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {estimates.map((estimate) => (
+              {estimates.map((estimate, index) => (
                 <tr key={estimate._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {index + 1}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {estimate.estimateNumber || "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {estimate.customer?.user?.name || "N/A"}
-                      
                     </div>
                     <div className="text-sm font-medium text-gray-900">
-                     
-                       {estimate.customer?.user?.email || "N/A"}
+                      {estimate.customer?.user?.email || "N/A"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -930,7 +937,8 @@ if (loading) return (
             </tbody>
           </table>
         </div>
-           {/* Load More Button */}
+
+        {/* Load More Button */}
         {hasMore && (
           <div className="text-center mt-4">
             <button
@@ -943,29 +951,26 @@ if (loading) return (
           </div>
         )}
 
-       
-
-
         {/* View Modal */}
         {viewingEstimate && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-      <div className="flex justify-between items-center border-b px-6 py-4 sticky top-0 bg-white z-10">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Estimate Details #{viewingEstimate.estimateNumber || viewingEstimate._id.substring(0, 8)}
-        </h2>
-        <button 
-          onClick={() => setViewingEstimate(null)}
-          className="text-gray-400 hover:text-gray-500"
-        >
-          <span className="sr-only">Close</span>
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center border-b px-6 py-4 sticky top-0 bg-white z-10">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Estimate Details #{viewingEstimate.estimateNumber || viewingEstimate._id.substring(0, 8)}
+                </h2>
+                <button 
+                  onClick={() => setViewingEstimate(null)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-      <div className="p-6">
+              <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-3">Customer Information</h3>
@@ -994,39 +999,38 @@ if (loading) return (
 
                 <div className="mb-6">
                   {/* Add Photos Section */}
-        {viewingEstimate.photos?.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Property Photos</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {viewingEstimate.photos.map((photo, index) => (
-                <div key={photo._id || index} className="relative group">
-                  <img
-                    src={photo.url}
-                    alt={`Property photo ${index + 1}`}
-                    className="w-full h-48 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                  />
-                  {photo.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-sm">
-                      {photo.caption}
+                  {viewingEstimate.photos?.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-3">Property Photos</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {viewingEstimate.photos.map((photo, index) => (
+                          <div key={photo._id || index} className="relative group">
+                            <img
+                              src={photo.url}
+                              alt={`Property photo ${index + 1}`}
+                              className="w-full h-48 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                            />
+                            {photo.caption && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-sm">
+                                {photo.caption}
+                              </div>
+                            )}
+                            <a 
+                              href={photo.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-30 transition-opacity rounded-lg"
+                            >
+                              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                              </svg>
+                            </a>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  <a 
-                    href={photo.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-30 transition-opacity rounded-lg"
-                  >
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                    </svg>
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-                   
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Services</h3>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -1064,7 +1068,6 @@ if (loading) return (
                           </td>
                         </tr>
                       </tfoot>
-                     
                     </table>
                   </div>
                 </div>
@@ -1090,7 +1093,6 @@ if (loading) return (
         )}
 
         {/* Edit Modal */}
-        {/* Edit Modal - Updated with scrollable content */}
         {editingEstimate && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">

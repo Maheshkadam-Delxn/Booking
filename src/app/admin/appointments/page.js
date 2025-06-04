@@ -46,6 +46,8 @@ const StatusBadge = ({ status }) => {
     default:
       break;
   }
+  const [currentPage, setCurrentPage] = useState(1);
+const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Format the status for display
   const formatStatus = (status) => {
@@ -122,53 +124,50 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     };
   };
 
- const handleUpdate = async () => {
-  setLoading(true);
-  try {
-    const headers = getAuthHeaders();
-    
-    if (!headers.Authorization) {
-      throw new Error('No authorization token available');
-    }
-    
-    // Make sure we're using the correct ID field - use _id if that's what MongoDB uses
-    const appointmentId = appointment._id || appointment.id;
-    if (!appointmentId) {
-      throw new Error('Appointment ID is missing');
-    }
+  const handleUpdate = async () => {
+    setLoading(true);
+    try {
+      const headers = getAuthHeaders();
+      
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
+      }
+      
+      const updateData = {
+        date: editedAppointment.date,
+        timeSlot: {
+          startTime: editedAppointment.startTime,
+          endTime: editedAppointment.endTime
+        },
+        status: editedAppointment.status,
+        notes: editedAppointment.notes
+      };
 
-    const updateData = {
-      date: editedAppointment.date,
-      timeSlot: {
-        startTime: editedAppointment.timeSlot?.startTime || editedAppointment.startTime,
-        endTime: editedAppointment.timeSlot?.endTime || editedAppointment.endTime
-      },
-      status: editedAppointment.status,
-      notes: editedAppointment.notes
-    };
+      const response = await axios.put(
+        `${API_URL}/appointments/${appointment.id}`,
+        updateData,
+        { headers }
+      );
 
-    const response = await axios.put(
-      `${API_URL}/appointments/${appointmentId}`,  // Use the properly extracted ID
-      updateData,
-      { headers }
-    );
-
-    if (response.data.success) {
-      onUpdate({
-        ...response.data.data,
-        _id: appointmentId,  // Make sure to include the ID in the updated data
-        id: appointmentId    // Include both id and _id for consistency
-      });
-      setIsEditing(false);
-      toast.success('Appointment updated successfully');
+      if (response.data.success) {
+        onUpdate({
+          ...appointment,
+          ...editedAppointment
+        });
+        
+        setIsEditing(false);
+        toast.success('Appointment updated successfully');
+      } else {
+        throw new Error(response.data.message || 'Failed to update appointment');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Update error:', error);
-    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
   const handleDelete = async () => {
     setLoading(true);
     try {
@@ -1336,12 +1335,12 @@ const handleUpdateAppointment = async (updatedAppointment) => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Appointments</h1>
           <div className="space-x-2">
-            <button
+            {/* <button
               onClick={() => router.push('/admin/appointments/new')}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
             >
               New Appointment
-            </button>
+            </button> */}
             <button
               onClick={() => setViewType('calendar')}
               className={`px-4 py-2 rounded-md ${
@@ -1432,138 +1431,147 @@ const handleUpdateAppointment = async (updatedAppointment) => {
           </div>
         </div>
 
-        {viewType === 'list' ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Service
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Time
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAppointments.map((appointment) => (
-                    <tr key={appointment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {appointment.customerName}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate max-w-[200px]">
-                          {appointment.address}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {appointment.serviceName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.frequency}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(appointment.date).toLocaleDateString()}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.startTime} - {appointment.endTime}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={appointment.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {appointment.payment.status}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ${appointment.payment.amount}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedAppointment(appointment);
-                              setActiveModal('details');
-                            }}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            View
-                          </button>
-                          {appointment.status === 'Scheduled' && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setSelectedAppointment(appointment);
-                                  setActiveModal('crew');
-                                }}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                Assign Crew
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedAppointment(appointment);
-                                  setActiveModal('payment');
-                                }}
-                                className="text-purple-600 hover:text-purple-900"
-                              >
-                                Payment
-                              </button>
-                              {appointment.frequency !== 'One-time' && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedAppointment(appointment);
-                                    setActiveModal('recurring');
-                                  }}
-                                  className="text-orange-600 hover:text-orange-900"
-                                >
-                                  Recurring
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {viewType === 'list' && renderLoadMore()}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow p-4">
-            {loading ? (
-              <div className="flex items-center justify-center h-[800px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center h-[800px]">
-                <div className="text-red-600">{error}</div>
-              </div>
-            ) : (
-              renderCalendar()
-            )}
-          </div>
-        )}
+{viewType === 'list' ? (
+  <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        {/* Table headers */}
+        <thead className="bg-gray-50">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Sr.No.
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Customer
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Service
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Date & Time
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Status
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Payment
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+           <tbody className="bg-white divide-y divide-gray-200">
+          {filteredAppointments.map((appointment, index) => (
+            <tr key={appointment.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                   {index + 1}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-gray-900">
+                  {appointment.customerName}
+                </div>
+                <div className="text-sm text-gray-500 truncate max-w-[200px]">
+                  {appointment.address}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {appointment.serviceName}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {appointment.frequency}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {new Date(appointment.date).toLocaleDateString()}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {appointment.startTime} - {appointment.endTime}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <StatusBadge status={appointment.status} />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {appointment.payment.status}
+                </div>
+                <div className="text-sm text-gray-500">
+                  ${appointment.payment.amount}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedAppointment(appointment);
+                      setActiveModal('details');
+                    }}
+                    className="text-green-600 hover:text-green-900"
+                  >
+                    View
+                  </button>
+                  {appointment.status === 'Scheduled' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setSelectedAppointment(appointment);
+                          setActiveModal('crew');
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Assign Crew
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedAppointment(appointment);
+                          setActiveModal('payment');
+                        }}
+                        className="text-purple-600 hover:text-purple-900"
+                      >
+                        Payment
+                      </button>
+                      {appointment.frequency !== 'One-time' && (
+                        <button
+                          onClick={() => {
+                            setSelectedAppointment(appointment);
+                            setActiveModal('recurring');
+                          }}
+                          className="text-orange-600 hover:text-orange-900"
+                        >
+                          Recurring
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+          {viewType === 'list' && renderLoadMore()}
+        </tbody>
+      </table>
+    </div>
+  </div>
+) : (
+  <div className="bg-white rounded-lg shadow p-4">
+    {loading ? (
+      <div className="flex items-center justify-center h-[800px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    ) : error ? (
+      <div className="flex items-center justify-center h-[800px]">
+        <div className="text-red-600">{error}</div>
+      </div>
+    ) : (
+      renderCalendar()
+    )}
+  </div>
+)}
 
         {selectedDate && (
   <DateAppointmentsModal
