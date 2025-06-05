@@ -128,11 +128,11 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-
+      
       if (!headers.Authorization) {
         throw new Error('No authorization token available');
       }
-
+      
       const updateData = {
         date: editedAppointment.date,
         timeSlot: {
@@ -143,7 +143,6 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
         notes: editedAppointment.notes
       };
 
-      // Make sure to include all fields that might trigger notifications
       const response = await axios.put(
         `${API_URL}/appointments/${appointment.id}`,
         updateData,
@@ -155,7 +154,7 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
           ...appointment,
           ...editedAppointment
         });
-
+        
         setIsEditing(false);
         toast.success('Appointment updated successfully');
       } else {
@@ -662,10 +661,12 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
 };
 
 // Add CustomToolbar component
-const CustomToolbar = ({ onNavigate, onView, view, date }) => {
+const CustomToolbar = ({ onNavigate, onView, view, date, handleCalendarView }) => {
   const goToToday = () => {
     const today = new Date();
     onNavigate('DATE', today);
+    // Force refresh the view
+    handleCalendarView(today, view);
   };
 
   const goToPrevious = () => {
@@ -678,6 +679,7 @@ const CustomToolbar = ({ onNavigate, onView, view, date }) => {
       newDate = moment(date).subtract(1, 'day').toDate();
     }
     onNavigate('DATE', newDate);
+    handleCalendarView(newDate, view);
   };
 
   const goToNext = () => {
@@ -690,10 +692,12 @@ const CustomToolbar = ({ onNavigate, onView, view, date }) => {
       newDate = moment(date).add(1, 'day').toDate();
     }
     onNavigate('DATE', newDate);
+    handleCalendarView(newDate, view);
   };
 
-  const goToView = (view) => {
-    onView(view);
+  const goToView = (newView) => {
+    onView(newView);
+    handleCalendarView(date, newView);
   };
 
   // Format the label based on the current view
@@ -825,10 +829,12 @@ const DateAppointmentsModal = ({ date, appointments, onClose, onEdit }) => {
   const selectedDateStr = moment(date).format('YYYY-MM-DD');
 
   // Filter appointments for the selected date
-  const filteredAppointments = appointments.filter(apt => {
-    const aptDateStr = moment(apt.date).format('YYYY-MM-DD');
-    return aptDateStr === selectedDateStr;
-  });
+  // In DateAppointmentsModal component, update the filtering logic:
+const filteredAppointments = appointments.filter(apt => {
+  const aptDate = moment(apt.date).startOf('day');
+  const selectedDateMoment = moment(date).startOf('day');
+  return aptDate.isSame(selectedDateMoment);
+});
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -917,6 +923,7 @@ const AppointmentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewType, setViewType] = useState('calendar');
+  
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 25,
@@ -949,140 +956,130 @@ const AppointmentsPage = () => {
   }, [userData]);
 
   // Define fetchAppointments first
-  const fetchAppointments = useCallback(async (page = 1, limit = 25) => {
-    setLoading(true);
-    try {
-      const headers = getAuthHeaders();
-
-      if (!headers.Authorization) {
-        throw new Error('No authorization token available');
-      }
-
-      const appointmentsRes = await axios.get(
-        `${API_URL}/appointments?page=${page}&limit=${limit}`,
-        { headers }
-      );
+const fetchAppointments = useCallback(async () => {
+  setLoading(true);
+  try {
+    const headers = getAuthHeaders();
+    
+    if (!headers.Authorization) {
+      throw new Error('No authorization token available');
+    }
+    
+    // Remove pagination parameters and fetch all appointments
+    const appointmentsRes = await axios.get(
+      `${API_URL}/appointments?limit=1000`, // Set a high limit to get all appointments
+      { headers }
+    );
 
       if (!appointmentsRes.data.success) {
         throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
       }
 
-      const newAppointments = appointmentsRes.data?.data || [];
-      const paginationData = appointmentsRes.data?.pagination || {};
+    const newAppointments = appointmentsRes.data?.data || [];
 
-      const transformedAppointments = newAppointments.map((app) => ({
-        id: app._id,
-        customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
-        customerPhone: app.customer?.phone || "N/A",
-        address: app.customer?.address ?
-          `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() :
-          'N/A',
-        serviceName: app.service?.name || "N/A",
-        serviceId: app.service?._id || "",
-        date: app.date,
-        start: app.date, // For calendar view
-        end: app.date,   // For calendar view
-        timeSlot: {
-          startTime: app.timeSlot?.startTime || 'N/A',
-          endTime: app.timeSlot?.endTime || 'N/A'
-        },
+    const transformedAppointments = newAppointments.map((app) => ({
+      id: app._id,
+      customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
+      customerPhone: app.customer?.phone || "N/A",
+      address: app.customer?.address ? 
+        `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() : 
+        'N/A',
+      serviceName: app.service?.name || "N/A",
+      serviceId: app.service?._id || "",
+      date: moment(app.date).toISOString(),
+      start: moment(app.date).toISOString(),
+      end: moment(app.date).toISOString(),
+      timeSlot: {
         startTime: app.timeSlot?.startTime || 'N/A',
-        endTime: app.timeSlot?.endTime || 'N/A',
-        status: app.status || 'Pending',
-        frequency: app.recurringType || 'One-time',
-        payment: app.payment || {
-          status: 'Pending',
-          amount: 0,
-          paymentMethod: 'Cash'
-        },
-        crew: app.crew || {
-          leadProfessional: null,
-          assignedTo: []
-        },
-        notes: app.notes || {
-          customer: '',
-          professional: '',
-          internal: ''
-        },
-        photos: app.photos || {
-          beforeService: [],
-          afterService: []
-        }
-      }));
+        endTime: app.timeSlot?.endTime || 'N/A'
+      },
+      startTime: app.timeSlot?.startTime || 'N/A',
+      endTime: app.timeSlot?.endTime || 'N/A',
+      status: app.status || 'Pending',
+      frequency: app.recurringType || 'One-time',
+      payment: app.payment || {
+        status: 'Pending',
+        amount: 0,
+        paymentMethod: 'Cash'
+      },
+      crew: app.crew || {
+        leadProfessional: null,
+        assignedTo: []
+      },
+      notes: app.notes || {
+        customer: '',
+        professional: '',
+        internal: ''
+      },
+      photos: app.photos || {
+        beforeService: [],
+        afterService: []
+      }
+    }));
 
-      setAppointments(prev => {
-        return page === 1 ? transformedAppointments : [...prev, ...transformedAppointments];
-      });
-
-      setError(null);
-
-      setPagination({
-        page,
-        limit,
-        total: paginationData.total || 0,
-        hasMore: !!paginationData.next
-      });
-    } catch (err) {
-      console.error("Error fetching appointments:", err);
-      setError(err.response?.data?.message || err.message);
-      toast.error(err.response?.data?.message || err.message || 'Failed to load appointments');
-    } finally {
-      setLoading(false);
-    }
-  }, [API_URL, getAuthHeaders]);
+    setAppointments(transformedAppointments);
+    setError(null);
+  } catch (err) {
+    console.error("Error fetching appointments:", err);
+    setError(err.response?.data?.message || err.message);
+    toast.error(err.response?.data?.message || err.message || 'Failed to load appointments');
+  } finally {
+    setLoading(false);
+  }
+}, [API_URL, getAuthHeaders]);
 
   // Then define handleCalendarView
-  const handleCalendarView = useCallback(async (date, view) => {
-    if (!userData?.token) {
-      toast.error('Please log in to view appointments');
-      router.push('/login');
-      return;
+const handleCalendarView = useCallback(async (date, view) => {
+  console.log('Loading calendar view for:', view, 'date:', date);
+  
+  try {
+    setLoading(true);
+    const headers = getAuthHeaders();
+    
+    let start, end;
+    const currentView = view || viewType;
+    
+    if (currentView === 'month') {
+      start = moment(date).startOf('month').format('YYYY-MM-DD');
+      end = moment(date).endOf('month').format('YYYY-MM-DD');
+    } else if (currentView === 'week') {
+      start = moment(date).startOf('week').format('YYYY-MM-DD');
+      end = moment(date).endOf('week').format('YYYY-MM-DD');
+    } else { // day view
+      start = moment(date).format('YYYY-MM-DD');
+      end = start;
     }
 
-    try {
-      setLoading(true);
-      const headers = getAuthHeaders();
+    console.log('Fetching appointments between:', start, 'and', end);
+    
+    const response = await axios.get(
+      `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
+      { headers }
+    );
 
-      // Calculate start and end based on current view
-      let start, end;
-      const currentView = view || viewType;
-
-      if (currentView === 'month') {
-        start = moment(date).startOf('month').format('YYYY-MM-DD');
-        end = moment(date).endOf('month').format('YYYY-MM-DD');
-      } else if (currentView === 'week') {
-        start = moment(date).startOf('week').format('YYYY-MM-DD');
-        end = moment(date).endOf('week').format('YYYY-MM-DD');
-      } else { // day view
-        start = moment(date).format('YYYY-MM-DD');
-        end = start;
-      }
-
-      const response = await axios.get(
-        `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
-        { headers }
-      );
+    console.log('Received', response.data.data.length, 'appointments');
 
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to load calendar events');
       }
 
-      const transformedEvents = response.data.data.map(event => {
-        const startDate = new Date(event.start);
-        const endDate = new Date(event.end);
-
-        return {
-          ...event,
-          id: event._id,
-          title: `${event.serviceName || 'Appointment'} - ${event.customerName || 'Customer'}`,
-          start: startDate,
-          end: endDate,
-          status: event.status,
-          customer: event.customer,
-          serviceName: event.serviceName,
-          tooltip: `${event.serviceName || 'Appointment'}\n${event.customerName || 'Customer'}\n${moment(startDate).format('h:mm A')} - ${moment(endDate).format('h:mm A')}`,
-        };
-      });
+    // When creating calendar events:
+const transformedEvents = response.data.data.map(event => {
+  const startDate = moment(event.start).utc().toDate();
+  const endDate = moment(event.end).utc().toDate();
+  
+  return {
+    ...event,
+    id: event._id,
+    title: `${event.serviceName || 'Appointment'} - ${event.customerName || 'Customer'}`,
+    start: startDate,
+    end: endDate,
+    status: event.status,
+    customer: event.customer,
+    serviceName: event.serviceName,
+    tooltip: `${event.serviceName || 'Appointment'}\n${event.customerName || 'Customer'}\n${moment(startDate).format('h:mm A')} - ${moment(endDate).format('h:mm A')}`,
+  };
+});
 
       setCalendarEvents(transformedEvents);
       setCurrentDate(date);
@@ -1104,11 +1101,13 @@ const AppointmentsPage = () => {
 
   // Add useEffect to load appointments when component mounts
   useEffect(() => {
-    if (!isLoading && userData?.token) {
-      fetchAppointments();
-    }
-  }, [isLoading, userData, fetchAppointments]);
-
+  if (!isLoading && userData?.token) {
+    fetchAppointments();
+    // Load current month's appointments by default for calendar
+    const today = new Date();
+    handleCalendarView(today, 'month');
+  }
+}, [isLoading, userData, fetchAppointments, handleCalendarView]);
   const loadMoreAppointments = async () => {
     if (pagination.hasMore) {
       await fetchAppointments(pagination.page + 1, pagination.limit);
@@ -1208,106 +1207,140 @@ const AppointmentsPage = () => {
 
   const statuses = ['all', ...new Set(appointments.map(a => a.status))];
 
-  const handleUpdateAppointment = async (updatedAppointment) => {
-    try {
-      const headers = getAuthHeaders();
-
-      if (!headers.Authorization) {
-        throw new Error('No authorization token available');
-      }
-
-      const response = await axios.put(
-        `${API_URL}/appointments/${updatedAppointment.id}`,
-        {
-          date: updatedAppointment.date,
-          timeSlot: {
-            startTime: updatedAppointment.startTime,
-            endTime: updatedAppointment.endTime,
-          },
-          status: updatedAppointment.status,
-        },
-        { headers }
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to update appointment');
-      }
-
-      setAppointments(appointments.map(apt =>
-        apt.id === updatedAppointment.id ? response.data.data : apt
-      ));
-
-      return response.data.data;
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
-      throw error;
+const handleUpdateAppointment = async (updatedAppointment) => {
+  try {
+    const headers = getAuthHeaders();
+    
+    if (!headers.Authorization) {
+      throw new Error('No authorization token available');
     }
-  };
 
-  const renderCalendar = () => (
-    <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-      <Calendar
-        localizer={localizer}
-        events={calendarEvents}
-        startAccessor="start"
-        endAccessor="end"
-        date={currentDate}
-        onNavigate={(newDate, view) => {
-          setCurrentDate(newDate);
-          handleCalendarView(newDate, view);
-        }}
-        onView={(view) => {
-          setViewType(view);
-          handleCalendarView(currentDate, view);
-        }}
-        style={{ height: '100%' }}
-        eventPropGetter={(event) => ({
-          style: {
-            backgroundColor: 'transparent',
-            borderRadius: '4px',
-            opacity: event.status === 'Completed' ? 0.7 : 1,
-            border: 'none',
-            color: '#fff',
-            padding: '2px 4px',
-            display: 'block',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            background: `linear-gradient(135deg, 
-            ${event.status === 'Completed' ? '#34D399' :
-                event.status === 'Cancelled' ? '#F87171' :
-                  event.status === 'Scheduled' ? '#60A5FA' : '#FBBF24'} 0%, 
-            ${event.status === 'Completed' ? '#10B981' :
-                event.status === 'Cancelled' ? '#EF4444' :
-                  event.status === 'Scheduled' ? '#3B82F6' : '#F59E0B'} 100%)`
-          },
-        })}
-        onSelectEvent={(event) => {
-          const appointment = appointments.find(apt => apt.id === event.id);
-          if (appointment) {
-            setSelectedAppointment(appointment);
-            setActiveModal('details');
-          }
-        }}
-        onSelectSlot={(slotInfo) => {
-          const selectedDate = moment(slotInfo.start).toDate();
-          setSelectedDate(selectedDate);
-        }}
-        selectable={true}
-        components={{
-          toolbar: CustomToolbar,
-          event: CustomEvent
-        }}
-        views={['month', 'week', 'day', 'agenda']}
-        defaultView="month"
-        popup
-        step={30}
-        timeslots={2}
-        min={new Date(0, 0, 0, 8, 0, 0)}
-        max={new Date(0, 0, 0, 18, 0, 0)}
-        dayLayoutAlgorithm="no-overlap"
-      />
-    </div>
-  );
+    const appointmentId = updatedAppointment._id || updatedAppointment.id;
+    if (!appointmentId) {
+      throw new Error('Appointment ID is missing');
+    }
+    
+    const response = await axios.put(
+      `${API_URL}/appointments/${appointmentId}`,
+      {
+        date: updatedAppointment.date,
+        timeSlot: {
+          startTime: updatedAppointment.timeSlot?.startTime || updatedAppointment.startTime,
+          endTime: updatedAppointment.timeSlot?.endTime || updatedAppointment.endTime,
+        },
+        status: updatedAppointment.status,
+      },
+      { headers }
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to update appointment');
+    }
+
+    // Update appointments list
+    const updatedAppointments = appointments.map(apt => 
+      (apt._id === appointmentId || apt.id === appointmentId) ? response.data.data : apt
+    );
+    setAppointments(updatedAppointments);
+
+    // Update calendar events
+    setCalendarEvents(prev => 
+      prev.map(event => 
+        event.id === appointmentId 
+          ? { 
+              ...event, 
+              start: new Date(response.data.data.date), 
+              end: new Date(response.data.data.date),
+              title: `${response.data.data.serviceName || 'Appointment'} - ${response.data.data.customerName || 'Customer'}`,
+              status: response.data.data.status
+            }
+          : event
+      ).filter(event => {
+        // Remove events that no longer exist in appointments
+        return updatedAppointments.some(apt => apt.id === event.id);
+      })
+    );
+
+    // Refresh calendar view
+    await handleCalendarView(currentDate, viewType);
+    
+    toast.success('Appointment updated successfully');
+    return response.data.data;
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+    throw error;
+  }
+};
+
+const renderCalendar = () => (
+  <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+    <Calendar
+      localizer={localizer}
+      events={calendarEvents}
+      startAccessor={(event) => new Date(event.start)}
+      endAccessor={(event) => new Date(event.end)}
+      defaultDate={currentDate}
+      onNavigate={(newDate, view) => {
+        setCurrentDate(newDate);
+        handleCalendarView(newDate, view);
+      }}
+      onView={(view) => {
+        setViewType(view);
+        handleCalendarView(currentDate, view);
+      }}
+      style={{ height: '100%' }}
+      eventPropGetter={(event) => ({
+        style: {
+          backgroundColor: 'transparent',
+          borderRadius: '4px',
+          opacity: event.status === 'Completed' ? 0.7 : 1,
+          border: 'none',
+          color: '#fff',
+          padding: '2px 4px',
+          display: 'block',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+          background: `linear-gradient(135deg, 
+            ${event.status === 'Completed' ? '#34D399' : 
+            event.status === 'Cancelled' ? '#F87171' : 
+            event.status === 'Scheduled' ? '#60A5FA' : '#FBBF24'} 0%, 
+            ${event.status === 'Completed' ? '#10B981' : 
+            event.status === 'Cancelled' ? '#EF4444' : 
+            event.status === 'Scheduled' ? '#3B82F6' : '#F59E0B'} 100%)`
+        },
+      })}
+      onSelectEvent={(event) => {
+        const appointment = appointments.find(apt => apt.id === event.id);
+        if (appointment) {
+          setSelectedAppointment(appointment);
+          setActiveModal('details');
+        }
+      }}
+      onSelectSlot={(slotInfo) => {
+        const selectedDate = moment(slotInfo.start).toDate();
+        setSelectedDate(selectedDate);
+      }}
+      selectable={true}
+      components={{
+        toolbar: (props) => (
+          <CustomToolbar 
+            {...props} 
+            handleCalendarView={handleCalendarView} 
+          />
+        ),
+        event: CustomEvent
+      }}
+      views={['month', 'week', 'day', 'agenda']}
+      defaultView="month"
+      popup
+      step={30}
+      timeslots={2}
+      min={new Date(0, 0, 0, 8, 0, 0)}
+      max={new Date(0, 0, 0, 18, 0, 0)}
+      dayLayoutAlgorithm="no-overlap"
+    />
+  </div>
+);
 
   const closeModal = () => {
     setSelectedAppointment(null);
@@ -1436,147 +1469,147 @@ const AppointmentsPage = () => {
           </div>
         </div>
 
-        {viewType === 'list' ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                {/* Table headers */}
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Sr.No.
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Service
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Time
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAppointments.map((appointment, index) => (
-                    <tr key={appointment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {index + 1}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {appointment.customerName}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate max-w-[200px]">
-                          {appointment.address}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {appointment.serviceName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.frequency}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(appointment.date).toLocaleDateString()}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.startTime} - {appointment.endTime}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={appointment.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {appointment.payment.status}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ${appointment.payment.amount}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedAppointment(appointment);
-                              setActiveModal('details');
-                            }}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            View
-                          </button>
-                          {appointment.status === 'Scheduled' && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setSelectedAppointment(appointment);
-                                  setActiveModal('crew');
-                                }}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                Assign Crew
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedAppointment(appointment);
-                                  setActiveModal('payment');
-                                }}
-                                className="text-purple-600 hover:text-purple-900"
-                              >
-                                Payment
-                              </button>
-                              {appointment.frequency !== 'One-time' && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedAppointment(appointment);
-                                    setActiveModal('recurring');
-                                  }}
-                                  className="text-orange-600 hover:text-orange-900"
-                                >
-                                  Recurring
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {viewType === 'list' && renderLoadMore()}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow p-4">
-            {loading ? (
-              <div className="flex items-center justify-center h-[800px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center h-[800px]">
-                <div className="text-red-600">{error}</div>
-              </div>
-            ) : (
-              renderCalendar()
-            )}
-          </div>
-        )}
+{viewType === 'list' ? (
+  <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        {/* Table headers */}
+        <thead className="bg-gray-50">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Sr.No.
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Customer
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Service
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Date & Time
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Status
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Payment
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+           <tbody className="bg-white divide-y divide-gray-200">
+          {filteredAppointments.map((appointment, index) => (
+            <tr key={appointment.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                   {index + 1}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-gray-900">
+                  {appointment.customerName}
+                </div>
+                <div className="text-sm text-gray-500 truncate max-w-[200px]">
+                  {appointment.address}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {appointment.serviceName}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {appointment.frequency}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {new Date(appointment.date).toLocaleDateString()}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {appointment.startTime} - {appointment.endTime}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <StatusBadge status={appointment.status} />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900">
+                  {appointment.payment.status}
+                </div>
+                <div className="text-sm text-gray-500">
+                  ${appointment.payment.amount}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedAppointment(appointment);
+                      setActiveModal('details');
+                    }}
+                    className="text-green-600 hover:text-green-900"
+                  >
+                    View
+                  </button>
+                  {appointment.status === 'Scheduled' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setSelectedAppointment(appointment);
+                          setActiveModal('crew');
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Assign Crew
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedAppointment(appointment);
+                          setActiveModal('payment');
+                        }}
+                        className="text-purple-600 hover:text-purple-900"
+                      >
+                        Payment
+                      </button>
+                      {appointment.frequency !== 'One-time' && (
+                        <button
+                          onClick={() => {
+                            setSelectedAppointment(appointment);
+                            setActiveModal('recurring');
+                          }}
+                          className="text-orange-600 hover:text-orange-900"
+                        >
+                          Recurring
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+) : (
+  <div className="bg-white rounded-lg shadow p-4">
+    {loading ? (
+      <div className="flex items-center justify-center h-[800px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    ) : error ? (
+      <div className="flex items-center justify-center h-[800px]">
+        <div className="text-red-600">{error}</div>
+      </div>
+    ) : (
+      renderCalendar()
+    )}
+  </div>
+)}
 
         {selectedDate && (
           <DateAppointmentsModal
