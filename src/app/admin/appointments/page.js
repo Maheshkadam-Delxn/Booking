@@ -47,12 +47,12 @@ const StatusBadge = ({ status }) => {
       break;
   }
   const [currentPage, setCurrentPage] = useState(1);
-const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Format the status for display
   const formatStatus = (status) => {
     if (!status) return 'Unknown';
-    
+
     // If status contains hyphens, format each word
     if (status.includes('-')) {
       return status
@@ -60,7 +60,7 @@ const [itemsPerPage, setItemsPerPage] = useState(10);
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
     }
-    
+
     // Otherwise just capitalize first letter
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
@@ -86,7 +86,7 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [uploadErrors, setUploadErrors]=useState([]);
+  const [uploadErrors, setUploadErrors] = useState([]);
 
   const errors = [];
 
@@ -112,72 +112,72 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   // Get auth headers function
   const getAuthHeaders = (contentType = 'application/json') => {
     const token = userData?.token || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    
+
     if (!token) {
       console.error('No auth token available in modal');
       return {};
     }
-    
-    return { 
+
+    return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': contentType
     };
   };
 
   const handleUpdate = async () => {
-  setLoading(true);
-  try {
-    const headers = getAuthHeaders();
-    
-    if (!headers.Authorization) {
-      throw new Error('No authorization token available');
-    }
-    
-    const updateData = {
-      date: editedAppointment.date,
-      timeSlot: {
-        startTime: editedAppointment.startTime,
-        endTime: editedAppointment.endTime
-      },
-      status: editedAppointment.status,
-      notes: editedAppointment.notes
-    };
+    setLoading(true);
+    try {
+      const headers = getAuthHeaders();
 
-    // Make sure to include all fields that might trigger notifications
-    const response = await axios.put(
-      `${API_URL}/appointments/${appointment.id}`,
-      updateData,
-      { headers }
-    );
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
+      }
 
-    if (response.data.success) {
-      onUpdate({
-        ...appointment,
-        ...editedAppointment
-      });
-      
-      setIsEditing(false);
-      toast.success('Appointment updated successfully');
-    } else {
-      throw new Error(response.data.message || 'Failed to update appointment');
+      const updateData = {
+        date: editedAppointment.date,
+        timeSlot: {
+          startTime: editedAppointment.startTime,
+          endTime: editedAppointment.endTime
+        },
+        status: editedAppointment.status,
+        notes: editedAppointment.notes
+      };
+
+      // Make sure to include all fields that might trigger notifications
+      const response = await axios.put(
+        `${API_URL}/appointments/${appointment.id}`,
+        updateData,
+        { headers }
+      );
+
+      if (response.data.success) {
+        onUpdate({
+          ...appointment,
+          ...editedAppointment
+        });
+
+        setIsEditing(false);
+        toast.success('Appointment updated successfully');
+      } else {
+        throw new Error(response.data.message || 'Failed to update appointment');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Update error:', error);
-    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleDelete = async () => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      
+
       if (!headers.Authorization) {
         throw new Error('No authorization token available');
       }
-      
+
       const response = await axios.delete(
         `${API_URL}/appointments/${appointment.id}`,
         { headers }
@@ -199,32 +199,51 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const handleFileSelect = (e, type) => {
     const files = Array.from(e.target.files);
     setUploadErrors([]); // Clear previous errors
-    if (files.length === 0) return;
-  
+
+    if (files.length === 0) {
+      setUploadErrors(['No files selected']);
+      toast.error('Please select at least one file');
+      return;
+    }
+
     const validFiles = [];
     const newPreviewUrls = [];
     const errors = [];
-  
+
     files.forEach(file => {
+      // Check if file is an image
       if (!file.type.startsWith('image/')) {
-        errors.push(`${file.name}: Not an image file`);
+        errors.push(`${file.name}: Not an image file (${file.type})`);
         return;
       }
-  
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        errors.push(`${file.name}: File too large (max 5MB)`);
+
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        errors.push(`${file.name}: File too large (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
         return;
       }
-  
+
+      // Check file extensions
+      const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      const extension = file.name.split('.').pop().toLowerCase();
+      if (!validExtensions.includes(extension)) {
+        errors.push(`${file.name}: Invalid file type (.${extension})`);
+        return;
+      }
+
+      // Check dimensions if needed (example)
+      // Note: This would require creating an image element and checking dimensions
+      // which is async and might complicate things, so I'm omitting it here
+
       validFiles.push(file);
       newPreviewUrls.push(URL.createObjectURL(file));
     });
-  
+
     // Set errors in state so UI can show them
     if (errors.length > 0) {
       setUploadErrors(errors);
-      
-      // Also show a toast notification
+
+      // Show a toast notification with all errors
       toast.error(
         <div>
           <p>Some files were invalid:</p>
@@ -234,17 +253,16 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
             ))}
           </ul>
         </div>,
-        { autoClose: 10000 }
+        { autoClose: 10000 } // Show for 10 seconds
       );
     }
-  
     // Only update preview and selected photos if there are valid files
     if (validFiles.length > 0) {
       setSelectedPhotos(prev => ({
         ...prev,
         [type]: [...prev[type], ...validFiles]
       }));
-  
+
       setPreviewUrls(prev => ({
         ...prev,
         [type]: [...prev[type], ...newPreviewUrls]
@@ -257,16 +275,16 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
       toast.info('Please select photos first');
       return;
     }
-  
+
     setUploadingPhotos(true);
-    
+
     try {
       const headers = getAuthHeaders('application/json');
-      
+
       if (!headers.Authorization) {
         throw new Error('No authorization token available');
       }
-      
+
       // Convert files to base64
       const photoData = await Promise.all(
         selectedPhotos[type].map(file => {
@@ -281,7 +299,7 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
           });
         })
       );
-  
+
       const response = await axios.post(
         `${API_URL}/appointments/${appointment.id}/photos`,
         {
@@ -290,13 +308,13 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
         },
         { headers }
       );
-  
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Upload failed');
       }
-  
+
       toast.success(`Successfully uploaded ${selectedPhotos[type].length} photo${selectedPhotos[type].length > 1 ? 's' : ''}`);
-  
+
       const updatedAppointment = {
         ...appointment,
         photos: {
@@ -305,11 +323,11 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
         }
       };
       onUpdate(updatedAppointment);
-  
+
       // Clear previews and selected photos
       setSelectedPhotos(prev => ({ ...prev, [type]: [] }));
       setPreviewUrls(prev => ({ ...prev, [type]: [] }));
-  
+
     } catch (error) {
       console.error('Photo upload error:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to upload photos');
@@ -323,7 +341,7 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
       ...prev,
       [type]: prev[type].filter((_, i) => i !== index)
     }));
-    
+
     URL.revokeObjectURL(previewUrls[type][index]);
     setPreviewUrls(prev => ({
       ...prev,
@@ -355,11 +373,10 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
       <div className="space-y-4">
         <div className="flex space-x-4 mb-4">
           <button
-            className={`px-4 py-2 rounded-md ${
-              activePhotoTab === 'beforeService'
+            className={`px-4 py-2 rounded-md ${activePhotoTab === 'beforeService'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200'
-            }`}
+              }`}
             onClick={() => setActivePhotoTab('beforeService')}
           >
             Before Service
@@ -370,11 +387,10 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
             )}
           </button>
           <button
-            className={`px-4 py-2 rounded-md ${
-              activePhotoTab === 'afterService'
+            className={`px-4 py-2 rounded-md ${activePhotoTab === 'afterService'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200'
-            }`}
+              }`}
             onClick={() => setActivePhotoTab('afterService')}
           >
             After Service
@@ -537,8 +553,8 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
                   <label className="block text-sm font-medium text-gray-700">Notes</label>
                   <textarea
                     value={editedAppointment.notes?.internal || ''}
-                    onChange={(e) => setEditedAppointment(prev => ({ 
-                      ...prev, 
+                    onChange={(e) => setEditedAppointment(prev => ({
+                      ...prev,
                       notes: { ...prev.notes, internal: e.target.value }
                     }))}
                     rows={3}
@@ -558,7 +574,7 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
                   <div>
                     <p className="text-gray-600">Time</p>
                     <p className="font-medium">
-                      {appointment.timeSlot ? 
+                      {appointment.timeSlot ?
                         `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
                         `${appointment.startTime} - ${appointment.endTime}`
                       }
@@ -576,16 +592,16 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
           </div>
 
           <div className="mb-6">
-          {uploadErrors.length > 0 && (
-  <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-    <h4 className="text-red-800 font-medium">Upload Errors:</h4>
-    <ul className="mt-2 list-disc pl-5 text-sm text-red-700">
-      {uploadErrors.map((error, index) => (
-        <li key={index}>{error}</li>
-      ))}
-    </ul>
-  </div>
-)}
+            {uploadErrors.length > 0 && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                <h4 className="text-red-800 font-medium">Upload Errors:</h4>
+                <ul className="mt-2 list-disc pl-5 text-sm text-red-700">
+                  {uploadErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <h3 className="text-xl font-semibold mb-4">Service Photos</h3>
             {renderPhotoSection()}
           </div>
@@ -597,18 +613,18 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
             {isEditing ? (
               // <Button onClick={handleUpdate}>Save Changes</Button>
               <Button onClick={handleUpdate} disabled={loading}>
-  {loading ? (
-    <div className="flex items-center justify-center">
-      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      Saving...
-    </div>
-  ) : (
-    'Save Changes'
-  )}
-</Button>
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </div>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
             ) : (
               <Button onClick={() => setIsEditing(true)}>Edit</Button>
             )}
@@ -617,7 +633,7 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
       </div>
 
       {showFullImage && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
           onClick={() => setShowFullImage(null)}
         >
@@ -728,41 +744,37 @@ const CustomToolbar = ({ onNavigate, onView, view, date }) => {
         <div className="flex items-center space-x-1 bg-gray-50 rounded-xl p-2 shadow-sm border border-gray-100">
           <button
             onClick={() => goToView('month')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              view === 'month'
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'month'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+              }`}
           >
             Month
           </button>
           <button
             onClick={() => goToView('week')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              view === 'week'
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'week'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+              }`}
           >
             Week
           </button>
           <button
             onClick={() => goToView('day')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              view === 'day'
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'day'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+              }`}
           >
             Day
           </button>
           <button
             onClick={() => goToView('agenda')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-              view === 'agenda'
+            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'agenda'
                 ? 'bg-white shadow-sm text-green-600 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+              }`}
           >
             Agenda
           </button>
@@ -811,7 +823,7 @@ const CustomEvent = ({ event }) => {
 
 const DateAppointmentsModal = ({ date, appointments, onClose, onEdit }) => {
   const selectedDateStr = moment(date).format('YYYY-MM-DD');
-  
+
   // Filter appointments for the selected date
   const filteredAppointments = appointments.filter(apt => {
     const aptDateStr = moment(apt.date).format('YYYY-MM-DD');
@@ -845,7 +857,7 @@ const DateAppointmentsModal = ({ date, appointments, onClose, onEdit }) => {
           ) : (
             <div className="space-y-4">
               {filteredAppointments.map((appointment) => (
-                <div 
+                <div
                   key={appointment.id}
                   className="bg-white rounded-lg border border-gray-100 p-4 hover:shadow-md transition-shadow duration-200 relative"
                 >
@@ -854,7 +866,7 @@ const DateAppointmentsModal = ({ date, appointments, onClose, onEdit }) => {
                       <h3 className="font-semibold text-gray-900">{appointment.customerName}</h3>
                       <p className="text-sm text-gray-500 mt-1">{appointment.serviceName}</p>
                       <p className="text-sm text-gray-500 mt-1">
-                        {appointment.timeSlot ? 
+                        {appointment.timeSlot ?
                           `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
                           `${appointment.startTime} - ${appointment.endTime}`
                         }
@@ -929,8 +941,8 @@ const AppointmentsPage = () => {
       console.error('No auth token available in context');
       return {};
     }
-    
-    return { 
+
+    return {
       'Authorization': `Bearer ${userData.token}`,
       'Content-Type': 'application/json'
     };
@@ -938,157 +950,157 @@ const AppointmentsPage = () => {
 
   // Define fetchAppointments first
   const fetchAppointments = useCallback(async (page = 1, limit = 25) => {
-  setLoading(true);
-  try {
-    const headers = getAuthHeaders();
-    
-    if (!headers.Authorization) {
-      throw new Error('No authorization token available');
-    }
-    
-    const appointmentsRes = await axios.get(
-      `${API_URL}/appointments?page=${page}&limit=${limit}`,
-      { headers }
-    );
+    setLoading(true);
+    try {
+      const headers = getAuthHeaders();
 
-    if (!appointmentsRes.data.success) {
-      throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
-    }
-
-    const newAppointments = appointmentsRes.data?.data || [];
-    const paginationData = appointmentsRes.data?.pagination || {};
-
-    const transformedAppointments = newAppointments.map((app) => ({
-      id: app._id,
-      customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
-      customerPhone: app.customer?.phone || "N/A",
-      address: app.customer?.address ? 
-        `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() : 
-        'N/A',
-      serviceName: app.service?.name || "N/A",
-      serviceId: app.service?._id || "",
-      date: app.date,
-      start: app.date, // For calendar view
-      end: app.date,   // For calendar view
-      timeSlot: {
-        startTime: app.timeSlot?.startTime || 'N/A',
-        endTime: app.timeSlot?.endTime || 'N/A'
-      },
-      startTime: app.timeSlot?.startTime || 'N/A',
-      endTime: app.timeSlot?.endTime || 'N/A',
-      status: app.status || 'Pending',
-      frequency: app.recurringType || 'One-time',
-      payment: app.payment || {
-        status: 'Pending',
-        amount: 0,
-        paymentMethod: 'Cash'
-      },
-      crew: app.crew || {
-        leadProfessional: null,
-        assignedTo: []
-      },
-      notes: app.notes || {
-        customer: '',
-        professional: '',
-        internal: ''
-      },
-      photos: app.photos || {
-        beforeService: [],
-        afterService: []
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
       }
-    }));
 
-    setAppointments(prev => {
-      return page === 1 ? transformedAppointments : [...prev, ...transformedAppointments];
-    });
-    
-    setError(null);
-    
-    setPagination({
-      page,
-      limit,
-      total: paginationData.total || 0,
-      hasMore: !!paginationData.next
-    });
-  } catch (err) {
-    console.error("Error fetching appointments:", err);
-    setError(err.response?.data?.message || err.message);
-    toast.error(err.response?.data?.message || err.message || 'Failed to load appointments');
-  } finally {
-    setLoading(false);
-  }
-}, [API_URL, getAuthHeaders]);
+      const appointmentsRes = await axios.get(
+        `${API_URL}/appointments?page=${page}&limit=${limit}`,
+        { headers }
+      );
+
+      if (!appointmentsRes.data.success) {
+        throw new Error(appointmentsRes.data.message || 'Failed to fetch appointments');
+      }
+
+      const newAppointments = appointmentsRes.data?.data || [];
+      const paginationData = appointmentsRes.data?.pagination || {};
+
+      const transformedAppointments = newAppointments.map((app) => ({
+        id: app._id,
+        customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
+        customerPhone: app.customer?.phone || "N/A",
+        address: app.customer?.address ?
+          `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() :
+          'N/A',
+        serviceName: app.service?.name || "N/A",
+        serviceId: app.service?._id || "",
+        date: app.date,
+        start: app.date, // For calendar view
+        end: app.date,   // For calendar view
+        timeSlot: {
+          startTime: app.timeSlot?.startTime || 'N/A',
+          endTime: app.timeSlot?.endTime || 'N/A'
+        },
+        startTime: app.timeSlot?.startTime || 'N/A',
+        endTime: app.timeSlot?.endTime || 'N/A',
+        status: app.status || 'Pending',
+        frequency: app.recurringType || 'One-time',
+        payment: app.payment || {
+          status: 'Pending',
+          amount: 0,
+          paymentMethod: 'Cash'
+        },
+        crew: app.crew || {
+          leadProfessional: null,
+          assignedTo: []
+        },
+        notes: app.notes || {
+          customer: '',
+          professional: '',
+          internal: ''
+        },
+        photos: app.photos || {
+          beforeService: [],
+          afterService: []
+        }
+      }));
+
+      setAppointments(prev => {
+        return page === 1 ? transformedAppointments : [...prev, ...transformedAppointments];
+      });
+
+      setError(null);
+
+      setPagination({
+        page,
+        limit,
+        total: paginationData.total || 0,
+        hasMore: !!paginationData.next
+      });
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+      setError(err.response?.data?.message || err.message);
+      toast.error(err.response?.data?.message || err.message || 'Failed to load appointments');
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL, getAuthHeaders]);
 
   // Then define handleCalendarView
- const handleCalendarView = useCallback(async (date, view) => {
-  if (!userData?.token) {
-    toast.error('Please log in to view appointments');
-    router.push('/login');
-    return;
-  }
-
-  try {
-    setLoading(true);
-    const headers = getAuthHeaders();
-    
-    // Calculate start and end based on current view
-    let start, end;
-    const currentView = view || viewType;
-    
-    if (currentView === 'month') {
-      start = moment(date).startOf('month').format('YYYY-MM-DD');
-      end = moment(date).endOf('month').format('YYYY-MM-DD');
-    } else if (currentView === 'week') {
-      start = moment(date).startOf('week').format('YYYY-MM-DD');
-      end = moment(date).endOf('week').format('YYYY-MM-DD');
-    } else { // day view
-      start = moment(date).format('YYYY-MM-DD');
-      end = start;
-    }
-
-    const response = await axios.get(
-      `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
-      { headers }
-    );
-
-    if (!response.data.success) {
-      throw new Error(response.data.message || 'Failed to load calendar events');
-    }
-
-    const transformedEvents = response.data.data.map(event => {
-      const startDate = new Date(event.start);
-      const endDate = new Date(event.end);
-      
-      return {
-        ...event,
-        id: event._id,
-        title: `${event.serviceName || 'Appointment'} - ${event.customerName || 'Customer'}`,
-        start: startDate,
-        end: endDate,
-        status: event.status,
-        customer: event.customer,
-        serviceName: event.serviceName,
-        tooltip: `${event.serviceName || 'Appointment'}\n${event.customerName || 'Customer'}\n${moment(startDate).format('h:mm A')} - ${moment(endDate).format('h:mm A')}`,
-      };
-    });
-
-    setCalendarEvents(transformedEvents);
-    setCurrentDate(date);
-    setError(null);
-  } catch (error) {
-    console.error('Calendar view error:', error);
-    if (error.response?.status === 401) {
-      toast.error('Session expired. Please log in again.');
+  const handleCalendarView = useCallback(async (date, view) => {
+    if (!userData?.token) {
+      toast.error('Please log in to view appointments');
       router.push('/login');
-    } else {
-      toast.error(error.response?.data?.message || error.message || 'Failed to load calendar events');
+      return;
     }
-    setCalendarEvents([]);
-    setError(error.message);
-  } finally {
-    setLoading(false);
-  }
-}, [API_URL, getAuthHeaders, userData, router, viewType]);
+
+    try {
+      setLoading(true);
+      const headers = getAuthHeaders();
+
+      // Calculate start and end based on current view
+      let start, end;
+      const currentView = view || viewType;
+
+      if (currentView === 'month') {
+        start = moment(date).startOf('month').format('YYYY-MM-DD');
+        end = moment(date).endOf('month').format('YYYY-MM-DD');
+      } else if (currentView === 'week') {
+        start = moment(date).startOf('week').format('YYYY-MM-DD');
+        end = moment(date).endOf('week').format('YYYY-MM-DD');
+      } else { // day view
+        start = moment(date).format('YYYY-MM-DD');
+        end = start;
+      }
+
+      const response = await axios.get(
+        `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
+        { headers }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to load calendar events');
+      }
+
+      const transformedEvents = response.data.data.map(event => {
+        const startDate = new Date(event.start);
+        const endDate = new Date(event.end);
+
+        return {
+          ...event,
+          id: event._id,
+          title: `${event.serviceName || 'Appointment'} - ${event.customerName || 'Customer'}`,
+          start: startDate,
+          end: endDate,
+          status: event.status,
+          customer: event.customer,
+          serviceName: event.serviceName,
+          tooltip: `${event.serviceName || 'Appointment'}\n${event.customerName || 'Customer'}\n${moment(startDate).format('h:mm A')} - ${moment(endDate).format('h:mm A')}`,
+        };
+      });
+
+      setCalendarEvents(transformedEvents);
+      setCurrentDate(date);
+      setError(null);
+    } catch (error) {
+      console.error('Calendar view error:', error);
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please log in again.');
+        router.push('/login');
+      } else {
+        toast.error(error.response?.data?.message || error.message || 'Failed to load calendar events');
+      }
+      setCalendarEvents([]);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL, getAuthHeaders, userData, router, viewType]);
 
   // Add useEffect to load appointments when component mounts
   useEffect(() => {
@@ -1105,10 +1117,10 @@ const AppointmentsPage = () => {
 
   const renderLoadMore = () => {
     if (!pagination.hasMore) return null;
-    
+
     return (
       <div className="mt-4 text-center">
-        <Button 
+        <Button
           onClick={loadMoreAppointments}
           disabled={loading}
           variant="outline"
@@ -1122,11 +1134,11 @@ const AppointmentsPage = () => {
   const fetchServices = useCallback(async () => {
     try {
       const headers = getAuthHeaders();
-      
+
       if (!headers.Authorization) {
         throw new Error('No authorization token available');
       }
-      
+
       const servicesRes = await axios.get(
         `${API_URL}/services`,
         { headers }
@@ -1165,20 +1177,20 @@ const AppointmentsPage = () => {
 
   const filteredAppointments = [...appointments]
     .filter(appointment => {
-      const searchMatches = 
+      const searchMatches =
         (appointment.customerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (appointment.address?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (appointment.serviceName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-      
+
       const statusMatches = statusFilter === 'all' || appointment.status === statusFilter;
       const serviceMatches = serviceFilter === 'all' || appointment.serviceId === serviceFilter;
-      
+
       return searchMatches && statusMatches && serviceMatches;
     })
     .sort((a, b) => {
       const aValue = sortField === 'date' ? new Date(a[sortField]) : a[sortField];
       const bValue = sortField === 'date' ? new Date(b[sortField]) : b[sortField];
-      
+
       if (sortField === 'date') {
         return sortDirection === 'asc'
           ? aValue - bValue
@@ -1199,11 +1211,11 @@ const AppointmentsPage = () => {
   const handleUpdateAppointment = async (updatedAppointment) => {
     try {
       const headers = getAuthHeaders();
-      
+
       if (!headers.Authorization) {
         throw new Error('No authorization token available');
       }
-      
+
       const response = await axios.put(
         `${API_URL}/appointments/${updatedAppointment.id}`,
         {
@@ -1221,10 +1233,10 @@ const AppointmentsPage = () => {
         throw new Error(response.data.message || 'Failed to update appointment');
       }
 
-      setAppointments(appointments.map(apt => 
+      setAppointments(appointments.map(apt =>
         apt.id === updatedAppointment.id ? response.data.data : apt
       ));
-      
+
       return response.data.data;
     } catch (error) {
       console.error('Update error:', error);
@@ -1233,69 +1245,69 @@ const AppointmentsPage = () => {
     }
   };
 
- const renderCalendar = () => (
-  <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-    <Calendar
-      localizer={localizer}
-      events={calendarEvents}
-      startAccessor="start"
-      endAccessor="end"
-      date={currentDate}
-      onNavigate={(newDate, view) => {
-        setCurrentDate(newDate);
-        handleCalendarView(newDate, view);
-      }}
-      onView={(view) => {
-        setViewType(view);
-        handleCalendarView(currentDate, view);
-      }}
-      style={{ height: '100%' }}
-      eventPropGetter={(event) => ({
-        style: {
-          backgroundColor: 'transparent',
-          borderRadius: '4px',
-          opacity: event.status === 'Completed' ? 0.7 : 1,
-          border: 'none',
-          color: '#fff',
-          padding: '2px 4px',
-          display: 'block',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-          background: `linear-gradient(135deg, 
-            ${event.status === 'Completed' ? '#34D399' : 
-            event.status === 'Cancelled' ? '#F87171' : 
-            event.status === 'Scheduled' ? '#60A5FA' : '#FBBF24'} 0%, 
-            ${event.status === 'Completed' ? '#10B981' : 
-            event.status === 'Cancelled' ? '#EF4444' : 
-            event.status === 'Scheduled' ? '#3B82F6' : '#F59E0B'} 100%)`
-        },
-      })}
-      onSelectEvent={(event) => {
-        const appointment = appointments.find(apt => apt.id === event.id);
-        if (appointment) {
-          setSelectedAppointment(appointment);
-          setActiveModal('details');
-        }
-      }}
-      onSelectSlot={(slotInfo) => {
-        const selectedDate = moment(slotInfo.start).toDate();
-        setSelectedDate(selectedDate);
-      }}
-      selectable={true}
-      components={{
-        toolbar: CustomToolbar,
-        event: CustomEvent
-      }}
-      views={['month', 'week', 'day', 'agenda']}
-      defaultView="month"
-      popup
-      step={30}
-      timeslots={2}
-      min={new Date(0, 0, 0, 8, 0, 0)}
-      max={new Date(0, 0, 0, 18, 0, 0)}
-      dayLayoutAlgorithm="no-overlap"
-    />
-  </div>
-);
+  const renderCalendar = () => (
+    <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+      <Calendar
+        localizer={localizer}
+        events={calendarEvents}
+        startAccessor="start"
+        endAccessor="end"
+        date={currentDate}
+        onNavigate={(newDate, view) => {
+          setCurrentDate(newDate);
+          handleCalendarView(newDate, view);
+        }}
+        onView={(view) => {
+          setViewType(view);
+          handleCalendarView(currentDate, view);
+        }}
+        style={{ height: '100%' }}
+        eventPropGetter={(event) => ({
+          style: {
+            backgroundColor: 'transparent',
+            borderRadius: '4px',
+            opacity: event.status === 'Completed' ? 0.7 : 1,
+            border: 'none',
+            color: '#fff',
+            padding: '2px 4px',
+            display: 'block',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            background: `linear-gradient(135deg, 
+            ${event.status === 'Completed' ? '#34D399' :
+                event.status === 'Cancelled' ? '#F87171' :
+                  event.status === 'Scheduled' ? '#60A5FA' : '#FBBF24'} 0%, 
+            ${event.status === 'Completed' ? '#10B981' :
+                event.status === 'Cancelled' ? '#EF4444' :
+                  event.status === 'Scheduled' ? '#3B82F6' : '#F59E0B'} 100%)`
+          },
+        })}
+        onSelectEvent={(event) => {
+          const appointment = appointments.find(apt => apt.id === event.id);
+          if (appointment) {
+            setSelectedAppointment(appointment);
+            setActiveModal('details');
+          }
+        }}
+        onSelectSlot={(slotInfo) => {
+          const selectedDate = moment(slotInfo.start).toDate();
+          setSelectedDate(selectedDate);
+        }}
+        selectable={true}
+        components={{
+          toolbar: CustomToolbar,
+          event: CustomEvent
+        }}
+        views={['month', 'week', 'day', 'agenda']}
+        defaultView="month"
+        popup
+        step={30}
+        timeslots={2}
+        min={new Date(0, 0, 0, 8, 0, 0)}
+        max={new Date(0, 0, 0, 18, 0, 0)}
+        dayLayoutAlgorithm="no-overlap"
+      />
+    </div>
+  );
 
   const closeModal = () => {
     setSelectedAppointment(null);
@@ -1338,21 +1350,19 @@ const AppointmentsPage = () => {
             </button> */}
             <button
               onClick={() => setViewType('calendar')}
-              className={`px-4 py-2 rounded-md ${
-                viewType === 'calendar'
+              className={`px-4 py-2 rounded-md ${viewType === 'calendar'
                   ? 'bg-green-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Calendar View
             </button>
             <button
               onClick={() => setViewType('list')}
-              className={`px-4 py-2 rounded-md ${
-                viewType === 'list'
+              className={`px-4 py-2 rounded-md ${viewType === 'list'
                   ? 'bg-green-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               List View
             </button>
@@ -1392,12 +1402,12 @@ const AppointmentsPage = () => {
                 >
                   {statuses.map((status) => (
                     <option key={status} value={status}>
-                      {status === 'all' 
-                        ? 'All Statuses' 
+                      {status === 'all'
+                        ? 'All Statuses'
                         : status
-                            .split('-')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(' ')}
+                          .split('-')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')}
                     </option>
                   ))}
                 </select>
@@ -1426,159 +1436,159 @@ const AppointmentsPage = () => {
           </div>
         </div>
 
-{viewType === 'list' ? (
-  <div className="bg-white rounded-lg shadow overflow-hidden">
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        {/* Table headers */}
-        <thead className="bg-gray-50">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Sr.No.
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Customer
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Service
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Date & Time
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Payment
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-           <tbody className="bg-white divide-y divide-gray-200">
-          {filteredAppointments.map((appointment, index) => (
-            <tr key={appointment.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">
-                   {index + 1}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">
-                  {appointment.customerName}
-                </div>
-                <div className="text-sm text-gray-500 truncate max-w-[200px]">
-                  {appointment.address}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">
-                  {appointment.serviceName}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {appointment.frequency}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">
-                  {new Date(appointment.date).toLocaleDateString()}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {appointment.startTime} - {appointment.endTime}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <StatusBadge status={appointment.status} />
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">
-                  {appointment.payment.status}
-                </div>
-                <div className="text-sm text-gray-500">
-                  ${appointment.payment.amount}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedAppointment(appointment);
-                      setActiveModal('details');
-                    }}
-                    className="text-green-600 hover:text-green-900"
-                  >
-                    View
-                  </button>
-                  {appointment.status === 'Scheduled' && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setActiveModal('crew');
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Assign Crew
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setActiveModal('payment');
-                        }}
-                        className="text-purple-600 hover:text-purple-900"
-                      >
-                        Payment
-                      </button>
-                      {appointment.frequency !== 'One-time' && (
-                        <button
-                          onClick={() => {
-                            setSelectedAppointment(appointment);
-                            setActiveModal('recurring');
-                          }}
-                          className="text-orange-600 hover:text-orange-900"
-                        >
-                          Recurring
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-          {viewType === 'list' && renderLoadMore()}
-        </tbody>
-      </table>
-    </div>
-  </div>
-) : (
-  <div className="bg-white rounded-lg shadow p-4">
-    {loading ? (
-      <div className="flex items-center justify-center h-[800px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    ) : error ? (
-      <div className="flex items-center justify-center h-[800px]">
-        <div className="text-red-600">{error}</div>
-      </div>
-    ) : (
-      renderCalendar()
-    )}
-  </div>
-)}
+        {viewType === 'list' ? (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                {/* Table headers */}
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sr.No.
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Service
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date & Time
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredAppointments.map((appointment, index) => (
+                    <tr key={appointment.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {index + 1}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {appointment.customerName}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate max-w-[200px]">
+                          {appointment.address}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {appointment.serviceName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {appointment.frequency}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {new Date(appointment.date).toLocaleDateString()}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {appointment.startTime} - {appointment.endTime}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={appointment.status} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {appointment.payment.status}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          ${appointment.payment.amount}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setActiveModal('details');
+                            }}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            View
+                          </button>
+                          {appointment.status === 'Scheduled' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedAppointment(appointment);
+                                  setActiveModal('crew');
+                                }}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                Assign Crew
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedAppointment(appointment);
+                                  setActiveModal('payment');
+                                }}
+                                className="text-purple-600 hover:text-purple-900"
+                              >
+                                Payment
+                              </button>
+                              {appointment.frequency !== 'One-time' && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedAppointment(appointment);
+                                    setActiveModal('recurring');
+                                  }}
+                                  className="text-orange-600 hover:text-orange-900"
+                                >
+                                  Recurring
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {viewType === 'list' && renderLoadMore()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow p-4">
+            {loading ? (
+              <div className="flex items-center justify-center h-[800px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-[800px]">
+                <div className="text-red-600">{error}</div>
+              </div>
+            ) : (
+              renderCalendar()
+            )}
+          </div>
+        )}
 
         {selectedDate && (
-  <DateAppointmentsModal
-    date={selectedDate}
-    appointments={appointments}
-    onClose={() => setSelectedDate(null)}
-    onEdit={(appointment) => {
-      setSelectedAppointment(appointment);
-      setActiveModal('details');
-    }}
-  />
-)}
+          <DateAppointmentsModal
+            date={selectedDate}
+            appointments={appointments}
+            onClose={() => setSelectedDate(null)}
+            onEdit={(appointment) => {
+              setSelectedAppointment(appointment);
+              setActiveModal('details');
+            }}
+          />
+        )}
 
         {selectedAppointment && activeModal === 'details' && (
           <AppointmentDetailsModal

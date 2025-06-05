@@ -32,7 +32,6 @@ const AdminPage = () => {
 
   return (
     <AdminLayout>
-      
       <Dashboard />
     </AdminLayout>
   );
