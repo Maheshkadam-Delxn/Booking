@@ -217,9 +217,9 @@ const EstimatesTable = () => {
                       <div className="text-sm text-gray-900">
                         {estimate.services?.length || 0} services
                       </div>
-                      <div className="text-sm text-gray-500">
+                      {/* <div className="text-sm text-gray-500">
                         ${estimate.services?.reduce((total, service) => total + (service.price || 0) * (service.quantity || 1), 0)?.toFixed(2) || "0.00"}
-                      </div>
+                      </div> */}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
@@ -426,8 +426,8 @@ const EstimatesTable = () => {
 
         {/* Edit Modal */}
         {editingEstimate && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center border-b px-6 py-4">
                 <h2 className="text-xl font-semibold text-gray-900">
                   Edit Estimate #{editingEstimate._id.substring(0, 8)}

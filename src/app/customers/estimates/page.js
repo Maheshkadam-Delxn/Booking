@@ -148,10 +148,10 @@ export default function EstimatesPage() {
                           <span className="text-gray-500 w-24">Size:</span>
                           <span className="text-gray-700 font-medium">{estimate.property?.size} sq ft</span>
                         </li>
-                        <li className="flex">
+                        {/* <li className="flex">
                           <span className="text-gray-500 w-24">Details:</span>
                           <span className="text-gray-700">{estimate.property?.details || 'N/A'}</span>
-                        </li>
+                        </li> */}
                         <li className="flex">
                           <span className="text-gray-500 w-24">Address:</span>
                           <div>
@@ -172,12 +172,12 @@ export default function EstimatesPage() {
                         <div className="flex items-center justify-between">
                           <div className="text-center">
                             <p className="text-xs text-gray-500">Minimum</p>
-                            <p className="text-lg font-bold text-emerald-600">₹{estimate.budget?.min}</p>
+                            <p className="text-lg font-bold text-emerald-600">${estimate.budget?.min}</p>
                           </div>
                           <div className="h-px bg-gray-200 flex-1 mx-4"></div>
                           <div className="text-center">
                             <p className="text-xs text-gray-500">Maximum</p>
-                            <p className="text-lg font-bold text-emerald-600">₹{estimate.budget?.max}</p>
+                            <p className="text-lg font-bold text-emerald-600">${estimate.budget?.max}</p>
                           </div>
                         </div>
                       </div>

@@ -25,7 +25,7 @@ const CustomerDetailsPage = ({ params }) => {
           throw new Error('Authentication required');
         }
 
-        const response = await fetch(`http://localhost:5000/api/v1/customers/${id}`, {
+        const response = await fetch(`${API_URL}/customers/${id}`, {
           headers: {
             'Authorization': `Bearer ${userData.token}`,
             'Content-Type': 'application/json'
