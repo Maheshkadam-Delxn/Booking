@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useDashboard } from "../../contexts/DashboardContext";
+import { useRouter } from 'next/navigation';
 
 const ServiceForm = () => {
+  const router = useRouter();
   const { userData, isLoading } = useDashboard();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -103,15 +105,42 @@ const ServiceForm = () => {
   const validateForm = () => {
     const errors = {};
     
-    // Check for empty required fields
-    if (!formData.name.trim()) errors.name = "Service name is required";
+    // Service Name validation
+    const nameErrors = [];
+    const serviceName = formData.name.trim();
+    const MAX_SERVICE_NAME_LENGTH = 100;
+    // Allow alphanumeric, spaces, hyphens, and ampersands.
+    const VALID_SERVICE_NAME_REGEX = /^[a-zA-Z0-9\s\-&]+$/;
+
+    if (!serviceName) {
+      nameErrors.push("Service name is required.");
+    } else {
+      if (serviceName.length > MAX_SERVICE_NAME_LENGTH) {
+        nameErrors.push(`Service name cannot exceed ${MAX_SERVICE_NAME_LENGTH} characters.`);
+      }
+      if (!VALID_SERVICE_NAME_REGEX.test(serviceName)) {
+        nameErrors.push("Service name can only contain letters, numbers, spaces, hyphens (-), and ampersands (&).");
+      } else {
+        // Check if the name consists only of numbers if it passed the general character validation
+        const ONLY_NUMBERS_REGEX = /^\d+$/;
+        if (ONLY_NUMBERS_REGEX.test(serviceName)) {
+          nameErrors.push("Service name cannot consist only of numbers.");
+        }
+      }
+      // Check for duplicate service name (only if name is not empty)
+      if (existingServices.includes(serviceName)) {
+         nameErrors.push("A service with this name already exists.");
+      }
+    }
+
+    if (nameErrors.length > 0) {
+      errors.name = nameErrors.join(" ");
+    }
+    
+    // Check for empty required fields (continued for other fields)
     if (!formData.description.trim()) errors.description = "Description is required";
     if (!formData.category) errors.category = "Category is required";
-    
-    // Check for duplicate service name
-    if (existingServices.includes(formData.name.trim())) {
-      errors.name = "A service with this name already exists";
-    }
+    // The duplicate service name check is now part of the combined nameErrors logic.
     
     // Validate numeric fields
     if (!formData.basePrice || isNaN(formData.basePrice) || parseFloat(formData.basePrice) <= 0) {
@@ -129,8 +158,34 @@ const ServiceForm = () => {
         packageErrors.push(`Package ${pkg.name} requires a description`);
       }
       if (pkg.additionalFeatures.some(feat => !feat.trim())) {
-        packageErrors.push(`Package ${pkg.name} has empty features`);
+        packageErrors.push(`Package ${pkg.name} has empty features.`);
       }
+
+      // Check for duplicate features within the same package (case-insensitive)
+      const featuresInPackage = pkg.additionalFeatures.map(f => f.trim().toLowerCase());
+      const uniqueFeaturesInPackage = new Set(featuresInPackage);
+      if (featuresInPackage.length !== uniqueFeaturesInPackage.size) {
+        const seenFeatures = new Set();
+        let firstDuplicateOriginalCase = '';
+        for (const originalFeature of pkg.additionalFeatures) {
+          const processedFeature = originalFeature.trim().toLowerCase();
+          if (seenFeatures.has(processedFeature)) {
+            firstDuplicateOriginalCase = originalFeature.trim();
+            break;
+          }
+          seenFeatures.add(processedFeature);
+        }
+        packageErrors.push(`Package ${pkg.name} has a duplicate feature: "${firstDuplicateOriginalCase}".`);
+      }
+
+      // Check feature character limits
+      const MAX_FEATURE_LENGTH = 75;
+      pkg.additionalFeatures.forEach(feature => {
+        if (feature.trim().length > MAX_FEATURE_LENGTH) {
+          packageErrors.push(`Package ${pkg.name}: Feature "${feature.trim().substring(0, 20)}..." exceeds ${MAX_FEATURE_LENGTH} characters.`);
+        }
+      });
+
       if (isNaN(pkg.priceMultiplier) || parseFloat(pkg.priceMultiplier) < 1) {
         packageErrors.push(`Package ${pkg.name} price multiplier must be at least 1`);
       }
@@ -140,6 +195,11 @@ const ServiceForm = () => {
       errors.packages = packageErrors;
     }
 
+    // Validate service image
+    if (!selectedFile) {
+      errors.image = "Service image is required.";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -147,17 +207,46 @@ const ServiceForm = () => {
   // Handle form field changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
+    const newFormData = {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
-    });
-    
-    // Clear error for this field when user makes changes
-    if (formErrors[name]) {
-      setFormErrors({
-        ...formErrors,
+    };
+    setFormData(newFormData);
+
+    if (name === "name") {
+      const nameErrors = [];
+      const serviceName = newFormData.name.trim();
+      const MAX_SERVICE_NAME_LENGTH = 100;
+      const VALID_SERVICE_NAME_REGEX = /^[a-zA-Z0-9\s\-&]+$/;
+      const ONLY_NUMBERS_REGEX = /^\d+$/;
+
+      if (!serviceName) {
+        nameErrors.push("Service name is required.");
+      } else {
+        if (serviceName.length > MAX_SERVICE_NAME_LENGTH) {
+          nameErrors.push(`Service name cannot exceed ${MAX_SERVICE_NAME_LENGTH} characters.`);
+        }
+        if (!VALID_SERVICE_NAME_REGEX.test(serviceName)) {
+          nameErrors.push("Service name can only contain letters, numbers, spaces, hyphens (-), and ampersands (&).");
+        } else {
+          if (ONLY_NUMBERS_REGEX.test(serviceName)) {
+            nameErrors.push("Service name cannot consist only of numbers.");
+          }
+        }
+        if (existingServices.includes(serviceName)) {
+          nameErrors.push("A service with this name already exists.");
+        }
+      }
+      setFormErrors(prevErrors => ({
+        ...prevErrors,
+        name: nameErrors.length > 0 ? nameErrors.join(" ") : "",
+      }));
+    } else if (formErrors[name]) {
+      // Clear error for other fields when user makes changes
+      setFormErrors(prevErrors => ({
+        ...prevErrors,
         [name]: "",
-      });
+      }));
     }
   };
 
@@ -274,7 +363,7 @@ const ServiceForm = () => {
     try {
       // First create the service
       const res = await axios.post(
-        "http://localhost:5000/api/v1/services",
+        `${API_URL}/services`,
         {
           ...formData,
           duration: parseInt(formData.duration) || 60,
@@ -298,13 +387,14 @@ const serviceId = res.data?._id || res.data?.data?._id; // Handle both response 
 if (!serviceId) {
   throw new Error("Service ID not found in response");
 }
+
  // Upload photo if selected
  if (selectedFile) {
   const formData = new FormData();
   formData.append('file', selectedFile);
   
   await axios.put(
-    `http://localhost:5000/api/v1/services/${serviceId}/photo`,
+    `${API_URL}/services/${serviceId}/photo`,
     formData,
     {
       headers: {
@@ -314,9 +404,13 @@ if (!serviceId) {
     }
   );
   setSuccessMessage("Service created successfully!");
-} else {
-        throw new Error("Service creation response malformed");
-      }
+  router.push('/admin/services'); // Redirect to services page
+}
+// If no file was selected, but service creation was successful, also redirect
+else if (!selectedFile && serviceId) {
+    setSuccessMessage("Service created successfully (no image uploaded)!");
+    router.push('/admin/services'); // Redirect to services page
+}
     } catch (err) {
       console.error("Error creating service:", err);
       
@@ -417,6 +511,7 @@ setIsSubmitting(false);
               value={formData.name}
               onChange={handleChange}
               required
+              maxLength="100"
               className={`w-full px-3 py-2 border ${
                 formErrors.name ? "border-red-500" : "border-gray-300"
               } rounded-md focus:outline-none focus:ring-2 focus:ring-green-500`}
@@ -722,7 +817,9 @@ setIsSubmitting(false);
                     {pkg.additionalFeatures.map((feat, featIndex) => (
                       <div key={featIndex} className="flex items-center space-x-2">
                         <input
+                          type="text"
                           value={feat}
+                          maxLength="75"
                           onChange={(e) =>
                             handleFeatureChange(index, featIndex, e.target.value)
                           }

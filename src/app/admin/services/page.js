@@ -14,8 +14,8 @@ const ServicesPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortField, setSortField] = useState('name');
-  const [sortDirection, setSortDirection] = useState('asc');
+  const [sortField, setSortField] = useState('createdAt'); // Default sort by creation date
+  const [sortDirection, setSortDirection] = useState('desc'); // Default newest first
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -181,17 +181,23 @@ const ServicesPage = () => {
                     <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </th>
+                <th className="px-6 py-3 cursor-pointer" onClick={() => handleSort('createdAt')}>
+                  Date Added
+                  {sortField === 'createdAt' && (
+                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center">Loading...</td>
+                  <td colSpan="7" className="px-6 py-4 text-center">Loading...</td>
                 </tr>
               ) : services.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center">No services found</td>
+                  <td colSpan="7" className="px-6 py-4 text-center">No services found</td>
                 </tr>
               ) : (
                 services.map((service, index) => (
@@ -206,7 +212,12 @@ const ServicesPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">{service.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{service.category}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">${service.basePrice}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {service.basePrice ? `$${service.basePrice.toFixed(2)}` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {service.createdAt ? new Date(service.createdAt).toLocaleDateString() : 'N/A'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link href={`/admin/services/${service._id}/edit`}>
                         <Button variant="secondary" size="sm" className="mr-2">Edit</Button>
