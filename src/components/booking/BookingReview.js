@@ -91,7 +91,7 @@ const BookingReview = ({ onBack }) => {
                 <li><strong>Date:</strong> {new Date(currentBooking?.appointmentDate).toLocaleDateString() || "N/A"}</li>
                 <li><strong>Time:</strong> {currentBooking?.startTime} - {currentBooking?.endTime}</li>
                 <li><strong>Frequency:</strong> {currentBooking?.frequency || "One-time"}</li>
-                <li><strong>Estimated Price:</strong> ${currentBooking?.selectedService?.price || "0.00"}</li>
+                <li><strong>Estimated Price:</strong> ${currentBooking?.selectedService?.basePrice || "0.00"}</li>
                 <li><strong>Duration:</strong> {currentBooking?.selectedService?.duration || "N/A"} minutes</li>
               </ul>
             </div>

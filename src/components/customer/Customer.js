@@ -584,7 +584,7 @@ const handleImageClick = (images, index = 0) => {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Service</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Amount</th>
+                      {/* <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Amount</th> */}
                       <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Payment</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-green-600 uppercase tracking-wider">Status</th>
                     </tr>
@@ -594,13 +594,13 @@ const handleImageClick = (images, index = 0) => {
                       <tr key={service._id}>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
+                            {/* <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-lg overflow-hidden mr-3">
                               <img
                                 src={service.image}
                                 alt={service.packageType || 'Service'}
                                 className="h-full w-full object-cover"
                               />
-                            </div>
+                            </div> */}
                             <div>
                               <div className="text-sm font-medium text-gray-900">{service.service?.name || 'Service'}</div>
                             </div>
@@ -614,9 +614,9 @@ const handleImageClick = (images, index = 0) => {
                             day: 'numeric'
                           })}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {/* <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                           ${service.price || '0.00'}
-                        </td>
+                        </td> */}
                         <td className="px-4 py-3 whitespace-nowrap">
                           {service.paymentStatus === 'Paid' ? (
                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">

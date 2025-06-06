@@ -905,14 +905,15 @@ const filteredAppointments = appointments.filter(apt => {
     setSelectedAppointment(appointment);
     setActiveModal('crew');
   }}
+  disabled={appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0}
   className={`${
     (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-      ? 'text-green-600 hover:text-green-800'
+      ? 'text-green-600 hover:text-green-800 cursor-not-allowed opacity-70'
       : 'text-blue-600 hover:text-blue-800'
   }`}
 >
   {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-    ? 'View Crew'
+    ? 'Assigned'
     : 'Assign Crew'}
 </button>
                   </div>
@@ -1016,7 +1017,8 @@ const fetchAppointments = useCallback(async () => {
       startTime: app.timeSlot?.startTime || 'N/A',
       endTime: app.timeSlot?.endTime || 'N/A',
       status: app.status || 'Pending',
-      frequency: app.recurringType || 'One-time',
+      // frequency: app.recurringType || 'One-time',
+       frequency: app.recurringType,
       payment: app.payment || {
         status: 'Pending',
         amount: 0,
@@ -1554,15 +1556,22 @@ const renderCalendar = () => (
                   </button>
                   {appointment.status === 'Scheduled' && (
                     <>
-                      <button
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setActiveModal('crew');
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Assign Crew
-                      </button>
+                     <button
+  onClick={() => {
+    setSelectedAppointment(appointment);
+    setActiveModal('crew');
+  }}
+  disabled={appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0}
+  className={`${
+    (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+      ? 'text-green-600 hover:text-green-800 cursor-not-allowed opacity-70'
+      : 'text-blue-600 hover:text-blue-800'
+  }`}
+>
+  {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+    ? 'Assigned'
+    : 'Assign Crew'}
+</button>
                       <button
                         onClick={() => {
                           setSelectedAppointment(appointment);
@@ -1588,9 +1597,9 @@ const renderCalendar = () => (
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-  <div className="text-sm text-gray-900">
+  {/* <div className="text-sm text-gray-900">
     {appointment.crew?.leadProfessional?.name || 'No lead'}
-  </div>
+  </div> */}
   <div className="text-sm text-gray-500">
     {appointment.crew?.assignedTo?.length || 0} team members
   </div>
