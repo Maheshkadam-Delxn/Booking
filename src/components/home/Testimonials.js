@@ -65,20 +65,20 @@ const Testimonials = () => {
             {testimonials.map((testimonial) => (
               <div 
                 key={testimonial.id} 
-                className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col p-8 min-w-[350px] max-w-[350px] snap-center"
+                className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col p-1 min-w-[350px] max-w-[350px] snap-center"
               >
                 {/* Decorative quote mark */}
-                <div className="absolute -top-4 left-8 text-6xl text-green-600 opacity-20 font-serif">
+                <div className="absolute -top-3 left-6 text-3xl text-green-600 opacity-20 font-serif">
                   "
                 </div>
                 
                 {/* Rating */}
-                <div className="flex mb-4">
+                <div className="flex mb-1">
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`h-5 w-5 ${
+                      className={`h-4 w-4 ${
                         i < testimonial.rating ? 'text-green-600' : 'text-gray-200'
                       }`}
                       viewBox="0 0 20 20"
@@ -89,25 +89,25 @@ const Testimonials = () => {
                   ))}
                 </div>
                 
-                <div className="mb-4">
-                  <span className="inline-block px-3 py-1 text-xs font-semibold text-green-600 bg-green-100 rounded-full">
+                <div className="mb-1">
+                  <span className="inline-block px-1.5 py-px text-xs font-semibold text-green-600 bg-green-100 rounded-full">
                     Verified Client
                   </span>
                 </div>
                 
                 {/* Testimonial text */}
-                <blockquote className="text-gray-700 text-lg mb-8 leading-relaxed italic flex-grow">
+                <blockquote className="text-gray-700 text-sm mb-1 leading-snug italic flex-grow">
                   "{testimonial.comment}"
                 </blockquote>
                 
                 {/* Author */}
                 <div className="flex items-center mt-auto">
-                  <div className="h-12 w-12 rounded-full bg-gray-100 mr-4 flex items-center justify-center overflow-hidden border-2 border-green-600">
+                  <div className="h-8 w-8 rounded-full bg-gray-100 mr-2 flex items-center justify-center overflow-hidden border-2 border-green-600">
                     <span className="text-lg font-medium text-gray-600">{testimonial.name.charAt(0)}</span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                    <p className="font-medium text-gray-900 text-xs">{testimonial.name}</p>
+                    <p className="text-xs text-gray-500">{testimonial.role}</p>
                   </div>
                 </div>
               </div>
