@@ -813,7 +813,12 @@ const CustomEvent = ({ event }) => {
   );
 };
 
-const DateAppointmentsModal = ({ date, appointments, onClose, onEdit }) => {
+const DateAppointmentsModal = ({ date, 
+  appointments, 
+  onClose, 
+  onEdit,
+  setSelectedAppointment,
+  setActiveModal  }) => {
   const selectedDateStr = moment(date).format('YYYY-MM-DD');
   
   // Filter appointments for the selected date
@@ -883,6 +888,21 @@ const filteredAppointments = appointments.filter(apt => {
                     >
                       Edit Appointment
                     </button>
+                    <button
+  onClick={() => {
+    setSelectedAppointment(appointment);
+    setActiveModal('crew');
+  }}
+  className={`${
+    (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+      ? 'text-green-600 hover:text-green-800'
+      : 'text-blue-600 hover:text-blue-800'
+  }`}
+>
+  {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+    ? 'View Crew'
+    : 'Assign Crew'}
+</button>
                   </div>
                 </div>
               ))}
@@ -967,7 +987,7 @@ const fetchAppointments = useCallback(async () => {
 
     const transformedAppointments = newAppointments.map((app) => ({
       id: app._id,
-      customerName: app.customer?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
+      customerName: app.customer?.user?.name || `Customer ${app.customer?._id?.substring(0, 6)}` || "N/A",
       customerPhone: app.customer?.phone || "N/A",
       address: app.customer?.address ? 
         `${app.customer.address.street || ''}, ${app.customer.address.city || ''}, ${app.customer.address.state || ''}, ${app.customer.address.zip || ''}`.trim() : 
@@ -1197,66 +1217,42 @@ const transformedEvents = response.data.data.map(event => {
 
 const handleUpdateAppointment = async (updatedAppointment) => {
   try {
-    const headers = getAuthHeaders();
-    
-    if (!headers.Authorization) {
-      throw new Error('No authorization token available');
-    }
-
-    const appointmentId = updatedAppointment._id || updatedAppointment.id;
-    if (!appointmentId) {
-      throw new Error('Appointment ID is missing');
-    }
-    
-    const response = await axios.put(
-      `${API_URL}/appointments/${appointmentId}`,
-      {
-        date: updatedAppointment.date,
-        timeSlot: {
-          startTime: updatedAppointment.timeSlot?.startTime || updatedAppointment.startTime,
-          endTime: updatedAppointment.timeSlot?.endTime || updatedAppointment.endTime,
-        },
-        status: updatedAppointment.status,
-      },
-      { headers }
+    // Update the local state immediately for better UX
+    setAppointments(prevAppointments => 
+      prevAppointments.map(apt => 
+        apt.id === updatedAppointment._id || apt.id === updatedAppointment.id 
+          ? { 
+              ...apt, 
+              ...updatedAppointment,
+              crew: updatedAppointment.crew || apt.crew // Make sure to preserve crew data
+            }
+          : apt
+      )
     );
 
-    if (!response.data.success) {
-      throw new Error(response.data.message || 'Failed to update appointment');
-    }
-
-    // Update appointments list
-    const updatedAppointments = appointments.map(apt => 
-      (apt._id === appointmentId || apt.id === appointmentId) ? response.data.data : apt
-    );
-    setAppointments(updatedAppointments);
-
-    // Update calendar events
-    setCalendarEvents(prev => 
-      prev.map(event => 
-        event.id === appointmentId 
+    // Update calendar events if needed
+    setCalendarEvents(prevEvents => 
+      prevEvents.map(event => 
+        event.id === updatedAppointment._id || event.id === updatedAppointment.id
           ? { 
               ...event, 
-              start: new Date(response.data.data.date), 
-              end: new Date(response.data.data.date),
-              title: `${response.data.data.serviceName || 'Appointment'} - ${response.data.data.customerName || 'Customer'}`,
-              status: response.data.data.status
+              ...updatedAppointment,
+              title: `${updatedAppointment.serviceName || 'Appointment'} - ${updatedAppointment.customerName || 'Customer'}`,
+              status: updatedAppointment.status,
+              crew: updatedAppointment.crew || event.crew // Preserve crew data
             }
           : event
-      ).filter(event => {
-        // Remove events that no longer exist in appointments
-        return updatedAppointments.some(apt => apt.id === event.id);
-      })
+      )
     );
 
-    // Refresh calendar view
-    await handleCalendarView(currentDate, viewType);
+    // Force a refresh of the data from the server
+    await fetchAppointments();
     
     toast.success('Appointment updated successfully');
-    return response.data.data;
+    return updatedAppointment;
   } catch (error) {
     console.error('Update error:', error);
-    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+    toast.error(error.message || 'Failed to update appointment');
     throw error;
   }
 };
@@ -1487,6 +1483,9 @@ const renderCalendar = () => (
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
             </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+  Crew
+</th>
           </tr>
         </thead>
            <tbody className="bg-white divide-y divide-gray-200">
@@ -1563,7 +1562,7 @@ const renderCalendar = () => (
                       >
                         Payment
                       </button>
-                      {appointment.frequency !== 'One-time' && (
+                      {appointment.recurringType === 'One-time' && (
                         <button
                           onClick={() => {
                             setSelectedAppointment(appointment);
@@ -1578,6 +1577,14 @@ const renderCalendar = () => (
                   )}
                 </div>
               </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+  <div className="text-sm text-gray-900">
+    {appointment.crew?.leadProfessional?.name || 'No lead'}
+  </div>
+  <div className="text-sm text-gray-500">
+    {appointment.crew?.assignedTo?.length || 0} team members
+  </div>
+</td>
             </tr>
           ))}
           
@@ -1606,10 +1613,12 @@ const renderCalendar = () => (
     date={selectedDate}
     appointments={appointments}
     onClose={() => setSelectedDate(null)}
-    onEdit={(appointment) => {
-      setSelectedAppointment(appointment);
-      setActiveModal('details');
-    }}
+   onEdit={(appointment, modalType = 'details') => {
+  setSelectedAppointment(appointment);
+  setActiveModal(modalType);
+}}
+    setSelectedAppointment={setSelectedAppointment}
+    setActiveModal={setActiveModal}
   />
 )}
 
