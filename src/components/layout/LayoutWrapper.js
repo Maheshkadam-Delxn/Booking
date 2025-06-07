@@ -37,6 +37,7 @@ export default function LayoutWrapper({ children }) {
     '/customers/services',
     '/customers/appointments',
     '/customers/settings',
+    '/super-admin',
   ];
 
   // Check if the pathname starts with '/customers/services' (dynamic path handling)
