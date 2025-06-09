@@ -1,8 +1,3 @@
-
-
-
-
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -23,153 +18,115 @@ const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
 
   const appointmentId = appointment?._id || appointment?.id;
 
-  // Helper function to get auth headers
   const getAuthHeaders = () => ({
     'Authorization': `Bearer ${userData.token}`,
     'Content-Type': 'application/json'
   });
 
-useEffect(() => {
-  if (!appointment) return;
+  useEffect(() => {
+    if (!appointment) return;
 
-  // Initialize crew assignment
-  setCrewAssignment({
-    leadProfessional: appointment.crew?.leadProfessional?._id || '',
-    assignedTo: appointment.crew?.assignedTo?.map(member => 
-      typeof member === 'object' ? member._id : member
-    ) || []
-  });
+    // Initialize crew assignment
+    setCrewAssignment({
+      leadProfessional: appointment.crew?.leadProfessional?._id || appointment.crew?.leadProfessional || '',
+      assignedTo: appointment.crew?.assignedTo?.map(member => 
+        typeof member === 'object' ? member._id : member
+      ) || []
+    });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      // Get available professionals for this appointment's timeslot
-      const dateStr = new Date(appointment.date).toISOString().split('T')[0];
-      const availableResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals/available`,
-        {
-          params: {
-            date: dateStr,
-            startTime: appointment.timeSlot.startTime,
-            endTime: appointment.timeSlot.endTime
-          },
-          headers: getAuthHeaders()
-        }
-      );
-      
-      // Get full details of available professionals
-      const professionalsResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals`,
-        { headers: getAuthHeaders() }
-      );
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get all professionals first
+        const professionalsResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals`,
+          { headers: getAuthHeaders() }
+        );
 
-      // Merge availability with professional details
-      const availableIds = availableResponse.data.data.map(p => p._id);
-      const availableProfessionals = professionalsResponse.data.data.filter(
-        p => availableIds.includes(p._id) || 
-             p._id === appointment.crew?.leadProfessional?._id || 
-             appointment.crew?.assignedTo?.some(id => 
-               (typeof id === 'object' ? id._id : id) === p._id
-             )
-      );
-
-      setProfessionals(availableProfessionals);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error(error.response?.data?.error || 'Failed to fetch professionals');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, [appointment, userData?.token]);
-
-  const assignProfessional = async (professionalId, isLead) => {
-    try {
-      setConflictError(null); // Clear previous errors
-      const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals/${professionalId}/assign/${appointmentId}`,
-        { professionalId, isLead },
-        { headers: getAuthHeaders() }
-      );
-      
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Assignment failed');
+        setProfessionals(professionalsResponse.data.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error(error.response?.data?.error || 'Failed to fetch professionals');
+      } finally {
+        setLoading(false);
       }
-      
-      return response.data;
+    };
+
+    fetchData();
+  }, [appointment, userData?.token]);
+
+  const updateCrewAssignment = async (updatedCrew) => {
+    try {
+      setSubmitting(true);
+      setConflictError(null);
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals/${appointmentId}/crew`,
+        updatedCrew,
+        { headers: getAuthHeaders() }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to update crew');
+      }
+
+      return response.data.data;
     } catch (error) {
+      console.error('Error updating crew:', error);
       if (error.response?.status === 400) {
         setConflictError(error.response.data.error || 'Scheduling conflict detected');
       }
       throw error;
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!appointmentId) {
-    toast.error('No appointment selected');
-    return;
-  }
-
-  setSubmitting(true);
-
-  try {
-    // First handle lead professional assignment
-    if (crewAssignment.leadProfessional) {
-      await assignProfessional(crewAssignment.leadProfessional, true);
-    }
-
-    // Then handle team members
-    const teamMemberPromises = crewAssignment.assignedTo
-      .filter(id => id !== crewAssignment.leadProfessional)
-      .map(professionalId => assignProfessional(professionalId, false));
-
-    await Promise.all(teamMemberPromises);
-
-    toast.success('Crew assignment updated successfully');
+    e.preventDefault();
     
-    // Fetch the fully updated appointment
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments/${appointmentId}`,
-      { headers: getAuthHeaders() }
-    );
-
-    if (!response.data.success) {
-      throw new Error('Failed to fetch updated appointment');
+    if (!appointmentId) {
+      toast.error('No appointment selected');
+      return;
     }
 
-    // Create complete updated appointment object
-    const updatedAppointment = {
-      ...appointment,
-      ...response.data.data,
-      crew: {
-        leadProfessional: response.data.data.crew?.leadProfessional || null,
-        assignedTo: response.data.data.crew?.assignedTo || []
+    try {
+      // Prepare the updated crew data
+      const updatedCrew = {
+        leadProfessional: crewAssignment.leadProfessional,
+        assignedTo: crewAssignment.assignedTo.filter(id => id !== crewAssignment.leadProfessional)
+      };
+
+      // Call the API to update the crew
+      const updatedAppointment = await updateCrewAssignment(updatedCrew);
+
+      toast.success('Crew assignment updated successfully');
+      
+      // Update the local state with the new crew assignment
+      const newAppointment = {
+        ...appointment,
+        crew: {
+          leadProfessional: updatedAppointment.crew.leadProfessional,
+          assignedTo: updatedAppointment.crew.assignedTo
+        }
+      };
+
+      onUpdate(newAppointment);
+      
+      // Refresh the appointments list
+      if (fetchAppointments) {
+        await fetchAppointments();
       }
-    };
-
-    onUpdate(updatedAppointment);
-    
-    if (fetchAppointments) {
-      await fetchAppointments();
+      
+      onClose();
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 
+                         error.message || 
+                         'Failed to update crew assignment';
+      toast.error(errorMessage);
     }
-    
-    onClose();
-  } catch (error) {
-    console.error('Error updating crew assignment:', error);
-    const errorMessage = error.response?.data?.error || 
-                       error.message || 
-                       'Failed to update crew assignment';
-    toast.error(errorMessage);
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
 
   const handleTeamMemberToggle = (professionalId) => {
     // Don't allow adding the lead professional as a team member
@@ -184,12 +141,11 @@ useEffect(() => {
         ? prev.assignedTo.filter(id => id !== professionalId)
         : [...prev.assignedTo, professionalId]
     }));
-    setConflictError(null); // Clear any previous error
+    setConflictError(null);
   };
 
   const handleLeadProfessionalChange = (e) => {
     const newLeadId = e.target.value;
-    // Remove from team members if selected as lead
     setCrewAssignment(prev => ({
       leadProfessional: newLeadId,
       assignedTo: prev.assignedTo.filter(id => id !== newLeadId)
@@ -203,7 +159,9 @@ useEffect(() => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Assign Crew</h2>
+          <h2 className="text-xl font-bold">
+            {appointment.crew?.leadProfessional ? 'Update Crew' : 'Assign Crew'}
+          </h2>
           <button 
             onClick={onClose} 
             className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -228,25 +186,23 @@ useEffect(() => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Lead Professional *
               </label>
-             <select
-  value={crewAssignment.leadProfessional}
-  onChange={handleLeadProfessionalChange}
-  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border"
-  required
-  disabled={submitting}
->
-  <option value="">Select Lead Professional</option>
-  {professionals.map(professional => (
-    <option 
-      key={professional._id} 
-      value={professional._id}
-      disabled={crewAssignment.assignedTo.includes(professional._id)}
-    >
-      {professional.name} - {professional.specialization || 'General'}
-      {crewAssignment.assignedTo.includes(professional._id) && ' (already in team)'}
-    </option>
-  ))}
-</select>
+              <select
+                value={crewAssignment.leadProfessional}
+                onChange={handleLeadProfessionalChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border"
+                required
+                disabled={submitting}
+              >
+                <option value="">Select Lead Professional</option>
+                {professionals.map(professional => (
+                  <option 
+                    key={professional._id} 
+                    value={professional._id}
+                  >
+                    {professional.name} - {professional.specialization || 'General'}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -274,7 +230,7 @@ useEffect(() => {
                         htmlFor={`member-${professional._id}`} 
                         className="ml-2 block text-sm text-gray-700"
                       >
-                        {professional.name} ({professional.specialization})
+                        {professional.name} ({professional.specialization || 'General'})
                         {professional._id === crewAssignment.leadProfessional && ' (lead)'}
                       </label>
                     </div>

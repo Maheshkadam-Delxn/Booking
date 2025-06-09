@@ -78,7 +78,14 @@ const validFiles = [];
 const newPreviewUrls = [];
 const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedAppointment, setEditedAppointment] = useState(appointment);
+  const [editedAppointment, setEditedAppointment] = useState({
+  ...appointment,
+  date: appointment.date || '',
+  timeSlot: appointment.timeSlot || {
+    startTime: appointment.startTime || '',
+    endTime: appointment.endTime || ''
+  }
+});
   const [selectedPhotos, setSelectedPhotos] = useState({ beforeService: [], afterService: [] });
   const [previewUrls, setPreviewUrls] = useState({ beforeService: [], afterService: [] });
   const [activePhotoTab, setActivePhotoTab] = useState('beforeService');
@@ -87,6 +94,8 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadErrors, setUploadErrors] = useState([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const errors = [];
 
@@ -109,6 +118,48 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     }
   }, [isLoading, userData, router]);
 
+ // Fetch available time slots when date changes in edit mode
+  useEffect(() => {
+    if (isEditing && editedAppointment.date && editedAppointment.serviceId) {
+      fetchAvailableTimeSlots(editedAppointment.date, editedAppointment.serviceId);
+    }
+  }, [editedAppointment.date, isEditing]);
+
+ const fetchAvailableTimeSlots = async (date, serviceId) => {
+  setLoadingSlots(true);
+  try {
+    const headers = getAuthHeaders();
+    
+    const response = await axios.get(
+      `${API_URL}/appointments/availability?date=${date}&serviceId=${serviceId}`,
+      { headers }
+    );
+
+    if (response.data.success) {
+      setAvailableTimeSlots(response.data.data);
+      
+      // If current time slot is not in available slots, reset the time
+      const currentSlot = `${editedAppointment.timeSlot?.startTime}-${editedAppointment.timeSlot?.endTime}`;
+      const slotExists = response.data.data.some(
+        slot => `${slot.start}-${slot.end}` === currentSlot
+      );
+      
+      if (!slotExists && response.data.data.length > 0) {
+        setEditedAppointment(prev => ({
+          ...prev,
+          timeSlot: response.data.data[0]
+        }));
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching time slots:', error);
+    toast.error('Failed to load available time slots');
+    setAvailableTimeSlots([]);
+  } finally {
+    setLoadingSlots(false);
+  }
+};
+
   // Get auth headers function
   const getAuthHeaders = (contentType = 'application/json') => {
     const token = userData?.token || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -124,49 +175,67 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     };
   };
 
-  const handleUpdate = async () => {
-    setLoading(true);
-    try {
-      const headers = getAuthHeaders();
-      
-      if (!headers.Authorization) {
-        throw new Error('No authorization token available');
-      }
-      
-      const updateData = {
-        date: editedAppointment.date,
-        timeSlot: {
-          startTime: editedAppointment.startTime,
-          endTime: editedAppointment.endTime
-        },
-        status: editedAppointment.status,
-        notes: editedAppointment.notes
-      };
-
-      const response = await axios.put(
-        `${API_URL}/appointments/${appointment.id}`,
-        updateData,
-        { headers }
-      );
-
-      if (response.data.success) {
-        onUpdate({
-          ...appointment,
-          ...editedAppointment
-        });
-        
-        setIsEditing(false);
-        toast.success('Appointment updated successfully');
-      } else {
-        throw new Error(response.data.message || 'Failed to update appointment');
-      }
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
-    } finally {
-      setLoading(false);
+const handleUpdate = async () => {
+  setLoading(true);
+  try {
+    console.log('Updating with:', editedAppointment); // Add this line
+    
+    const headers = getAuthHeaders();
+    
+    if (!headers.Authorization) {
+      throw new Error('No authorization token available');
     }
-  };
+    
+    // Validate required fields
+    if (!editedAppointment.date || !editedAppointment.timeSlot?.startTime || !editedAppointment.timeSlot?.endTime) {
+      console.error('Validation failed:', {
+        date: editedAppointment.date,
+        timeSlot: editedAppointment.timeSlot
+      });
+      throw new Error('Please select a date and time slot');
+    }
+
+    // Prepare the update data with proper time slot format
+    const updateData = {
+      date: editedAppointment.date,
+      timeSlot: {
+        startTime: editedAppointment.timeSlot.startTime,
+        endTime: editedAppointment.timeSlot.endTime
+      },
+      status: editedAppointment.status,
+      notes: editedAppointment.notes
+    };
+
+    const response = await axios.put(
+      `${API_URL}/appointments/${appointment.id}`,
+      updateData,
+      { headers }
+    );
+
+    if (response.data.success) {
+      onUpdate({
+        ...appointment,
+        ...editedAppointment,
+        timeSlot: {
+          startTime: editedAppointment.timeSlot.startTime,
+          endTime: editedAppointment.timeSlot.endTime
+        },
+        startTime: editedAppointment.timeSlot.startTime,
+        endTime: editedAppointment.timeSlot.endTime
+      });
+      
+      setIsEditing(false);
+      toast.success('Appointment updated successfully');
+    } else {
+      throw new Error(response.data.message || 'Failed to update appointment');
+    }
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDelete = async () => {
     setLoading(true);
@@ -505,90 +574,117 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
           </div>
 
           <div className="mb-6">
-            {isEditing ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <select
-                    value={editedAppointment.status}
-                    onChange={(e) => setEditedAppointment(prev => ({ ...prev, status: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Scheduled">Scheduled</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Date</label>
-                    <input
-                      type="date"
-                      value={editedAppointment.date ? new Date(editedAppointment.date).toISOString().split('T')[0] : ''}
-                      onChange={(e) => setEditedAppointment(prev => ({ ...prev, date: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Time Slot</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="time"
-                        value={editedAppointment.startTime}
-                        onChange={(e) => setEditedAppointment(prev => ({ ...prev, startTime: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                      />
-                      <input
-                        type="time"
-                        value={editedAppointment.endTime}
-                        onChange={(e) => setEditedAppointment(prev => ({ ...prev, endTime: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Notes</label>
-                  <textarea
-                    value={editedAppointment.notes?.internal || ''}
-                    onChange={(e) => setEditedAppointment(prev => ({
-                      ...prev,
-                      notes: { ...prev.notes, internal: e.target.value }
-                    }))}
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                    placeholder="Add internal notes..."
-                  />
-                </div>
-              </div>
-            ) : (
-              <>
-                <StatusBadge status={appointment.status} />
-                <div className="mt-2 grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-600">Date</p>
-                    <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Time</p>
-                    <p className="font-medium">
-                      {appointment.timeSlot ?
-                        `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
-                        `${appointment.startTime} - ${appointment.endTime}`
-                      }
-                    </p>
-                  </div>
-                </div>
-                {appointment.notes?.internal && (
-                  <div className="mt-4">
-                    <p className="text-gray-600">Internal Notes</p>
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{appointment.notes.internal}</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+  {isEditing ? (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Status</label>
+        <select
+          value={editedAppointment.status}
+          onChange={(e) => setEditedAppointment(prev => ({ ...prev, status: e.target.value }))}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+        >
+          <option value="Pending">Pending</option>
+          <option value="Scheduled">Scheduled</option>
+          <option value="Completed">Completed</option>
+          
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+  <div>
+    <label className="block text-sm font-medium text-gray-700">Date</label>
+    <input
+      type="date"
+      value={editedAppointment.date ? new Date(editedAppointment.date).toISOString().split('T')[0] : ''}
+      onChange={(e) => {
+        const newDate = e.target.value;
+        setEditedAppointment(prev => ({ 
+          ...prev, 
+          date: newDate,
+          timeSlot: { startTime: '', endTime: '' } // Reset time slot when date changes
+        }));
+      }}
+      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+      min={new Date().toISOString().split('T')[0]}
+    />
+  </div>
+  <div>
+    <label className="block text-sm font-medium text-gray-700">Time Slot</label>
+    {loadingSlots ? (
+      <div className="mt-2 text-sm text-gray-500">Loading available time slots...</div>
+    ) : availableTimeSlots.length > 0 ? (
+      <select
+  value={editedAppointment.timeSlot?.startTime || ''}
+  onChange={(e) => {
+    const selectedSlot = availableTimeSlots.find(
+      slot => slot.start === e.target.value
+    );
+    if (selectedSlot) {
+      setEditedAppointment(prev => ({
+        ...prev,
+        timeSlot: {
+          startTime: selectedSlot.start,
+          endTime: selectedSlot.end
+        }
+      }));
+    }
+  }}
+>
+        <option value="">Select a time slot</option>
+        {availableTimeSlots.map((slot, index) => (
+          <option key={index} value={slot.start}>
+            {`${slot.start} - ${slot.end}`}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <div className="mt-2 text-sm text-red-500">
+        No available time slots for this date
+      </div>
+    )}
+  </div>
+</div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Notes</label>
+        <textarea
+          value={editedAppointment.notes?.internal || ''}
+          onChange={(e) => setEditedAppointment(prev => ({
+            ...prev,
+            notes: { ...prev.notes, internal: e.target.value }
+          }))}
+          rows={3}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+          placeholder="Add internal notes..."
+        />
+      </div>
+    </div>
+  ) : (
+    <>
+      <StatusBadge status={appointment.status} />
+      <div className="mt-2 grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-gray-600">Date</p>
+          <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
+        </div>
+        <div>
+          <p className="text-gray-600">Time</p>
+          <p className="font-medium">
+            {appointment.timeSlot ?
+              `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
+              `${appointment.startTime} - ${appointment.endTime}`
+            }
+          </p>
+        </div>
+      </div>
+      {appointment.notes?.internal && (
+        <div className="mt-4">
+          <p className="text-gray-600">Internal Notes</p>
+          <p className="text-sm text-gray-800 whitespace-pre-wrap">{appointment.notes.internal}</p>
+        </div>
+      )}
+    </>
+  )}
+</div>
 
           <div className="mb-6">
             {uploadErrors.length > 0 && (
@@ -900,22 +996,21 @@ const filteredAppointments = appointments.filter(apt => {
                     >
                       Edit Appointment
                     </button>
-                    <button
-  onClick={() => {
-    setSelectedAppointment(appointment);
-    setActiveModal('crew');
-  }}
-  disabled={appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0}
-  className={`${
-    (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-      ? 'text-green-600 hover:text-green-800 cursor-not-allowed opacity-70'
-      : 'text-blue-600 hover:text-blue-800'
-  }`}
->
-  {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-    ? 'Assigned'
-    : 'Assign Crew'}
-</button>
+                     <button
+      onClick={() => {
+        setSelectedAppointment(appointment);
+        setActiveModal('crew');
+      }}
+      className={`${
+        (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+          ? 'text-blue-600 hover:text-blue-800'
+          : 'text-green-600 hover:text-green-800'
+      }`}
+    >
+      {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+        ? 'View Crew'
+        : 'Assign Crew'}
+    </button>
                   </div>
                 </div>
               ))}
@@ -1557,21 +1652,20 @@ const renderCalendar = () => (
                   {appointment.status === 'Scheduled' && (
                     <>
                      <button
-  onClick={() => {
-    setSelectedAppointment(appointment);
-    setActiveModal('crew');
-  }}
-  disabled={appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0}
-  className={`${
-    (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-      ? 'text-green-600 hover:text-green-800 cursor-not-allowed opacity-70'
-      : 'text-blue-600 hover:text-blue-800'
-  }`}
->
-  {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-    ? 'Assigned'
-    : 'Assign Crew'}
-</button>
+      onClick={() => {
+        setSelectedAppointment(appointment);
+        setActiveModal('crew');
+      }}
+      className={`${
+        (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+          ? 'text-blue-600 hover:text-blue-800'
+          : 'text-green-600 hover:text-green-800'
+      }`}
+    >
+      {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+        ? 'View Crew'
+        : 'Assign Crew'}
+    </button>
                       <button
                         onClick={() => {
                           setSelectedAppointment(appointment);
