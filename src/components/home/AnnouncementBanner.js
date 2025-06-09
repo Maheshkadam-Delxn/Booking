@@ -44,6 +44,7 @@ const AnnouncementBanner = () => {
     setTimeout(() => {
       setIsVisible(false);
     }, 10000);
+    setIsVisible(false);
   };
 
   if (!announcement || !isVisible) {
