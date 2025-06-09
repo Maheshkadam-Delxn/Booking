@@ -1,10 +1,20 @@
 "use client"
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Container from '../ui/Container';
 import { testimonials } from '../../lib/data/mockData';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Testimonials = () => {
+  const [expandedTestimonials, setExpandedTestimonials] = useState({});
+  const MAX_LENGTH = 150; // Maximum characters to show before 'Read more'
+
+  const toggleReadMore = (id) => {
+    setExpandedTestimonials(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
   const scrollContainerRef = useRef(null);
 
   const scroll = (direction) => {
@@ -97,7 +107,31 @@ const Testimonials = () => {
                 
                 {/* Testimonial text */}
                 <blockquote className="text-gray-700 text-sm mb-1 leading-snug italic flex-grow">
-                  "{testimonial.comment}"
+                  {
+                    testimonial.comment.length > MAX_LENGTH && !expandedTestimonials[testimonial.id] ? (
+                      <>
+                        "{testimonial.comment.substring(0, MAX_LENGTH)}..."
+                        <button 
+                          onClick={() => toggleReadMore(testimonial.id)} 
+                          className="text-green-600 hover:text-green-700 font-medium text-xs ml-1 py-1 px-2 rounded-md hover:bg-green-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                        >
+                          Read more
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        "{testimonial.comment}"
+                        {testimonial.comment.length > MAX_LENGTH && (
+                          <button 
+                            onClick={() => toggleReadMore(testimonial.id)} 
+                            className="text-green-600 hover:text-green-700 font-medium text-xs ml-1 py-1 px-2 rounded-md hover:bg-green-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                          >
+                            Read less
+                          </button>
+                        )}
+                      </>
+                    )
+                  }
                 </blockquote>
                 
                 {/* Author */}
