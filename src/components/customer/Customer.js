@@ -225,7 +225,7 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
         const transformedUser = {
           name: customerData.user?.name || "",
           email: customerData.user?.email || "",
-          phone: customerData.phone || "",
+          phone: customerData.user?.phone || "",
           address: customerData.address || {},
           formattedAddress: formattedAddress,
           memberStatus: customerData.memberStatus || "Standard Member",
@@ -506,12 +506,17 @@ const handleImageClick = (images, index = 0) => {
                 <p className="text-sm text-green-600 font-medium">Email</p>
                 <p className="text-gray-700">{user.email}</p>
               </div>
-              {user.phone && (
+              {/* {user.phone && (
                 <div>
                   <p className="text-sm text-green-600 font-medium">Phone</p>
                   <p className="text-gray-700">{user.phone}</p>
                 </div>
-              )}
+              )} */}
+
+               <div>
+                <p className="text-sm text-green-600 font-medium">Phone</p>
+                <p className="text-gray-700">{user.phone}</p>
+              </div>
               {/* <div>
             <p className="text-sm text-green-600 font-medium">Address</p>
             <p className="text-gray-700">

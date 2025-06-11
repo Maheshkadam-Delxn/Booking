@@ -64,101 +64,67 @@ const CustomerDetails = ({ onNext, onBack }) => {
     fetchCustomerDetails();
   }, [userData, isLoading]);
 
-  const handlePropertyImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
+ const handlePropertyImageUpload = async (e) => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
 
-    // Validate files
-    const validFiles = files.filter(file => {
-      if (!file.type.match('image.*')) {
-        alert(`Skipped ${file.name}: Not an image file`);
-        return false;
+  const formData = new FormData();
+  files.forEach(file => {
+    formData.append('images', file); // Using 'images' as field name
+  });
+
+  try {
+    const response = await axios.post(
+      `${API_URL}/customers/${customerData._id}/property-images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${userData.token}`
+        }
       }
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert(`Skipped ${file.name}: File must be smaller than 5MB`);
-        return false;
+    );
+
+    // Update local state
+    setCustomerData(prev => ({
+      ...prev,
+      propertyDetails: {
+        ...prev.propertyDetails,
+        images: response.data.data
       }
-      return true;
-    });
+    }));
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Image upload failed: ' + (error.response?.data?.message || error.message));
+  }
+};
 
-    if (!validFiles.length) return;
+ const handleDeleteImage = async (imageId) => {
+  if (!confirm('Are you sure you want to delete this image?')) return;
 
-    setIsUploading(true);
-    setUploadProgress(0);
+  try {
+    const response = await axios.delete(
+      `${API_URL}/customers/${customerData._id}/property-images/${imageId}`,
+      {
+        headers: { Authorization: `Bearer ${userData.token}` }
+      }
+    );
 
-    try {
-      const uploadData = new FormData();
-      validFiles.forEach(file => {
-        uploadData.append('files', file);
-      });
+    // Update local state with the updated images array from backend
+    setCustomerData(prev => ({
+      ...prev,
+      propertyDetails: {
+        ...prev.propertyDetails,
+        images: response.data.data // Use the full array returned from backend
+      }
+    }));
 
-      const response = await axios.post(
-        `${API_URL}/customers/${customerData._id}/property-images`,
-        uploadData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${userData.token}`
-          },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            setUploadProgress(percentCompleted);
-          }
-        }
-      );
-
-      // Update local state with new images
-      setCustomerData(prev => ({
-        ...prev,
-        propertyDetails: {
-          ...prev.propertyDetails,
-          images: [
-            ...(prev.propertyDetails.images || []),
-            ...response.data.data
-          ]
-        }
-      }));
-
-      alert(`${validFiles.length} image(s) uploaded successfully!`);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload some images. Please try again.');
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-      e.target.value = ''; // Reset file input
-    }
-  };
-
-  const handleDeleteImage = async (imageId) => {
-    if (!confirm('Are you sure you want to delete this image?')) return;
-
-    try {
-      await axios.delete(
-        `${API_URL}/customers/${customerData._id}/property-images/${imageId}`,
-        {
-          headers: { Authorization: `Bearer ${userData.token}` }
-        }
-      );
-
-      // Update local state by removing the deleted image
-      setCustomerData(prev => ({
-        ...prev,
-        propertyDetails: {
-          ...prev.propertyDetails,
-          images: prev.propertyDetails.images.filter(img => img._id !== imageId)
-        }
-      }));
-
-      alert('Image deleted successfully!');
-    } catch (error) {
-      console.error('Delete error:', error);
-      alert('Failed to delete image. Please try again.');
-    }
-  };
-
+    alert('Image deleted successfully!');
+  } catch (error) {
+    console.error('Delete error:', error);
+    alert('Failed to delete image. Please try again.');
+  }
+};
   const handleInputChange = (path, value) => {
     setFormData(prev => ({
       ...prev,

@@ -375,6 +375,13 @@ const UserServices = () => {
                       <Eye size={16} className="mr-1" />
                       View Details
                     </Link>
+                     <Link
+                      href={`/booknow?serviceId=${service._id || service.id}`}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg flex items-center transition-colors duration-300 shadow-sm hover:shadow-md"
+                    >
+                      <Calendar size={16} className="mr-1" />
+                      Book Now
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -442,6 +449,13 @@ const UserServices = () => {
                         <Eye size={16} className="mr-1" />
                         View Details
                       </Link>
+                       <Link
+                      href={`/booknow?serviceId=${service._id || service.id}`}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg flex items-center transition-colors duration-300 shadow-sm hover:shadow-md"
+                    >
+                      <Calendar size={16} className="mr-1" />
+                      Book Now
+                    </Link>
                     </div>
                   </div>
                 </div>

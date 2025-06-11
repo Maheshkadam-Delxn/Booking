@@ -987,30 +987,44 @@ const filteredAppointments = appointments.filter(apt => {
                     </div>
                   </div>
                   <div className="mt-3 flex justify-end">
-                    <button
-                      onClick={() => {
-                        onEdit(appointment);
-                        onClose();
-                      }}
-                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
-                    >
-                      Edit Appointment
-                    </button>
-                     <button
-      onClick={() => {
-        setSelectedAppointment(appointment);
-        setActiveModal('crew');
-      }}
-      className={`${
-        (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-          ? 'text-blue-600 hover:text-blue-800'
-          : 'text-green-600 hover:text-green-800'
-      }`}
-    >
-      {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
-        ? 'View Crew'
-        : 'Assign Crew'}
-    </button>
+                    <div className="flex space-x-4">
+  <button
+    onClick={() => {
+      onEdit(appointment);
+      onClose();
+    }}
+    className="text-green-600 hover:text-green-900"
+  >
+    View
+  </button>
+
+  <button
+    onClick={() => {
+      setSelectedAppointment(appointment);
+      setActiveModal('crew');
+    }}
+    className={`${
+      (appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+        ? 'text-blue-600 hover:text-blue-800'
+        : 'text-green-600 hover:text-green-800'
+    }`}
+  >
+    {(appointment.crew?.leadProfessional || appointment.crew?.assignedTo?.length > 0)
+      ? 'View Crew'
+      : 'Assign Crew'}
+  </button>
+
+  <button
+    onClick={() => {
+      setSelectedAppointment(appointment);
+      setActiveModal('payment');
+    }}
+    className="text-purple-600 hover:text-purple-900"
+  >
+    Payment
+  </button>
+</div>
+
                   </div>
                 </div>
               ))}
@@ -1649,7 +1663,7 @@ const renderCalendar = () => (
                   >
                     View
                   </button>
-                  {appointment.status === 'Scheduled' && (
+                  {(appointment.status === 'Scheduled' || appointment.status === 'Rescheduled' )&&(
                     <>
                      <button
       onClick={() => {

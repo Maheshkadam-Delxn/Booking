@@ -104,14 +104,12 @@ const handleReschedule = async () => {
     return;
   }
 
-  // Additional validation
   const { canReschedule, reason } = canRescheduleAppointment(selectedAppointment);
   if (!canReschedule) {
     setRescheduleError(reason);
     return;
   }
 
-  // Check if the new date is in the past
   const newAppointmentDate = new Date(selectedDate);
   if (newAppointmentDate < new Date()) {
     setRescheduleError("Cannot reschedule to a past date");
@@ -136,24 +134,24 @@ const handleReschedule = async () => {
       }
     );
 
-    if (res.data.success) {
-      alert("Reschedule request submitted successfully!");
+   if (res.data.success) {
+  // Close modal first
+  setShowRescheduleModal(false);
 
-      // Update the specific appointment in state
-      setAppointments(prevAppointments => 
-        prevAppointments.map(appointment => 
-          appointment._id === selectedAppointment._id
-            ? {
-                ...appointment,
-                date: selectedDate,
-                timeSlot: { startTime: selectedSlot.start, endTime: selectedSlot.end },
-              }
-            : appointment
-        )
-      );
+  // Clear all selections and error states
+  setSelectedAppointment(null);
+  setSelectedDate("");
+  setAvailableSlots([]);
+  setSelectedSlot(null);
+  setRescheduleError(null);
 
-      setShowRescheduleModal(false);
-    } else {
+  // ✅ Refetch appointments
+  await fetchAppointments();
+
+  // Optional: success alert
+  alert("Reschedule request submitted successfully!");
+}
+ else {
       setRescheduleError(res.data.error || "Failed to submit reschedule request");
     }
   } catch (err) {
@@ -300,22 +298,23 @@ const handleReschedule = async () => {
                         <CreditCard className="h-4 w-4 text-green-500 mr-2" />
                         <span>Status:</span>
                         {getPaymentBadge(appointment.payment?.status)}
+                        {/* <StatusBadge status={appointment.status} /> */}
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between border-t pt-4">
                     <div className="flex items-center text-sm text-gray-500">
-                      <User className="h-4 w-4 mr-2" />
-                      <span>{appointment.attendee?.name || "No attendee specified"}</span>
+                       <User className="h-4 w-4 mr-2" />
+    <span>
+      {appointment.crew?.assignedTo?.length > 0 ? (
+        <span className="text-green-600">Crew assigned</span>
+      ) : (
+        "No attendee specified"
+      )}
+    </span>
                     </div>
-                   {/* <button
-  onClick={() => router.push(`/customers/appointments/${appointment._id}`)}
-  className="flex items-center text-sm text-green-600 hover:underline focus:outline-none"
->
-  <span>View details</span>
-  <ChevronRight className="h-4 w-4 ml-1" />
-</button> */}
+                  
 <button
   onClick={() => {
     const { canReschedule, reason } = canRescheduleAppointment(appointment);
@@ -445,3 +444,13 @@ const handleReschedule = async () => {
 };
 
 export default Appointments;
+
+
+
+ {/* <button
+  onClick={() => router.push(`/customers/appointments/${appointment._id}`)}
+  className="flex items-center text-sm text-green-600 hover:underline focus:outline-none"
+>
+  <span>View details</span>
+  <ChevronRight className="h-4 w-4 ml-1" />
+</button> */}
