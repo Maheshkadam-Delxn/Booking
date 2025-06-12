@@ -79,13 +79,13 @@ const newPreviewUrls = [];
 const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedAppointment, setEditedAppointment] = useState({
-  ...appointment,
-  date: appointment.date || '',
-  timeSlot: appointment.timeSlot || {
-    startTime: appointment.startTime || '',
-    endTime: appointment.endTime || ''
-  }
-});
+    ...appointment,
+    date: appointment.date || '',
+    timeSlot: appointment.timeSlot || {
+      startTime: appointment.startTime || '',
+      endTime: appointment.endTime || ''
+    }
+  });
   const [selectedPhotos, setSelectedPhotos] = useState({ beforeService: [], afterService: [] });
   const [previewUrls, setPreviewUrls] = useState({ beforeService: [], afterService: [] });
   const [activePhotoTab, setActivePhotoTab] = useState('beforeService');
@@ -96,9 +96,9 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [uploadErrors, setUploadErrors] = useState([]);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [dateChanged, setDateChanged] = useState(false);
 
   const errors = [];
-
 
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -118,51 +118,46 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     }
   }, [isLoading, userData, router]);
 
- // Fetch available time slots when date changes in edit mode
+  // Reset date changed flag when editing is toggled
   useEffect(() => {
-    if (isEditing && editedAppointment.date && editedAppointment.serviceId) {
+    if (!isEditing) {
+      setDateChanged(false);
+    }
+  }, [isEditing]);
+
+  // Fetch available time slots when date changes in edit mode
+  useEffect(() => {
+    if (isEditing && dateChanged && editedAppointment.date && editedAppointment.serviceId) {
       fetchAvailableTimeSlots(editedAppointment.date, editedAppointment.serviceId);
     }
-  }, [editedAppointment.date, isEditing]);
+  }, [editedAppointment.date, isEditing, dateChanged]);
 
- const fetchAvailableTimeSlots = async (date, serviceId) => {
-  setLoadingSlots(true);
-  try {
-    const headers = getAuthHeaders();
-    
-    const response = await axios.get(
-      `${API_URL}/appointments/availability?date=${date}&serviceId=${serviceId}`,
-      { headers }
-    );
-
-    if (response.data.success) {
-      setAvailableTimeSlots(response.data.data);
+  const fetchAvailableTimeSlots = async (date, serviceId) => {
+    setLoadingSlots(true);
+    try {
+      const headers = getAuthHeaders();
       
-      // If current time slot is not in available slots, reset the time
-      const currentSlot = `${editedAppointment.timeSlot?.startTime}-${editedAppointment.timeSlot?.endTime}`;
-      const slotExists = response.data.data.some(
-        slot => `${slot.start}-${slot.end}` === currentSlot
+      const response = await axios.get(
+        `${API_URL}/appointments/availability?date=${date}&serviceId=${serviceId}`,
+        { headers }
       );
-      
-      if (!slotExists && response.data.data.length > 0) {
-        setEditedAppointment(prev => ({
-          ...prev,
-          timeSlot: response.data.data[0]
-        }));
+
+      if (response.data.success) {
+        setAvailableTimeSlots(response.data.data);
       }
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      toast.error('Failed to load available time slots');
+      setAvailableTimeSlots([]);
+    } finally {
+      setLoadingSlots(false);
     }
-  } catch (error) {
-    console.error('Error fetching time slots:', error);
-    toast.error('Failed to load available time slots');
-    setAvailableTimeSlots([]);
-  } finally {
-    setLoadingSlots(false);
-  }
-};
+  };
 
   // Get auth headers function
   const getAuthHeaders = (contentType = 'application/json') => {
-    const token = userData?.token || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const token = userData?.token;
+    // || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
     if (!token) {
       console.error('No auth token available in modal');
@@ -175,67 +170,61 @@ const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
     };
   };
 
-const handleUpdate = async () => {
-  setLoading(true);
-  try {
-    console.log('Updating with:', editedAppointment); // Add this line
-    
-    const headers = getAuthHeaders();
-    
-    if (!headers.Authorization) {
-      throw new Error('No authorization token available');
-    }
-    
-    // Validate required fields
-    if (!editedAppointment.date || !editedAppointment.timeSlot?.startTime || !editedAppointment.timeSlot?.endTime) {
-      console.error('Validation failed:', {
+  const handleUpdate = async () => {
+    setLoading(true);
+    try {
+      const headers = getAuthHeaders();
+      
+      if (!headers.Authorization) {
+        throw new Error('No authorization token available');
+      }
+      
+      // Validate required fields
+      if (!editedAppointment.date || !editedAppointment.timeSlot?.startTime || !editedAppointment.timeSlot?.endTime) {
+        throw new Error('Please select a date and time slot');
+      }
+
+      // Prepare the update data with proper time slot format
+      const updateData = {
         date: editedAppointment.date,
-        timeSlot: editedAppointment.timeSlot
-      });
-      throw new Error('Please select a date and time slot');
-    }
-
-    // Prepare the update data with proper time slot format
-    const updateData = {
-      date: editedAppointment.date,
-      timeSlot: {
-        startTime: editedAppointment.timeSlot.startTime,
-        endTime: editedAppointment.timeSlot.endTime
-      },
-      status: editedAppointment.status,
-      notes: editedAppointment.notes
-    };
-
-    const response = await axios.put(
-      `${API_URL}/appointments/${appointment.id}`,
-      updateData,
-      { headers }
-    );
-
-    if (response.data.success) {
-      onUpdate({
-        ...appointment,
-        ...editedAppointment,
         timeSlot: {
           startTime: editedAppointment.timeSlot.startTime,
           endTime: editedAppointment.timeSlot.endTime
         },
-        startTime: editedAppointment.timeSlot.startTime,
-        endTime: editedAppointment.timeSlot.endTime
-      });
-      
-      setIsEditing(false);
-      toast.success('Appointment updated successfully');
-    } else {
-      throw new Error(response.data.message || 'Failed to update appointment');
+        status: editedAppointment.status,
+        notes: editedAppointment.notes
+      };
+
+      const response = await axios.put(
+        `${API_URL}/appointments/${appointment.id}`,
+        updateData,
+        { headers }
+      );
+
+      if (response.data.success) {
+        onUpdate({
+          ...appointment,
+          ...editedAppointment,
+          timeSlot: {
+            startTime: editedAppointment.timeSlot.startTime,
+            endTime: editedAppointment.timeSlot.endTime
+          },
+          startTime: editedAppointment.timeSlot.startTime,
+          endTime: editedAppointment.timeSlot.endTime
+        });
+        
+        setIsEditing(false);
+        toast.success('Appointment updated successfully');
+      } else {
+        throw new Error(response.data.message || 'Failed to update appointment');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Update error:', error);
-    toast.error(error.response?.data?.message || error.message || 'Failed to update appointment');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleDelete = async () => {
     setLoading(true);
@@ -561,7 +550,7 @@ const handleUpdate = async () => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">Appointment Details</h2>
@@ -574,117 +563,120 @@ const handleUpdate = async () => {
           </div>
 
           <div className="mb-6">
-  {isEditing ? (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Status</label>
-        <select
-          value={editedAppointment.status}
-          onChange={(e) => setEditedAppointment(prev => ({ ...prev, status: e.target.value }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-        >
-          <option value="Pending">Pending</option>
-          <option value="Scheduled">Scheduled</option>
-          <option value="Completed">Completed</option>
-          
-          <option value="Cancelled">Cancelled</option>
-        </select>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-  <div>
-    <label className="block text-sm font-medium text-gray-700">Date</label>
-    <input
-      type="date"
-      value={editedAppointment.date ? new Date(editedAppointment.date).toISOString().split('T')[0] : ''}
-      onChange={(e) => {
-        const newDate = e.target.value;
-        setEditedAppointment(prev => ({ 
-          ...prev, 
-          date: newDate,
-          timeSlot: { startTime: '', endTime: '' } // Reset time slot when date changes
-        }));
-      }}
-      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-      min={new Date().toISOString().split('T')[0]}
-    />
-  </div>
-  <div>
-    <label className="block text-sm font-medium text-gray-700">Time Slot</label>
-    {loadingSlots ? (
-      <div className="mt-2 text-sm text-gray-500">Loading available time slots...</div>
-    ) : availableTimeSlots.length > 0 ? (
-      <select
-  value={editedAppointment.timeSlot?.startTime || ''}
-  onChange={(e) => {
-    const selectedSlot = availableTimeSlots.find(
-      slot => slot.start === e.target.value
-    );
-    if (selectedSlot) {
-      setEditedAppointment(prev => ({
-        ...prev,
-        timeSlot: {
-          startTime: selectedSlot.start,
-          endTime: selectedSlot.end
-        }
-      }));
-    }
-  }}
->
-        <option value="">Select a time slot</option>
-        {availableTimeSlots.map((slot, index) => (
-          <option key={index} value={slot.start}>
-            {`${slot.start} - ${slot.end}`}
-          </option>
-        ))}
-      </select>
-    ) : (
-      <div className="mt-2 text-sm text-red-500">
-        No available time slots for this date
-      </div>
-    )}
-  </div>
-</div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Notes</label>
-        <textarea
-          value={editedAppointment.notes?.internal || ''}
-          onChange={(e) => setEditedAppointment(prev => ({
-            ...prev,
-            notes: { ...prev.notes, internal: e.target.value }
-          }))}
-          rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-          placeholder="Add internal notes..."
-        />
-      </div>
-    </div>
-  ) : (
-    <>
-      <StatusBadge status={appointment.status} />
-      <div className="mt-2 grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-gray-600">Date</p>
-          <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
-        </div>
-        <div>
-          <p className="text-gray-600">Time</p>
-          <p className="font-medium">
-            {appointment.timeSlot ?
-              `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
-              `${appointment.startTime} - ${appointment.endTime}`
-            }
-          </p>
-        </div>
-      </div>
-      {appointment.notes?.internal && (
-        <div className="mt-4">
-          <p className="text-gray-600">Internal Notes</p>
-          <p className="text-sm text-gray-800 whitespace-pre-wrap">{appointment.notes.internal}</p>
-        </div>
-      )}
-    </>
-  )}
-</div>
+            {isEditing ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <select
+                    value={editedAppointment.status}
+                    onChange={(e) => setEditedAppointment(prev => ({ ...prev, status: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Date</label>
+                    <input
+                      type="date"
+                      value={editedAppointment.date ? new Date(editedAppointment.date).toISOString().split('T')[0] : ''}
+                      onChange={(e) => {
+                        const newDate = e.target.value;
+                        setEditedAppointment(prev => ({ 
+                          ...prev, 
+                          date: newDate
+                        }));
+                        setDateChanged(true);
+                      }}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Time Slot</label>
+                    {loadingSlots && dateChanged ? (
+                      <div className="mt-2 text-sm text-gray-500">Loading available time slots...</div>
+                    ) : dateChanged && availableTimeSlots.length > 0 ? (
+                      <select
+                        value={editedAppointment.timeSlot?.startTime || ''}
+                        onChange={(e) => {
+                          const selectedSlot = availableTimeSlots.find(
+                            slot => slot.start === e.target.value
+                          );
+                          if (selectedSlot) {
+                            setEditedAppointment(prev => ({
+                              ...prev,
+                              timeSlot: {
+                                startTime: selectedSlot.start,
+                                endTime: selectedSlot.end
+                              }
+                            }));
+                          }
+                        }}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                      >
+                        <option value="">Select a time slot</option>
+                        {availableTimeSlots.map((slot, index) => (
+                          <option key={index} value={slot.start}>
+                            {`${slot.start} - ${slot.end}`}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 bg-gray-50">
+                        {appointment.timeSlot ? 
+                          `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` : 
+                          `${appointment.startTime} - ${appointment.endTime}`
+                        }
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <textarea
+                    value={editedAppointment.notes?.internal || ''}
+                    onChange={(e) => setEditedAppointment(prev => ({
+                      ...prev,
+                      notes: { ...prev.notes, internal: e.target.value }
+                    }))}
+                    rows={3}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                    placeholder="Add internal notes..."
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <StatusBadge status={appointment.status} />
+                <div className="mt-2 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-600">Date</p>
+                    <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Time</p>
+                    <p className="font-medium">
+                      {appointment.timeSlot ?
+                        `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}` :
+                        `${appointment.startTime} - ${appointment.endTime}`
+                      }
+                    </p>
+                  </div>
+                </div>
+                {appointment.notes?.internal && (
+                  <div className="mt-4">
+                    <p className="text-gray-600">Internal Notes</p>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{appointment.notes.internal}</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           <div className="mb-6">
             {uploadErrors.length > 0 && (
@@ -757,11 +749,136 @@ const handleUpdate = async () => {
 };
 
 // Add CustomToolbar component
+// const CustomToolbar = ({ onNavigate, onView, view, date, handleCalendarView }) => {
+//   const goToToday = () => {
+//     const today = new Date();
+//     onNavigate('DATE', today);
+//     // Force refresh the view
+//     handleCalendarView(today, view);
+//   };
+
+//   const goToPrevious = () => {
+//     let newDate;
+//     if (view === 'month') {
+//       newDate = moment(date).subtract(1, 'month').toDate();
+//     } else if (view === 'week') {
+//       newDate = moment(date).subtract(1, 'week').toDate();
+//     } else {
+//       newDate = moment(date).subtract(1, 'day').toDate();
+//     }
+//     onNavigate('DATE', newDate);
+//     handleCalendarView(newDate, view);
+//   };
+
+//   const goToNext = () => {
+//     let newDate;
+//     if (view === 'month') {
+//       newDate = moment(date).add(1, 'month').toDate();
+//     } else if (view === 'week') {
+//       newDate = moment(date).add(1, 'week').toDate();
+//     } else {
+//       newDate = moment(date).add(1, 'day').toDate();
+//     }
+//     onNavigate('DATE', newDate);
+//     handleCalendarView(newDate, view);
+//   };
+
+//   const goToView = (newView) => {
+//     onView(newView);
+//     handleCalendarView(date, newView);
+//   };
+
+//   // Format the label based on the current view
+//   const getLabel = () => {
+//     const currentDate = moment(date);
+//     switch (view) {
+//       case 'month':
+//         return currentDate.format('MMMM YYYY');
+//       case 'week':
+//         return `${currentDate.startOf('week').format('MMM D')} - ${currentDate.endOf('week').format('MMM D, YYYY')}`;
+//       case 'day':
+//         return currentDate.format('dddd, MMMM D, YYYY');
+//       case 'agenda':
+//         return `${currentDate.startOf('month').format('MMM D')} - ${currentDate.endOf('month').format('MMM D, YYYY')}`;
+//       default:
+//         return currentDate.format('MMMM YYYY');
+//     }
+//   };
+
+//   return (
+//     <div className="flex items-center justify-between p-6 bg-white rounded-xl shadow-sm mb-6 border border-gray-100">
+//       <div className="flex items-center space-x-6">
+//         <button
+//           onClick={goToToday}
+//           className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
+//         >
+//           Today
+//         </button>
+//         <div className="flex items-center space-x-2">
+//           <button
+//             onClick={goToPrevious}
+//             className="p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+//           >
+//             <ChevronLeft className="w-5 h-5" />
+//           </button>
+//           <button
+//             onClick={goToNext}
+//             className="p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+//           >
+//             <ChevronRight className="w-5 h-5" />
+//           </button>
+//         </div>
+//         <h2 className="text-2xl font-bold text-gray-900">
+//           {getLabel()}
+//         </h2>
+//       </div>
+//       <div className="flex items-center space-x-2">
+//         <div className="flex items-center space-x-1 bg-gray-50 rounded-xl p-2 shadow-sm border border-gray-100">
+//           <button
+//             onClick={() => goToView('month')}
+//             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'month'
+//                 ? 'bg-white shadow-sm text-green-600 font-medium'
+//                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+//               }`}
+//           >
+//             Month
+//           </button>
+//           <button
+//             onClick={() => goToView('week')}
+//             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'week'
+//                 ? 'bg-white shadow-sm text-green-600 font-medium'
+//                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+//               }`}
+//           >
+//             Week
+//           </button>
+//           <button
+//             onClick={() => goToView('day')}
+//             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'day'
+//                 ? 'bg-white shadow-sm text-green-600 font-medium'
+//                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+//               }`}
+//           >
+//             Day
+//           </button>
+//           <button
+//             onClick={() => goToView('agenda')}
+//             className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'agenda'
+//                 ? 'bg-white shadow-sm text-green-600 font-medium'
+//                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+//               }`}
+//           >
+//             Agenda
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
 const CustomToolbar = ({ onNavigate, onView, view, date, handleCalendarView }) => {
   const goToToday = () => {
     const today = new Date();
     onNavigate('DATE', today);
-    // Force refresh the view
     handleCalendarView(today, view);
   };
 
@@ -796,7 +913,6 @@ const CustomToolbar = ({ onNavigate, onView, view, date, handleCalendarView }) =
     handleCalendarView(date, newView);
   };
 
-  // Format the label based on the current view
   const getLabel = () => {
     const currentDate = moment(date);
     switch (view) {
@@ -814,71 +930,78 @@ const CustomToolbar = ({ onNavigate, onView, view, date, handleCalendarView }) =
   };
 
   return (
-    <div className="flex items-center justify-between p-6 bg-white rounded-xl shadow-sm mb-6 border border-gray-100">
-      <div className="flex items-center space-x-6">
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white rounded-t-xl border-b border-gray-200">
+      {/* Left side controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <button
           onClick={goToToday}
-          className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm"
         >
           Today
         </button>
-        <div className="flex items-center space-x-2">
+        
+        <div className="flex items-center gap-2">
           <button
             onClick={goToPrevious}
-            className="p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={goToNext}
-            className="p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">
+        
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 whitespace-nowrap">
           {getLabel()}
         </h2>
       </div>
-      <div className="flex items-center space-x-2">
-        <div className="flex items-center space-x-1 bg-gray-50 rounded-xl p-2 shadow-sm border border-gray-100">
-          <button
-            onClick={() => goToView('month')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'month'
-                ? 'bg-white shadow-sm text-green-600 font-medium'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-          >
-            Month
-          </button>
-          <button
-            onClick={() => goToView('week')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'week'
-                ? 'bg-white shadow-sm text-green-600 font-medium'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-          >
-            Week
-          </button>
-          <button
-            onClick={() => goToView('day')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'day'
-                ? 'bg-white shadow-sm text-green-600 font-medium'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-          >
-            Day
-          </button>
-          <button
-            onClick={() => goToView('agenda')}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${view === 'agenda'
-                ? 'bg-white shadow-sm text-green-600 font-medium'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-          >
-            Agenda
-          </button>
-        </div>
+
+      {/* View type selector */}
+      <div className="flex flex-wrap gap-2 sm:gap-1">
+        <button
+          onClick={() => goToView('month')}
+          className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-all duration-200 ${
+            view === 'month'
+              ? 'bg-green-600 text-white font-medium shadow-sm'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          }`}
+        >
+          Month
+        </button>
+        <button
+          onClick={() => goToView('week')}
+          className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-all duration-200 ${
+            view === 'week'
+              ? 'bg-green-600 text-white font-medium shadow-sm'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          }`}
+        >
+          Week
+        </button>
+        <button
+          onClick={() => goToView('day')}
+          className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-all duration-200 ${
+            view === 'day'
+              ? 'bg-green-600 text-white font-medium shadow-sm'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          }`}
+        >
+          Day
+        </button>
+        <button
+          onClick={() => goToView('agenda')}
+          className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-all duration-200 ${
+            view === 'agenda'
+              ? 'bg-green-600 text-white font-medium shadow-sm'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          }`}
+        >
+          Agenda
+        </button>
       </div>
     </div>
   );
