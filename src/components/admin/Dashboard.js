@@ -535,26 +535,21 @@ const CalendarOverview = ({ appointments }) => {
     }
 
     try {
+      // Create date object from appointment date string
       const appointmentDate = new Date(appointment.date);
       
-      // Parse time (handle both "HH:MM AM/PM" and "HH:MM:SS AM/PM" formats)
+      // Parse time string (handle both "HH:MM" and "HH:MM:SS" formats)
       const timeString = appointment.timeSlot.startTime;
-      const timeParts = timeString.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+      const timeParts = timeString.match(/(\d+):(\d+)(?::\d+)?/);
       if (!timeParts) {
         console.warn("Could not parse time:", timeString);
         return null;
       }
 
-      let hours = parseInt(timeParts[1], 10);
+      const hours = parseInt(timeParts[1], 10);
       const minutes = parseInt(timeParts[2], 10);
-      const period = timeParts[3]?.toUpperCase();
 
-      // Convert to 24-hour format if period exists
-      if (period) {
-        if (period === "PM" && hours < 12) hours += 12;
-        if (period === "AM" && hours === 12) hours = 0;
-      }
-
+      // Set hours and minutes on the date object
       appointmentDate.setHours(hours, minutes, 0, 0);
 
       return {
@@ -570,7 +565,7 @@ const CalendarOverview = ({ appointments }) => {
   // Filter and sort appointments
   const now = new Date();
   const upcomingAppointments = processedAppointments
-    .filter(a => a.status === 'scheduled' && a.fullDateTime > now)
+    .filter(a => a.status === 'Scheduled' && a.fullDateTime > now)
     .sort((a, b) => a.fullDateTime - b.fullDateTime)
     .slice(0, 5); // Limit to 5 upcoming appointments
 
@@ -584,8 +579,8 @@ const CalendarOverview = ({ appointments }) => {
       ) : (
         <ul className="divide-y divide-gray-200">
           {upcomingAppointments.map((appointment) => (
-            <li key={appointment.id} className="p-4 hover:bg-gray-50">
-              <Link href={`/admin/appointments/${appointment.id}`} className="block">
+            <li key={appointment._id} className="p-4 hover:bg-gray-50">
+              <Link href={`/admin/appointments/${appointment._id}`} className="block">
                 <div className="flex flex-col sm:flex-row sm:justify-between">
                   <p className="text-sm font-medium text-gray-900 mb-1 sm:mb-0">
                     {appointment.customer?.user?.name || 'Unknown Customer'}
@@ -621,39 +616,159 @@ const CalendarOverview = ({ appointments }) => {
   );
 };
 
-const getBarChartData = () => {
-  return [
-    { month: 'Jan', value: 12 },
-    { month: 'Feb', value: 15 },
-    { month: 'Mar', value: 18 },
-    { month: 'Apr', value: 22 },
-    { month: 'May', value: 28 },
-    { month: 'Jun', value: 35 },
-    { month: 'Jul', value: 40 },
-    { month: 'Aug', value: 38 },
-    { month: 'Sep', value: 30 },
-    { month: 'Oct', value: 25 },
-    { month: 'Nov', value: 20 },
-    { month: 'Dec', value: 18 },
-  ];
+const StatusPieChart = ({ data }) => {
+  const colors = {
+    'Scheduled': '#10B981',
+    'Rescheduled': '#F59E0B',
+    'Completed': '#3B82F6',
+    'Cancelled': '#EF4444',
+    'No-Show': '#8B5CF6'
+  };
+
+  // Calculate total count for percentage calculations
+  const total = data.reduce((sum, item) => sum + item.count, 0);
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">Appointments by Status</h3>
+      <div className="flex flex-col md:flex-row items-center">
+        <div className="relative w-48 h-48 md:w-64 md:h-64 mb-4 md:mb-0 md:mr-8">
+          <svg className="w-full h-full" viewBox="0 0 100 100">
+            {data.reduce((acc, item, index) => {
+              const prevPercent = acc.prevPercent;
+              const percent = (item.count / total) * 100;
+              const dashArray = `${percent} ${100 - percent}`;
+              const dashOffset = -prevPercent;
+              
+              acc.elements.push(
+                <circle
+                  key={index}
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke={colors[item._id] || '#999'}
+                  strokeWidth="10"
+                  strokeDasharray={dashArray}
+                  strokeDashoffset={dashOffset}
+                  transform="rotate(-90 50 50)"
+                />
+              );
+              
+              acc.prevPercent += percent;
+              return acc;
+            }, { elements: [], prevPercent: 0 }).elements}
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">{total}</div>
+              <div className="text-sm text-gray-500">Total</div>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {data.map((item) => (
+            <div key={item._id} className="flex items-center">
+              <div 
+                className="w-4 h-4 rounded-full mr-2" 
+                style={{ backgroundColor: colors[item._id] || '#999' }}
+              ></div>
+              <div className="text-sm text-gray-700">
+                <span className="font-medium">{item._id}:</span> {item.count} (
+                {total > 0 ? Math.round((item.count / total) * 100) : 0}%)
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-const BarChart = ({ data, title }) => {
-  const maxValue = Math.max(...data.map(item => item.value));
-  
+const DayOfWeekChart = ({ data }) => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const maxCount = Math.max(...data.map(item => item.count), 1);
+
   return (
-    <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
-      <div className="flex items-end space-x-2 h-48 min-w-[600px]">
-        {data.map((item, index) => (
-          <div key={index} className="flex flex-col items-center flex-1">
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">Appointments by Day of Week</h3>
+      <div className="flex flex-col space-y-3">
+        {days.map((day, index) => {
+          const dayData = data.find(item => item._id === index + 1) || { count: 0 };
+          return (
+            <div key={day} className="flex items-center">
+              <div className="w-24 text-sm text-gray-500">{day}</div>
+              <div className="flex-1 flex items-center">
+                <div 
+                  className="h-6 bg-green-500 rounded mr-2" 
+                  style={{ width: `${(dayData.count / maxCount) * 100}%` }}
+                ></div>
+                <div className="text-sm font-medium">{dayData.count}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const MonthlyTrendChart = ({ data }) => {
+  // Month labels
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+
+  // Get current year
+  const currentYear = new Date().getFullYear();
+
+  // Initialize all months with count 0
+  const monthlyData = months.map((month, index) => ({
+    month,
+    count: 0,
+    monthNumber: index + 1 // 1-12
+  }));
+
+  // Process backend data
+  if (data && data.length > 0) {
+    data.forEach(item => {
+      // Only process data for current year
+      if (item._id.year === currentYear) {
+        const monthIndex = item._id.month - 1; // Convert to 0-based index
+        if (monthIndex >= 0 && monthIndex < 12) {
+          monthlyData[monthIndex].count = item.count;
+        }
+      }
+    });
+  }
+
+  // Calculate max count for scaling
+  const maxCount = Math.max(...monthlyData.map(item => item.count), 1);
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Monthly Appointment Trends ({currentYear})
+      </h3>
+      <div className="flex items-end space-x-1 h-48">
+        {monthlyData.map((item, index) => (
+          <div key={index} className="flex-1 flex flex-col items-center">
             <div 
-              className="w-full bg-green-500 rounded-t"
-              style={{ height: `${(item.value / maxValue) * 100}%` }}
+              className="w-full bg-green-500 rounded-t hover:bg-green-600 transition-colors"
+              style={{ 
+                height: `${(item.count / maxCount) * 100}%`,
+                minHeight: item.count > 0 ? '2px' : '0' // Ensure zero counts are visible
+              }}
+              title={`${item.month}: ${item.count} appointment${item.count !== 1 ? 's' : ''}`}
             ></div>
-            <div className="text-xs text-gray-500 mt-1 truncate">{item.month}</div>
+            <div className="text-xs text-gray-500 mt-1">{item.month}</div>
           </div>
         ))}
+      </div>
+      <div className="mt-4 flex justify-between text-xs text-gray-500">
+        <span>Total: {monthlyData.reduce((sum, month) => sum + month.count, 0)}</span>
+        <span>Max: {maxCount} in {months[monthlyData.findIndex(m => m.count === maxCount)]}</span>
       </div>
     </div>
   );
@@ -661,7 +776,7 @@ const BarChart = ({ data, title }) => {
 
 const Dashboard = () => {
   const { appointments, estimates, services } = useStore();
-  const [timeRange, setTimeRange] = useState('week');
+  const [timeRange, setTimeRange] = useState('month'); // Default to month
   const { userData } = useDashboard();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -676,6 +791,40 @@ const Dashboard = () => {
     totalServices: 0,
     completedAppointments: 0
   });
+  const [appointmentStats, setAppointmentStats] = useState({
+    byStatus: [],
+    byDayOfWeek: [],
+    byMonth: [],
+    completionRate: 0
+  });
+
+  useEffect(() => {
+    const fetchAppointmentStats = async () => {
+      try {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        const response = await axios.get(`${API_URL}/dashboard/appointments`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setAppointmentStats({
+          byStatus: response.data.data.appointmentsByStatus || [],
+          byDayOfWeek: response.data.data.appointmentsByDayOfWeek || [],
+          byMonth: response.data.data.appointmentsByMonth || [],
+          completionRate: response.data.data.completionRate || 0
+        });
+      } catch (error) {
+        console.error('Error fetching appointment stats:', error);
+        setAppointmentStats({
+          byStatus: [],
+          byDayOfWeek: [],
+          byMonth: [],
+          completionRate: 0
+        });
+      }
+    };
+
+    fetchAppointmentStats();
+  }, [API_URL]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -704,7 +853,6 @@ const Dashboard = () => {
         setStats({
           totalAppointments: appointmentsRes.data.data?.length || 0,
           pendingEstimates: estimatesRes.data.data?.filter(e => e.status === 'pending')?.length || 0,
-          //  pendingEstimates: estimatesRes.data.data?.filter(e => e.status === 'Approved')?.length || 0,
           totalServices: servicesRes.data.data?.length || 0,
           completedAppointments: appointmentsRes.data.data?.filter(a => a.status === 'Completed')?.length || 0
         });
@@ -735,7 +883,7 @@ const Dashboard = () => {
       target: 'James Wilson',
       date: '1 hour ago',
       datetime: '2023-05-18T18:00',
-      icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z',
+      icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
       iconBackground: 'bg-blue-500',
     },
     {
@@ -748,8 +896,6 @@ const Dashboard = () => {
       iconBackground: 'bg-purple-500',
     },
   ];
-
-  const barChartData = getBarChartData();
   
   if (loading) {
     return (
@@ -824,7 +970,7 @@ const Dashboard = () => {
       </div>
 
       {/* Time range selector */}
-      <div className="mb-6 bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row justify-between items-center">
+      {/* <div className="mb-6 bg-white rounded-lg shadow p-4 flex flex-col sm:flex-row justify-between items-center">
         <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-0">Overview</h2>
         <div className="flex space-x-2 w-full sm:w-auto">
           <button
@@ -858,10 +1004,10 @@ const Dashboard = () => {
             Year
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-6">
         <Card>
           <Card.Content className="text-center p-4 sm:p-6">
             <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-green-100 rounded-full">
@@ -870,7 +1016,7 @@ const Dashboard = () => {
               </svg>
             </div>
             <h2 className="mt-3 text-base sm:text-lg font-medium text-gray-700">Total Appointments</h2>
-            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalAppointments}</p>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-green-600">{stats.totalAppointments}</p>
             <p className="mt-1 text-xs sm:text-sm text-gray-500">From all time</p>
           </Card.Content>
         </Card>
@@ -908,20 +1054,21 @@ const Dashboard = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="mt-3 text-base sm:text-lg font-medium text-gray-700">Completed Jobs</h2>
-            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-green-600">{stats.completedAppointments}</p>
-            <p className="mt-1 text-xs sm:text-sm text-gray-500">Successfully completed</p>
+            <h2 className="mt-3 text-base sm:text-lg font-medium text-gray-700">Completion Rate</h2>
+            <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-green-600">
+              {appointmentStats.completionRate}%
+            </p>
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">Appointments completed</p>
           </Card.Content>
         </Card>
       </div>
 
       {/* Charts and Activity Log */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-        <div className="lg:col-span-2">
-          <BarChart 
-            data={barChartData} 
-            title={timeRange === 'week' ? 'Weekly Appointments' : timeRange === 'month' ? 'Monthly Appointments' : 'Yearly Appointments'} 
-          />
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          {appointmentStats.byStatus.length > 0 && (
+            <StatusPieChart data={appointmentStats.byStatus} />
+          )}
         </div>
         <div className="lg:col-span-1 space-y-4 sm:space-y-6">
           <div className="bg-white p-4 rounded-lg shadow">
@@ -934,6 +1081,16 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Additional Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+        {appointmentStats.byDayOfWeek.length > 0 && (
+          <DayOfWeekChart data={appointmentStats.byDayOfWeek} />
+        )}
+       {appointmentStats.byMonth && appointmentStats.byMonth.length > 0 && (
+  <MonthlyTrendChart data={appointmentStats.byMonth} />
+)}
       </div>
 
       {/* Upcoming Appointments */}
