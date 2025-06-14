@@ -30,6 +30,8 @@ const [availableSlots, setAvailableSlots] = useState([]);
 const [selectedSlot, setSelectedSlot] = useState(null);
 const [rescheduleLoading, setRescheduleLoading] = useState(false);
 const [rescheduleError, setRescheduleError] = useState(null);
+const [deleteLoading, setDeleteLoading] = useState(false);
+const [deleteError, setDeleteError] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { userData, isLoading } = useDashboard();
@@ -166,7 +168,29 @@ const handleReschedule = async () => {
 };
 
 
+const handleDeleteAppointment = async (appointmentId) => {
+  if (!confirm("Are you sure you want to cancel this appointment?")) {
+    return;
+  }
 
+  setDeleteLoading(true);
+  
+  try {
+    const res = await axios.delete(`${API_URL}/appointments/${appointmentId}`, {
+      headers: { Authorization: `Bearer ${userData.token}` }
+    });
+
+    if (res.data.success) {
+      await fetchAppointments(); // Refresh the list
+      alert("Appointment canceled successfully");
+    }
+  } catch (err) {
+    const errorMsg = err.response?.data?.message || "Failed to cancel appointment";
+    alert(errorMsg);
+  } finally {
+    setDeleteLoading(false);
+  }
+};
 
 
 
@@ -303,9 +327,9 @@ const handleReschedule = async () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t pt-4">
-                    <div className="flex items-center text-sm text-gray-500">
-                       <User className="h-4 w-4 mr-2" />
+                 <div className="mt-4 flex items-center justify-between border-t pt-4">
+  <div className="flex items-center text-sm text-gray-500">
+    <User className="h-4 w-4 mr-2" />
     <span>
       {appointment.crew?.assignedTo?.length > 0 ? (
         <span className="text-green-600">Crew assigned</span>
@@ -313,33 +337,55 @@ const handleReschedule = async () => {
         "No attendee specified"
       )}
     </span>
-                    </div>
-                  
-<button
-  onClick={() => {
-    const { canReschedule, reason } = canRescheduleAppointment(appointment);
-    if (!canReschedule) {
-      alert(reason);
-      return;
-    }
-    setSelectedAppointment(appointment);
-    setShowRescheduleModal(true);
-    setSelectedDate("");
-    setAvailableSlots([]);
-    setSelectedSlot(null);
-  }}
-  className={`ml-4 flex items-center text-sm focus:outline-none ${
-    canRescheduleAppointment(appointment).canReschedule 
-      ? 'text-blue-600 hover:underline' 
-      : 'text-gray-400 cursor-not-allowed'
-  }`}
-  disabled={!canRescheduleAppointment(appointment).canReschedule}
->
-  <span>Reschedule</span>
-</button>
+  </div>
+  
+  <div className="flex space-x-4">
+    <button
+      onClick={() => {
+        const { canReschedule, reason } = canRescheduleAppointment(appointment);
+        if (!canReschedule) {
+          alert(reason);
+          return;
+        }
+        setSelectedAppointment(appointment);
+        setShowRescheduleModal(true);
+        setSelectedDate("");
+        setAvailableSlots([]);
+        setSelectedSlot(null);
+      }}
+      className={`flex items-center text-sm focus:outline-none ${
+        canRescheduleAppointment(appointment).canReschedule 
+          ? 'text-blue-600 hover:underline' 
+          : 'text-gray-400 cursor-not-allowed'
+      }`}
+      disabled={!canRescheduleAppointment(appointment).canReschedule}
+    >
+      <span>Reschedule</span>
+    </button>
 
-
-                  </div>
+    <button
+      onClick={() => handleDeleteAppointment(appointment._id)}
+      className={`flex items-center text-sm focus:outline-none ${
+        canRescheduleAppointment(appointment).canReschedule 
+          ? 'text-red-600 hover:underline' 
+          : 'text-gray-400 cursor-not-allowed'
+      }`}
+      disabled={!canRescheduleAppointment(appointment).canReschedule || deleteLoading}
+    >
+      {deleteLoading ? (
+        <>
+          <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Canceling...
+        </>
+      ) : (
+        "Cancel"
+      )}
+    </button>
+  </div>
+</div>
                 </div>
               </div>
             ))}
@@ -354,6 +400,19 @@ const handleReschedule = async () => {
           {rescheduleError}
         </div>
       )}
+
+
+      {deleteError && (
+  <div className="fixed top-4 right-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-lg z-50">
+    <div className="flex">
+      <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+      <div>
+        <p className="font-medium text-red-800">Error canceling appointment</p>
+        <p className="text-sm text-red-600 mt-1">{deleteError}</p>
+      </div>
+    </div>
+  </div>
+)}
 
       <label className="block text-sm mb-2">Select New Date:</label>
       <input
@@ -383,24 +442,38 @@ const handleReschedule = async () => {
         }}
       />
 
-      {availableSlots.length > 0 && (
-        <>
-          <p className="mb-2 text-sm font-medium">Available Time Slots:</p>
-          <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto mb-4">
-            {availableSlots.map((slot, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedSlot(slot)}
-                className={`border rounded p-2 text-sm hover:bg-green-100 ${
-                  selectedSlot === slot ? 'bg-green-200 border-green-500' : ''
-                }`}
-              >
-                {slot.start} - {slot.end}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+    {availableSlots.length > 0 && (
+  <>
+    <p className="mb-2 text-sm font-medium">Available Time Slots:</p>
+    <div className="flex items-center text-xs text-gray-500 mb-1">
+      <span className="inline-block w-3 h-3 bg-green-200 mr-1 rounded-sm"></span> Available
+      <span className="inline-block w-3 h-3 bg-gray-100 ml-2 mr-1 rounded-sm"></span> Booked
+    </div>
+    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto mb-4">
+      {availableSlots.map((slot, index) => (
+        <button
+          key={index}
+          onClick={() => slot.available && setSelectedSlot(slot)}
+          className={`border rounded p-2 text-sm h-16 flex flex-col items-center justify-center ${
+            !slot.available
+              ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+              : selectedSlot === slot
+                ? 'bg-green-100 border-green-500 hover:bg-green-50'
+                : 'hover:bg-green-50'
+          }`}
+          disabled={!slot.available}
+        >
+          <span className="font-medium">
+            {slot.start} - {slot.end}
+          </span>
+          {!slot.available && (
+            <span className="text-xs mt-1 text-gray-500">Booked</span>
+          )}
+        </button>
+      ))}
+    </div>
+  </>
+)}
 
       <div className="flex justify-between items-center">
         <button

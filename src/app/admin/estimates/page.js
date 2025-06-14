@@ -587,37 +587,37 @@ const EstimatesTable = () => {
                 </div>
 
                 {/* Status and Notes */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                      required
-                    >
-                      {/* <option value="Requested">Requested</option> */}
-  <option value="In Review">In Review</option>
-  <option value="Prepared">Prepared</option>
-  <option value="Sent">Sent</option>
-  <option value="Approved">Approved</option>
-  <option value="Declined">Declined</option>
-  <option value="Expired">Expired</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                    <textarea
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                      rows="3"
-                      placeholder="Add any additional notes here..."
-                    />
-                  </div>
-                </div>
+               {/* Status and Notes */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+    <select
+      name="status"
+      value={formData.status}
+      onChange={handleInputChange}
+      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+      required
+    >
+      <option value="In Review">In Review</option>
+      <option value="Prepared">Prepared</option>
+      <option value="Sent">Sent</option>
+      <option value="Approved">Approved</option>
+      <option value="Declined">Declined</option>
+      <option value="Expired">Expired</option>
+    </select>
+  </div>
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+    <textarea
+      name="notes"
+      value={formData.notes}
+      onChange={handleInputChange}
+      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+      rows="3"
+      placeholder="Add any additional notes here..."
+    />
+  </div>
+</div>
 
                 <div className="flex justify-end space-x-3 border-t pt-4">
                   <button

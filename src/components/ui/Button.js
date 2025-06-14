@@ -15,7 +15,9 @@ const Button = ({
   const variants = {
     primary: "bg-green-600 hover:bg-green-700 text-white",
     secondary: "bg-white hover:bg-gray-100 text-green-700 border border-green-600",
-    social: "bg-white hover:bg-gray-100 text-gray-700 border border-gray-300"
+    social: "bg-white hover:bg-gray-100 text-gray-700 border border-gray-300",
+    disabled: "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200",
+    outline: "bg-white text-green-700 border border-green-300 hover:bg-green-50 focus:ring-green-500",
   };
   
   const widthStyle = fullWidth ? "w-full" : "";

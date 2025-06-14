@@ -62,120 +62,133 @@
 
 
 
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import Button from '../ui/Button';
 
-const TimeSlotPicker = ({ selectedDate, onTimeSelect, selectedSlot, serviceId, theme = 'default' }) => {
+const TimeSlotPicker = ({ selectedDate,onTimeSelect, selectedSlot, serviceId, theme }) => {
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
-    const fetchTimeSlots = async () => {
-      if (!selectedDate || !serviceId) return;
+    if (selectedDate && serviceId) {
+      fetchTimeSlots();
+    } else {
+      setTimeSlots([]);
+    }
+  }, [selectedDate, serviceId]);
+
+  const fetchTimeSlots = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `${API_URL}/appointments/availability?date=${selectedDate}&serviceId=${serviceId}`
+      );
       
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await axios.get(
-          `${API_URL}/appointments/availability?date=${selectedDate}&serviceId=${serviceId}`
-        );
-        
-        // Transform the API response to match our expected format
-        const formattedSlots = response.data.data.map(slot => ({
-          startTime: slot.start,
-          endTime: slot.end,
-          available: true // Assuming all slots from this endpoint are available
-        }));
-        
-        setTimeSlots(formattedSlots);
-      } catch (err) {
-        setError('Failed to load time slots');
-        console.error('Error fetching time slots:', err);
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch time slots');
       }
-    };
-
-    fetchTimeSlots();
-  }, [selectedDate, serviceId, API_URL]);
-
-  const handleSlotClick = (slot) => {
-    if (slot.available) {
-      onTimeSelect(slot.startTime, slot.endTime);
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setTimeSlots(data.data || []);
+      } else {
+        throw new Error(data.error || 'No time slots available');
+      }
+    } catch (err) {
+      console.error('Error fetching time slots:', err);
+      setError(err.message);
+      setTimeSlots([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!selectedDate) {
-    return <div className="text-center py-4 text-gray-500">Please select a date first</div>;
-  }
+  const getSlotEmoji = (available) => {
+    if (theme === 'tree') {
+      return available ? '🌲' : '🪵';
+    }
+    return available ? '✅' : '❌';
+  };
 
-  if (loading) {
-    return <div className="text-center py-4">Loading available slots...</div>;
-  }
+  // const getSlotVariant = (slot) => {
+  //   if (selectedSlot === `${slot.start} - ${slot.end}`) {
+  //     return 'primary';
+  //   }
+  //   return slot.available ? 'outline' : 'disabled';
+  // };
 
-  if (error) {
-    return <div className="text-center py-4 text-red-500">{error}</div>;
-  }
-
-  if (timeSlots.length === 0) {
-    return <div className="text-center py-4 text-gray-500">No available time slots for this date</div>;
-  }
-
+ const getSlotVariant = (slot) => {
+    // Only show as selected if the slot matches AND we have a selected date
+    if (selectedSlot === `${slot.start} - ${slot.end}` && selectedDate) {
+      return 'primary';
+    }
+    return slot.available ? 'outline' : 'disabled';
+  };
+  
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-      {timeSlots.map((slot, index) => {
-        const slotText = `${slot.startTime} - ${slot.endTime}`;
-        const isSelected = selectedSlot === slotText;
-        
-        let buttonClass = '';
-        let displayContent = slotText;
-        
-        if (theme === 'tree') {
-          displayContent = slot.available ? '🌲' : '🪵';
-          buttonClass = `text-2xl p-2 rounded-md text-center ${
-            slot.available 
-              ? 'hover:bg-green-50 cursor-pointer' 
-              : 'cursor-not-allowed opacity-50'
-          } ${
-            isSelected ? 'ring-2 ring-green-500 bg-green-50' : ''
-          }`;
-        } else {
-          buttonClass = `p-2 border rounded-md text-center text-sm ${
-            slot.available 
-              ? 'hover:bg-gray-50 cursor-pointer' 
-              : 'bg-gray-100 cursor-not-allowed opacity-50'
-          } ${
-            isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200'
-          }`;
-        }
-
-        return (
-          <button
+    <div className="space-y-4">
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-3"></div>
+          <p className="text-gray-600">Loading available time slots...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="p-3 bg-red-50 rounded-lg text-red-600 flex items-center">
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {error}
+        </div>
+      )}
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {timeSlots.map((slot, index) => (
+          <Button
             key={index}
             type="button"
-            className={buttonClass}
-            onClick={() => handleSlotClick(slot)}
+            variant={getSlotVariant(slot)}
+            onClick={() => slot.available && onTimeSelect(slot.start, slot.end)}
             disabled={!slot.available}
-            aria-label={slotText}
-            title={slotText}
+            className={`flex flex-col items-center justify-center py-3 px-2 rounded-lg transition-all h-24 w-full ${
+              slot.available ? 'hover:shadow-md hover:-translate-y-0.5' : ''
+            }`}
           >
-            {theme === 'tree' ? (
-              <div className="flex flex-col items-center">
-                <span className="text-3xl">{displayContent}</span>
-                <span className="text-xs mt-1">
-                  {new Date(`2000-01-01T${slot.startTime}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            ) : (
-              `${new Date(`2000-01-01T${slot.startTime}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(`2000-01-01T${slot.endTime}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            <span className="text-3xl mb-1">{getSlotEmoji(slot.available)}</span>
+            <span className="text-sm font-medium">
+              {slot.start} - {slot.end}
+            </span>
+            {!slot.available && (
+              <span className="text-xs mt-1 text-gray-500">Booked</span>
             )}
-          </button>
-        );
-      })}
+          </Button>
+        ))}
+      </div>
+      
+      {!loading && timeSlots.length === 0 && !error && (
+        <div className="text-center py-6 bg-gray-50 rounded-lg">
+          <svg className="w-10 h-10 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-gray-600">Please select a date to see available time slots</p>
+        </div>
+      )}
+      
+      {!loading && timeSlots.length === 0 && error && (
+        <div className="text-center py-6 bg-gray-50 rounded-lg">
+          <svg className="w-10 h-10 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-gray-600">No time slots available for this date</p>
+        </div>
+      )}
     </div>
   );
 };
