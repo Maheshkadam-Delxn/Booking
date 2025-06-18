@@ -377,7 +377,7 @@ function LoginContent() {
       setIsLoading(false);
       
       setTimeout(() => {
-        router.push('/customer');
+        router.push('/customers');
       }, 1500);
     }, 1000);
   };

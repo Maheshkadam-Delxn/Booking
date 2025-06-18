@@ -139,7 +139,7 @@ const UserServices = () => {
         <div className="flex flex-col md:flex-row justify-between items-center mb-10">
           <div className="mb-6 md:mb-0">
             <div className="flex items-center mb-3">
-              <span className="bg-emerald-600 text-white p-2 rounded-lg mr-3 shadow-lg">
+              <span className="bg-green-600 text-white p-2 rounded-lg mr-3 shadow-lg">
                 <Shield size={20} />
               </span>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
@@ -234,7 +234,7 @@ const UserServices = () => {
                 onClick={clearFilters}
                 className={`px-3 py-1.5 text-sm rounded-full flex items-center transition-all ${
                   !selectedCategory
-                    ? "bg-emerald-600 text-white shadow-md"
+                    ? "bg-green-600 text-white shadow-md"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
@@ -247,7 +247,7 @@ const UserServices = () => {
                   onClick={() => handleCategoryFilter(category)}
                   className={`px-3 py-1.5 text-sm rounded-full flex items-center transition-all ${
                     selectedCategory === category
-                      ? "bg-emerald-600 text-white shadow-md"
+                      ? "bg-green-600 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
@@ -370,14 +370,14 @@ const UserServices = () => {
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                     <Link
                       href={`/customers/services/${service._id}`}
-                      className="flex items-center text-emerald-600 hover:text-emerald-800 text-sm font-medium transition-colors duration-300"
+                      className="flex items-center text-green-600 hover:text-green-800 text-sm font-medium transition-colors duration-300"
                     >
                       <Eye size={16} className="mr-1" />
                       View Details
                     </Link>
                      <Link
                       href={`/booknow?serviceId=${service._id || service.id}`}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg flex items-center transition-colors duration-300 shadow-sm hover:shadow-md"
+                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg flex items-center transition-colors duration-300 shadow-sm hover:shadow-md"
                     >
                       <Calendar size={16} className="mr-1" />
                       Book Now

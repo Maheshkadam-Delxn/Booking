@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext  } from "react";
 import { useParams } from "next/navigation";
 
 import axios from "axios";
-import CustomerLayout from "../../../../components/customer/CustomerLayout";
+
 import {
   ArrowLeft,
   Calendar,
@@ -13,25 +13,30 @@ import {
   DollarSign,
 } from "lucide-react";
 import Link from "next/link";
-
+// import { DashboardContext } from "../../../../context/DashboardContext";
+import { useDashboard } from '@/contexts/DashboardContext';
+import CustomerLayout from "@/components/customer/CustomerLayout"; 
 export default function ServiceDetailPage() {
   const params = useParams();
   const id = params?.id;
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+   const { userData } = useDashboard();
  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
+
+ 
   useEffect(() => {
     const fetchService = async () => {
       try {
-        const token =
-          localStorage.getItem("authToken") ||
-          sessionStorage.getItem("authToken");
+       if (!userData?.token) {
+          throw new Error("Authentication token not available");
+        }
         const response = await axios.get(
           `${API_URL}/services/${id}`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${userData.token}`,
             },
           }
         );
@@ -45,7 +50,7 @@ export default function ServiceDetailPage() {
     };
 
     fetchService();
-  }, [id]);
+  }, [id,userData?.token]);
 
   // Format date function
   const formatDate = (dateString) => {
@@ -212,9 +217,11 @@ export default function ServiceDetailPage() {
                 {/* <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                   Manage Service
                 </button> */}
-                <button className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-green-500 transition-colors">
-                  Contact Support
-                </button>
+               <Link href="/contact">
+  <button className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-green-500 transition-colors">
+    Contact Support
+  </button>
+</Link>
               </div>
             </div>
           </div>
