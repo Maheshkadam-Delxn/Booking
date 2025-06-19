@@ -14,7 +14,7 @@ const AdminPage = () => {
     if (!isLoading) {
       if (!userData?.role) {
         router.push('/login');
-      } else if (userData.role !== 'admin') {
+      } else if (userData.role !== 'admin' && userData.role !== 'tenantAdmin') {
         router.push('/login');
       }
     }
@@ -22,7 +22,7 @@ const AdminPage = () => {
 
   if (isLoading) return <p>Loading...</p>;
 
-  if (userData?.role !== 'admin') return null;
+  if (userData?.role !== 'admin' && userData?.role !== 'tenantAdmin') return null;
 
   // useEffect(() => {
   //   // Get token from both storage locations

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../../lib/api/apiClient';
 import Button from '../ui/Button';
 import { useDashboard } from '../../contexts/DashboardContext';
 
@@ -23,34 +23,11 @@ const AnnouncementManager = () => {
     fetchAnnouncements();
   }, []);
 
-  // Create an axios instance with the auth token
-  const getAuthAxios = () => {
-    // The base URL already includes /api/v1 at the end, so we need to remove
-    // the /api/v1 prefix from all endpoint paths when configuring baseURL
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    // Remove the trailing /api/v1 to get the real base URL
-    const actualBaseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/api/v1'));
-    
-    const instance = axios.create({
-      baseURL: actualBaseUrl,
-    });
-    
-    // Add token to headers if available
-    if (userData && userData.token) {
-      instance.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
-    }
-    
-    return instance;
-  };
-
   const fetchAnnouncements = async () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = '/api/v1/announcements';
-      console.log('Fetching announcements from:', apiUrl);
-      const response = await getAuthAxios().get(apiUrl);
-      console.log('Response:', response);
+      const response = await apiClient.get('/announcements');
       setAnnouncements(response.data);
     } catch (error) {
       console.error('Error fetching announcements:', error);
@@ -77,16 +54,10 @@ const AnnouncementManager = () => {
     }
     
     try {
-      const authAxios = getAuthAxios();
-      
       if (isEditing) {
-        console.log(`Updating announcement ${editId}:`, formData);
-        const response = await authAxios.put(`/api/v1/announcements/${editId}`, formData);
-        console.log('Update response:', response);
+        await apiClient.put(`/announcements/${editId}`, formData);
       } else {
-        console.log('Creating new announcement:', formData);
-        const response = await authAxios.post('/api/v1/announcements', formData);
-        console.log('Create response:', response);
+        await apiClient.post('/announcements', formData);
       }
       setFormData({ title: '', message: '', status: 'inactive', displayDuration: 5 });
       setIsEditing(false);
@@ -130,7 +101,7 @@ const AnnouncementManager = () => {
     
     if (window.confirm('Are you sure you want to delete this announcement?')) {
       try {
-        await getAuthAxios().delete(`/api/v1/announcements/${id}`);
+        await apiClient.delete(`/announcements/${id}`);
         fetchAnnouncements();
       } catch (error) {
         console.error('Error deleting announcement:', error);

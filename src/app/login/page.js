@@ -1,277 +1,18 @@
-// 'use client';
-
-// import React, { useState, Suspense } from 'react';
-// import Link from 'next/link';
-// import { useRouter, useSearchParams } from 'next/navigation';
-// import AuthFormContainer from '../../components/auth/AuthFormContainer';
-// import Input from '../../components/ui/Input';
-// import Button from '../../components/ui/Button';
-// import SocialButton from '../../components/auth/SocialButton';
-// import { useDashboard } from '../../contexts/DashboardContext';
-// import { jwtDecode } from 'jwt-decode';
-
-// // Create a client component that safely uses useSearchParams
-// function LoginContent() {
-//   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-//   const router = useRouter();
-//   const { loginWithRole } = useDashboard();
-//   const searchParams = useSearchParams();
-//   const redirectPath = searchParams.get('redirect') || '/dashboard';
-  
-//   const [formData, setFormData] = useState({
-//     email: '',
-//     password: ''
-//   });
-//   const [errors, setErrors] = useState({});
-//   const [isLoading, setIsLoading] = useState(false);
-//   const [showSuccess, setShowSuccess] = useState(false);
-//   const [showError, setShowError] = useState(false);
-//   const [rememberMe, setRememberMe] = useState(false);
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData({
-//       ...formData,
-//       [name]: value
-//     });
-    
-//     // Clear field-specific error when user types
-//     if (errors[name]) {
-//       setErrors({
-//         ...errors,
-//         [name]: ''
-//       });
-//     }
-//   };
-
-//   const validateForm = () => {
-//     const newErrors = {};
-    
-//     // Simple email validation
-//     if (!formData.email) {
-//       newErrors.email = 'Email is required';
-//     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-//       newErrors.email = 'Email is invalid';
-//     }
-    
-//     // Password validation
-//     if (!formData.password) {
-//       newErrors.password = 'Password is required';
-//     }
-    
-//     setErrors(newErrors);
-//     return Object.keys(newErrors).length === 0;
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!validateForm()) return;
-
-//     setIsLoading(true);
-//     setShowError(false);
-//     setShowSuccess(false);
-
-//     try {
-//       const response = await fetch(`${API_URL}/auth/login`, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify(formData)
-//       });
-
-//       if (!response.ok) {
-//         const error = await response.json();
-//         throw new Error(error.message || 'Login failed');
-//       }
-
-//       const { token } = await response.json();
-//       if (!token) throw new Error('No token received');
-
-//       const userData = await loginWithRole(token, rememberMe);
-//       setShowSuccess(true);
-
-//       setTimeout(() => {
-//         if (redirectPath !== '/dashboard') {
-//           router.push(redirectPath); // Use query param redirect if provided
-//         } else {
-//           router.push(
-//             userData.role === 'admin' ? '/admin' :
-//             userData.role === 'professional' ? '/professional' :
-//             '/customers'
-//           );
-//         }
-//       }, 1500);
-
-//     } catch (error) {
-//       setShowError(error.message || 'Login failed');
-//       console.error('Login error:', error);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   const handleSocialLogin = (provider) => {
-//     console.log(`Login with ${provider}`);
-//     setIsLoading(true);
-    
-//     // Simulate API call for social login
-//     setTimeout(() => {
-//       // Default social login as customer
-//       const userData = { id: 5, name: 'Social User', email: 'social@example.com' };
-//       loginWithRole('customer', userData);
-      
-//       setShowSuccess(true);
-//       setIsLoading(false);
-      
-//       // Redirect after 1.5 seconds
-//       setTimeout(() => {
-//         router.push('/customer');
-//       }, 1500);
-//     }, 1000);
-//   };
-
-//   return (
-//     <AuthFormContainer 
-//       title="Log in to your account" 
-//       subtitle="Welcome back to Gildordo Rochin"
-//     >
-//       {showSuccess && (
-//         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">
-//           <p className="font-bold">Success!</p>
-//           <p className="text-sm">You have successfully logged in. Redirecting to dashboard...</p>
-//         </div>
-//       )}
-      
-//       {showError && (
-//         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-//           <p className="font-bold">Login failed</p>
-//           <p className="text-sm">Invalid email or password.</p>
-//         </div>
-//       )}
-      
-//       <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-//         <Input
-//           label="Email Address"
-//           type="email"
-//           id="email"
-//           name="email"
-//           placeholder="you@example.com"
-//           value={formData.email}
-//           onChange={handleChange}
-//           error={errors.email}
-//           required
-//         />
-        
-//         <Input
-//           label="Password"
-//           type="password"
-//           id="password"
-//           name="password"
-//           placeholder="••••••••"
-//           value={formData.password}
-//           onChange={handleChange}
-//           error={errors.password}
-//           required
-//         />
-//         <div>
-//           <div className="flex items-center">
-//             <input
-//               id="rememberMe"
-//               name="rememberMe"
-//               type="checkbox"
-//               checked={rememberMe}
-//               onChange={(e) => setRememberMe(e.target.checked)}
-//               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-//             />
-//             <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-//               Remember me
-//             </label>
-//           </div>
-        
-//           <div className="text-right">
-//             <Link href="/forgot-password" className="text-sm text-green-600 hover:text-green-500">
-//               Forgot your password?
-//             </Link>
-//           </div>
-//         </div>
-        
-//         <Button
-//           type="submit"
-//           variant="primary"
-//           fullWidth
-//           isLoading={isLoading}
-//         >
-//           Log in
-//         </Button>
-        
-//         <div className="relative my-4">
-//           <div className="absolute inset-0 flex items-center">
-//             <div className="w-full border-t border-gray-300"></div>
-//           </div>
-//           <div className="relative flex justify-center text-sm">
-//             <span className="bg-white px-2 text-gray-500">Or continue with</span>
-//           </div>
-//         </div>
-        
-//         <SocialButton 
-//           provider="Google" 
-//           onClick={() => handleSocialLogin('Google')} 
-//         />
-        
-//         <div className="text-center mt-4">
-//           <p className="text-sm text-gray-600">
-//             Don't have an account?{' '}
-//             <Link href="/signup" className="font-medium text-green-600 hover:text-green-500">
-//               Sign up
-//             </Link>
-//           </p>
-//         </div>
-//       </form>
-//     </AuthFormContainer>
-//   );
-// }
-
-// // Loading fallback for the Suspense boundary
-// function LoginLoading() {
-//   return (
-//     <AuthFormContainer 
-//       title="Log in to your account" 
-//       subtitle="Welcome back to Gildordo Rochin"
-//     >
-//       <div className="flex justify-center items-center py-10">
-//         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
-//       </div>
-//     </AuthFormContainer>
-//   );
-// }
-
-// export default function LoginPage() {
-//   return (
-//     <Suspense fallback={<LoginLoading />}>
-//       <LoginContent />
-//     </Suspense>
-//   );
-// }
-
-
-
-
-
-
-
-
 'use client';
 
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import AuthFormContainer from '../../components/auth/AuthFormContainer';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import SocialButton from '../../components/auth/SocialButton';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { jwtDecode } from 'jwt-decode';
+import apiClient from '../../lib/api/apiClient';
 
+// Create a client component that safely uses useSearchParams
 function LoginContent() {
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const router = useRouter();
   const { loginWithRole } = useDashboard();
   const searchParams = useSearchParams();
@@ -294,6 +35,7 @@ function LoginContent() {
       [name]: value
     });
     
+    // Clear field-specific error when user types
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -305,12 +47,14 @@ function LoginContent() {
   const validateForm = () => {
     const newErrors = {};
     
+    // Simple email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
     
+    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
@@ -328,38 +72,61 @@ function LoginContent() {
     setShowSuccess(false);
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      console.log('🔐 Attempting login with:', formData.email);
+      console.log('🌐 API URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+      
+      const response = await apiClient.post('/auth/login', formData);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
+      console.log('✅ Login response:', response.data);
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Login failed');
       }
 
-      const { token } = await response.json();
+      const { token } = response.data;
       if (!token) throw new Error('No token received');
 
+      console.log('🔑 Token received, logging in with role...');
       const userData = await loginWithRole(token, rememberMe);
       setShowSuccess(true);
+
+      console.log('👤 User data:', userData);
 
       setTimeout(() => {
         if (redirectPath !== '/dashboard') {
           router.push(redirectPath);
         } else {
-          router.push(
-            userData.role === 'admin' ? '/admin' :
-            userData.role === 'professional' ? '/professional' :
-            '/customers'
-          );
+          // Route based on user role
+          const targetRoute = userData.role === 'superAdmin' ? '/super-admin' :
+                             userData.role === 'tenantAdmin' ? '/admin' :
+                             userData.role === 'admin' ? '/admin' :
+                             userData.role === 'professional' ? '/professional' :
+                             userData.role === 'customer' ? '/customers' :
+                             '/customers'; // Default fallback
+          console.log('🚀 Redirecting to:', targetRoute);
+          router.push(targetRoute);
         }
       }, 1500);
 
     } catch (error) {
-      setShowError(error.message || 'Login failed');
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
+      
+      let errorMessage = 'Login failed';
+      
+      if (error.response) {
+        // Server responded with error
+        console.log('📊 Error response:', error.response.data);
+        errorMessage = error.response.data.message || error.response.data.error || 'Login failed';
+      } else if (error.request) {
+        // Network error
+        console.log('🌐 Network error:', error.request);
+        errorMessage = 'Network error. Please check your connection.';
+      } else {
+        // Other error
+        errorMessage = error.message || 'Login failed';
+      }
+      
+      setShowError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -369,13 +136,16 @@ function LoginContent() {
     console.log(`Login with ${provider}`);
     setIsLoading(true);
     
+    // Simulate API call for social login
     setTimeout(() => {
+      // Default social login as customer
       const userData = { id: 5, name: 'Social User', email: 'social@example.com' };
       loginWithRole('customer', userData);
       
       setShowSuccess(true);
       setIsLoading(false);
       
+      // Redirect after 1.5 seconds
       setTimeout(() => {
         router.push('/customer');
       }, 1500);
@@ -531,46 +301,66 @@ function LoginContent() {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-600">
+                    <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
                       Remember me
                     </label>
                   </div>
-                
+                  
                   <div className="text-sm">
-                    <Link href="/forgot-password" className="font-medium text-green-600 hover:text-green-500 hover:underline">
-                      Forgot password?
+                    <Link href="/forgot-password" className="text-green-600 hover:text-green-500">
+                      Forgot your password?
                     </Link>
                   </div>
                 </div>
-                
+
                 <Button
                   type="submit"
                   variant="primary"
                   fullWidth
-                  isLoading={isLoading}
-                  className="mt-4 py-2.5 text-base font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+                  disabled={isLoading}
+                  className="mt-6"
                 >
-                  {isLoading ? 'Logging in...' : 'Log in'}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Signing in...
+                    </div>
+                  ) : (
+                    'Sign in'
+                  )}
                 </Button>
-                
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"></div>
+
+                <div className="mt-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="bg-white px-2 text-gray-500">Or continue with</span>
+
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    <SocialButton
+                      provider="google"
+                      onClick={() => handleSocialLogin('google')}
+                      disabled={isLoading}
+                    />
+                    <SocialButton
+                      provider="facebook"
+                      onClick={() => handleSocialLogin('facebook')}
+                      disabled={isLoading}
+                    />
                   </div>
                 </div>
-                
-                <SocialButton 
-                  provider="Google" 
-                  onClick={() => handleSocialLogin('Google')} 
-                />
-                
-                <div className="text-center mt-4">
-                  <p className="text-xs text-gray-600">
+
+                <div className="text-center mt-6">
+                  <p className="text-sm text-gray-600">
                     Don't have an account?{' '}
-                    <Link href="/signup" className="font-medium text-green-600 hover:text-green-500 hover:underline">
+                    <Link href="/signup" className="text-green-600 hover:text-green-500 font-medium">
                       Sign up
                     </Link>
                   </p>
@@ -586,22 +376,10 @@ function LoginContent() {
 
 function LoginLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-gray-50 p-4">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
-        <div className="md:w-1/2 p-6 text-white flex flex-col justify-center relative bg-cover bg-center"
-          style={{
-            backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(/images/landscaping-image.png)",
-            minHeight: "400px"
-          }}>
-          <div className="relative z-10">
-            <h1 className="text-2xl font-bold mb-4 leading-tight">
-              Welcome Back to <span className="text-yellow-300">Gildardo Rochin</span>
-            </h1>
-          </div>
-        </div>
-        <div className="md:w-1/2 p-8 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading...</p>
       </div>
     </div>
   );
