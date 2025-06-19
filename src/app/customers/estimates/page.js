@@ -5,7 +5,8 @@ import { Clock, Home, MapPin, DollarSign, Calendar, CheckCircle, AlertCircle, Lo
 import CustomerLayout from '../../../components/customer/CustomerLayout';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { useRouter } from 'next/navigation';
-
+import { motion } from "framer-motion";
+import Link  from 'next/link';
 
 export default function EstimatesPage() {
   const [estimates, setEstimates] = useState([]);
@@ -107,9 +108,19 @@ export default function EstimatesPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No estimates found</h3>
             <p className="text-gray-500 mb-6">You don't have any estimates yet.</p>
-            <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+            {/* <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg bg-green-600 hover:bg-green-700 transition-colors">
               Request New Estimate
-            </button>
+            </button> */}
+           <Link href="/create-estimate">
+  <motion.button 
+    className="bg-white text-green-700 border border-green-600 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors duration-300 w-48"
+    whileHover={{ scale: 1.03 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    Request Estimate
+  </motion.button>
+</Link>
+            {/* href="/create-estimate" */}
           </div>
         ) : (
           <div className="space-y-6">

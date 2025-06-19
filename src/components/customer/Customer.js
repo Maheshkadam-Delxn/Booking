@@ -551,12 +551,12 @@ const handleImageClick = (images, index = 0) => {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-green-600 font-medium">Address</p>
-                  <p className="text-gray-700">{user.properties[0].address}</p>
+                  {/* <p className="text-gray-700">{user.properties[0].address}</p> */}
                 </div>
                 <div className="flex justify-between">
                   <div>
                     <p className="text-sm text-green-600 font-medium">Size</p>
-                    <p className="text-gray-700">{user.properties[0].sqft}</p>
+                    {/* <p className="text-gray-700">{user.properties[0].sqft}</p> */}
                   </div>
                   {/* <div>
                 <p className="text-sm text-green-600 font-medium">Services</p>

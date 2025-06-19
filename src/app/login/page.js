@@ -147,7 +147,7 @@ function LoginContent() {
       
       // Redirect after 1.5 seconds
       setTimeout(() => {
-        router.push('/customer');
+        router.push('/customers');
       }, 1500);
     }, 1000);
   };
