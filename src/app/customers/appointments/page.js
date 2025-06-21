@@ -73,18 +73,26 @@ const [deleteError, setDeleteError] = useState(null);
 
 const canRescheduleAppointment = (appointment) => {
   const now = new Date();
-  const appointmentDate = new Date(appointment.date);
+  
+  // Combine date with time slot to get actual appointment datetime
+  const appointmentDateStr = new Date(appointment.date).toISOString().split('T')[0];
+  const appointmentDateTime = new Date(`${appointmentDateStr}T${appointment.timeSlot.startTime}:00Z`);
+  
+  console.log('Current time:', now.toISOString());
+  console.log('Appointment time:', appointmentDateTime.toISOString());
   
   // Check if appointment is in the past
-  if (appointmentDate < now) {
+  if (appointmentDateTime < now) {
     return { canReschedule: false, reason: "Past appointments cannot be rescheduled" };
   }
   
-  // Check if appointment is within the minimum reschedule window (e.g., 24 hours)
-  const hoursBeforeAppointment = (appointmentDate - now) / (1000 * 60 * 60);
-  const MIN_RESCHEDULE_HOURS = 24; // Minimum hours before appointment to allow rescheduling
+  // Calculate hours remaining (in UTC)
+  const hoursBeforeAppointment = (appointmentDateTime - now) / (1000 * 60 * 60);
+  const MIN_RESCHEDULE_HOURS = 24;
   
-  if (hoursBeforeAppointment < MIN_RESCHEDULE_HOURS) {
+  console.log('Hours before appointment:', hoursBeforeAppointment);
+  
+  if (hoursBeforeAppointment <= MIN_RESCHEDULE_HOURS) {
     return { 
       canReschedule: false, 
       reason: `Appointments cannot be rescheduled within ${MIN_RESCHEDULE_HOURS} hours of the scheduled time` 
@@ -95,10 +103,6 @@ const canRescheduleAppointment = (appointment) => {
 };
 
 
-
-
-
- 
 
 const handleReschedule = async () => {
   if (!selectedDate || !selectedSlot) {
@@ -112,9 +116,25 @@ const handleReschedule = async () => {
     return;
   }
 
-  const newAppointmentDate = new Date(selectedDate);
-  if (newAppointmentDate < new Date()) {
-    setRescheduleError("Cannot reschedule to a past date");
+  // Create date in UTC by appending 'Z' to ISO string
+  const [hours, minutes] = selectedSlot.start.split(':').map(Number);
+  const newAppointmentDateTime = new Date(`${selectedDate}T${selectedSlot.start}:00Z`);
+
+  // Get current time in UTC
+  const now = new Date();
+  const bufferTime = new Date(now.getTime() + 5 * 60 * 1000); // 5 minute buffer
+
+  // Debug logs
+  console.log("Reschedule attempt:", {
+    selectedDate,
+    selectedSlot,
+    newAppointmentDateTime,
+    now,
+    bufferTime
+  });
+
+  if (newAppointmentDateTime < bufferTime) {
+    setRescheduleError("Cannot reschedule to a past date/time");
     return;
   }
 
@@ -125,47 +145,25 @@ const handleReschedule = async () => {
     const res = await axios.put(
       `${API_URL}/appointments/${selectedAppointment._id}/reschedule-request`,
       {
-        requestedDate: selectedDate,
+        requestedDate: selectedDate, // YYYY-MM-DD format
         requestedTime: `${selectedSlot.start} - ${selectedSlot.end}`,
-        reason: "Customer requested reschedule through portal"
+        reason: "Customer requested reschedule"
       },
-      {
-        headers: {
-          Authorization: `Bearer ${userData.token}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${userData.token}` } }
     );
 
-   if (res.data.success) {
-  // Close modal first
-  setShowRescheduleModal(false);
-
-  // Clear all selections and error states
-  setSelectedAppointment(null);
-  setSelectedDate("");
-  setAvailableSlots([]);
-  setSelectedSlot(null);
-  setRescheduleError(null);
-
-  // ✅ Refetch appointments
-  await fetchAppointments();
-
-  // Optional: success alert
-  alert("Reschedule request submitted successfully!");
-}
- else {
-      setRescheduleError(res.data.error || "Failed to submit reschedule request");
+    if (res.data.success) {
+      setShowRescheduleModal(false);
+      await fetchAppointments();
+      alert("Reschedule request submitted successfully!");
     }
   } catch (err) {
-    console.error("Reschedule failed:", err);
-    setRescheduleError(
-      err.response?.data?.error ||
-      "Failed to submit reschedule request. Please try again."
-    );
+    setRescheduleError(err.response?.data?.error || "Failed to submit reschedule request");
   } finally {
     setRescheduleLoading(false);
   }
 };
+
 
 
 const handleDeleteAppointment = async (appointmentId) => {

@@ -165,47 +165,72 @@ const CreateEstimateForm = ({ appointmentId }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError('');
 
-    if (formData.services.length === 0 || formData.services.some(s => !s.service)) {
-      setError('Please add at least one valid service');
-      setIsSubmitting(false);
-      return;
-    }
+  if (formData.services.length === 0 || formData.services.some(s => !s.service)) {
+    setError('Please add at least one valid service');
+    setIsSubmitting(false);
+    return;
+  }
 
-    const requestData = {
-      services: formData.services.map(s => ({
-        service: s.service,
-        quantity: parseInt(s.quantity)
-      })),
-      property: {
-        address: formData.property.address,
-        size: formData.property.size,
-        details: formData.property.details
-      },
-      customerNotes: formData.customerNotes,
-      budget: formData.budget,
-      accessInfo: formData.accessInfo
-    };
+  // Get tenant ID from the first selected service
+  const selectedService = services.find(s => s._id === formData.services[0].service);
+  if (!selectedService) {
+    setError('Invalid service selection');
+    setIsSubmitting(false);
+    return;
+  }
 
-    try {
-      const res = await axios.post(
-        `${API_URL}/estimates/request`,
-        requestData,
-        { headers: { Authorization: `Bearer ${userData?.token}` } }
-      );
-      const estimateId = res.data.data._id;
-      if (photos.length > 0) await uploadPhotos(estimateId);
-      router.push('/customers/estimates');
-    } catch (err) {
-      console.error('Error creating estimate:', err);
-      setError(err.response?.data?.message || 'Failed to create estimate. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const requestData = {
+    tenantId: selectedService.tenantId, // Include tenantId from the service
+    services: formData.services.map(s => ({
+      service: s.service,
+      quantity: parseInt(s.quantity)
+    })),
+    property: {
+      address: formData.property.address,
+      size: formData.property.size,
+      details: formData.property.details
+    },
+    customerNotes: formData.customerNotes,
+    budget: formData.budget,
+    accessInfo: formData.accessInfo
   };
+
+  try {
+    console.log('Submitting estimate request:', requestData); // Log request payload
+    
+    const res = await axios.post(
+      `${API_URL}/estimates/request`,
+      requestData,
+      { 
+        headers: { 
+          Authorization: `Bearer ${userData?.token}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+    
+    console.log('Estimate created:', res.data); // Log successful response
+    
+    const estimateId = res.data.data._id;
+    if (photos.length > 0) await uploadPhotos(estimateId);
+    router.push('/customers/estimates');
+  } catch (err) {
+    console.error('Error creating estimate:', err);
+    console.error('Error response data:', err.response?.data); // Log detailed error
+    
+    const errorMessage = err.response?.data?.message || 
+                        err.response?.data?.error || 
+                        'Failed to create estimate. Please try again.';
+    
+    setError(errorMessage);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (!userData?.token) {
     return (

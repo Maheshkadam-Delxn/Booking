@@ -61,13 +61,12 @@
 // export default TimeSlotPicker;
 
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Button from '../ui/Button';
 
-const TimeSlotPicker = ({ selectedDate,onTimeSelect, selectedSlot, serviceId, theme }) => {
+const TimeSlotPicker = ({ selectedDate, onTimeSelect, selectedSlot, serviceId, theme }) => {
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -89,16 +88,38 @@ const TimeSlotPicker = ({ selectedDate,onTimeSelect, selectedSlot, serviceId, th
         `${API_URL}/appointments/availability?date=${selectedDate}&serviceId=${serviceId}`
       );
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch time slots');
-      }
+      if (!response.ok) throw new Error('Failed to fetch time slots');
       
       const data = await response.json();
       
       if (data.success) {
-        setTimeSlots(data.data || []);
+        // Process slots with consistent naming
+        let processedSlots = data.data.map(slot => ({
+          start: slot.startTime,
+          end: slot.endTime,
+          available: slot.available
+        })).sort((a, b) => a.start.localeCompare(b.start));
+
+        // Additional client-side validation for today's date
+        const today = new Date().toISOString().split('T')[0];
+        const isToday = selectedDate === today;
+        
+        if (isToday) {
+          const currentTime = new Date();
+          const currentHours = currentTime.getHours();
+          const currentMinutes = currentTime.getMinutes();
+          
+          processedSlots = processedSlots.filter(slot => {
+            const [hours, minutes] = slot.start.split(':').map(Number);
+            // Only keep slots that start after current time
+            return hours > currentHours || 
+                  (hours === currentHours && minutes > currentMinutes);
+          });
+        }
+        
+        setTimeSlots(processedSlots);
       } else {
-        throw new Error(data.error || 'No time slots available');
+        throw new Error(data.message || 'No time slots available');
       }
     } catch (err) {
       console.error('Error fetching time slots:', err);
@@ -109,6 +130,7 @@ const TimeSlotPicker = ({ selectedDate,onTimeSelect, selectedSlot, serviceId, th
     }
   };
 
+  // Rest of your component remains the same...
   const getSlotEmoji = (available) => {
     if (theme === 'tree') {
       return available ? '🌲' : '🪵';
@@ -116,16 +138,9 @@ const TimeSlotPicker = ({ selectedDate,onTimeSelect, selectedSlot, serviceId, th
     return available ? '✅' : '❌';
   };
 
-  // const getSlotVariant = (slot) => {
-  //   if (selectedSlot === `${slot.start} - ${slot.end}`) {
-  //     return 'primary';
-  //   }
-  //   return slot.available ? 'outline' : 'disabled';
-  // };
-
- const getSlotVariant = (slot) => {
-    // Only show as selected if the slot matches AND we have a selected date
-    if (selectedSlot === `${slot.start} - ${slot.end}` && selectedDate) {
+  const getSlotVariant = (slot) => {
+    const currentSlot = `${slot.start} - ${slot.end}`;
+    if (selectedSlot === currentSlot && selectedDate) {
       return 'primary';
     }
     return slot.available ? 'outline' : 'disabled';
@@ -150,9 +165,9 @@ const TimeSlotPicker = ({ selectedDate,onTimeSelect, selectedSlot, serviceId, th
       )}
       
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {timeSlots.map((slot, index) => (
+        {timeSlots.map((slot) => (
           <Button
-            key={index}
+            key={`${slot.start}-${slot.end}`}
             type="button"
             variant={getSlotVariant(slot)}
             onClick={() => slot.available && onTimeSelect(slot.start, slot.end)}
@@ -178,15 +193,6 @@ const TimeSlotPicker = ({ selectedDate,onTimeSelect, selectedSlot, serviceId, th
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-gray-600">Please select a date to see available time slots</p>
-        </div>
-      )}
-      
-      {!loading && timeSlots.length === 0 && error && (
-        <div className="text-center py-6 bg-gray-50 rounded-lg">
-          <svg className="w-10 h-10 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="text-gray-600">No time slots available for this date</p>
         </div>
       )}
     </div>

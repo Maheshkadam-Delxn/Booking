@@ -22,6 +22,7 @@ import RecurringAppointmentModal from "./components/RecurringAppointmentModal";
 import CrewAssignmentModal from "./components/CrewAssignmentModal";
 import PaymentStatusModal from "./components/PaymentStatusModal";
 import { useRouter } from "next/navigation";
+import { useTenant } from "@/contexts/TenantContext";
 
 // Status badge component with appropriate colors
 const StatusBadge = ({ status }) => {
@@ -85,8 +86,8 @@ const StatusBadge = ({ status }) => {
 
 // Add the localizer for the calendar
 const localizer = momentLocalizer(moment);
-const validFiles = [];
-const newPreviewUrls = [];
+
+
 const AppointmentDetailsModal = ({ appointment, onClose, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedAppointment, setEditedAppointment] = useState({
@@ -1332,7 +1333,8 @@ const DateAppointmentsModal = ({
 const AppointmentsPage = () => {
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const { userData, isLoading } = useDashboard();
+  const { userData, isLoading: isUserLoading } = useDashboard();
+  const { tenant, isLoading: isTenantLoading } = useTenant();
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1356,20 +1358,25 @@ const AppointmentsPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Move getAuthHeaders before fetchAppointments
   const getAuthHeaders = useCallback(() => {
     if (!userData?.token) {
       console.error("No auth token available in context");
       return {};
     }
 
-    return {
+    const headers = {
       Authorization: `Bearer ${userData.token}`,
       "Content-Type": "application/json",
     };
-  }, [userData]);
 
-  // Define fetchAppointments first
+    // Add tenant subdomain header if available
+    if (tenant?.subdomain) {
+      headers["X-Tenant-Subdomain"] = tenant.subdomain;
+    }
+
+    return headers;
+  }, [userData, tenant]);
+
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
     try {
@@ -1379,11 +1386,14 @@ const AppointmentsPage = () => {
         throw new Error("No authorization token available");
       }
 
-      // Remove pagination parameters and fetch all appointments
-      const appointmentsRes = await axios.get(
-        `${API_URL}/appointments?limit=1000`, // Set a high limit to get all appointments
-        { headers }
-      );
+      // Add tenantId parameter if user is a tenant admin
+      const url = `${API_URL}/appointments?limit=1000${
+        userData?.role === "tenantAdmin" && tenant?.id
+          ? `&tenantId=${tenant.id}`
+          : ""
+      }`;
+
+      const appointmentsRes = await axios.get(url, { headers });
 
       if (!appointmentsRes.data.success) {
         throw new Error(
@@ -1419,7 +1429,6 @@ const AppointmentsPage = () => {
         startTime: app.timeSlot?.startTime || "N/A",
         endTime: app.timeSlot?.endTime || "N/A",
         status: app.status || "Pending",
-        // frequency: app.recurringType || 'One-time',
         frequency: app.recurringType,
         payment: app.payment || {
           status: "Pending",
@@ -1439,6 +1448,7 @@ const AppointmentsPage = () => {
           beforeService: [],
           afterService: [],
         },
+        tenantId: app.tenantId?._id || app.tenantId || null, // Add tenantId to appointment
       }));
 
       setAppointments(transformedAppointments);
@@ -1454,125 +1464,82 @@ const AppointmentsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, getAuthHeaders]);
+  }, [API_URL, getAuthHeaders, userData, tenant]);
 
-  // Then define handleCalendarView
   const handleCalendarView = useCallback(
-    async (date, view) => {
-      console.log("Loading calendar view for:", view, "date:", date);
+  async (date, view) => {
+    console.log("Loading calendar view for:", view, "date:", date);
 
-      try {
-        setLoading(true);
-        const headers = getAuthHeaders();
+    try {
+      setLoading(true);
+      const headers = getAuthHeaders();
 
-        let start, end;
-        const currentView = view || viewType;
+      let start, end;
+      const currentView = view || viewType;
 
-        if (currentView === "month") {
-          start = moment(date).startOf("month").format("YYYY-MM-DD");
-          end = moment(date).endOf("month").format("YYYY-MM-DD");
-        } else if (currentView === "week") {
-          start = moment(date).startOf("week").format("YYYY-MM-DD");
-          end = moment(date).endOf("week").format("YYYY-MM-DD");
-        } else {
-          // day view
-          start = moment(date).format("YYYY-MM-DD");
-          end = start;
-        }
-
-        console.log("Fetching appointments between:", start, "and", end);
-
-        const response = await axios.get(
-          `${API_URL}/appointments/calendar?start=${start}&end=${end}`,
-          { headers }
-        );
-
-        console.log("Received", response.data.data.length, "appointments");
-
-        if (!response.data.success) {
-          throw new Error(
-            response.data.message || "Failed to load calendar events"
-          );
-        }
-
-        // When creating calendar events:
-        const transformedEvents = response.data.data.map((event) => {
-          const startDate = moment(event.start).utc().toDate();
-          const endDate = moment(event.end).utc().toDate();
-
-          return {
-            ...event,
-            id: event._id,
-            title: `${event.serviceName || "Appointment"} - ${
-              event.customerName || "Customer"
-            }`,
-            start: startDate,
-            end: endDate,
-            status: event.status,
-            customer: event.customer,
-            serviceName: event.serviceName,
-            tooltip: `${event.serviceName || "Appointment"}\n${
-              event.customerName || "Customer"
-            }\n${moment(startDate).format("h:mm A")} - ${moment(endDate).format(
-              "h:mm A"
-            )}`,
-          };
-        });
-
-        setCalendarEvents(transformedEvents);
-        setCurrentDate(date);
-        setError(null);
-      } catch (error) {
-        console.error("Calendar view error:", error);
-        if (error.response?.status === 401) {
-          toast.error("Session expired. Please log in again.");
-          router.push("/login");
-        } else {
-          toast.error(
-            error.response?.data?.message ||
-              error.message ||
-              "Failed to load calendar events"
-          );
-        }
-        setCalendarEvents([]);
-        setError(error.message);
-      } finally {
-        setLoading(false);
+      if (currentView === "month") {
+        start = moment(date).startOf("month").format("YYYY-MM-DD");
+        end = moment(date).endOf("month").format("YYYY-MM-DD");
+      } else if (currentView === "week") {
+        start = moment(date).startOf("week").format("YYYY-MM-DD");
+        end = moment(date).endOf("week").format("YYYY-MM-DD");
+      } else {
+        // day view
+        start = moment(date).format("YYYY-MM-DD");
+        end = start;
       }
-    },
-    [API_URL, getAuthHeaders, userData, router, viewType]
-  );
 
-  // Add useEffect to load appointments when component mounts
-  useEffect(() => {
-    if (!isLoading && userData?.token) {
-      fetchAppointments();
-      // Load current month's appointments by default for calendar
-      const today = new Date();
-      handleCalendarView(today, "month");
+      // Include tenantId in the API request for tenant admins
+      const url = `${API_URL}/appointments/calendar?start=${start}&end=${end}${
+        userData?.role === "tenantAdmin" && tenant?.id
+          ? `&tenantId=${tenant.id}`
+          : ""
+      }`;
+
+      const response = await axios.get(url, { headers });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Failed to load calendar events");
+      }
+
+      // Filter appointments by tenant (client-side fallback)
+      let filteredEvents = response.data.data;
+      if (userData?.role === "tenantAdmin" && tenant?.id) {
+        filteredEvents = filteredEvents.filter(
+          (event) => event.tenantId === tenant.id
+        );
+      }
+
+      // Transform events for the calendar
+      const transformedEvents = filteredEvents.map((event) => {
+        const startDate = moment(event.start).utc().toDate();
+        const endDate = moment(event.end).utc().toDate();
+
+        return {
+          ...event,
+          id: event._id,
+          title: `${event.serviceName || "Appointment"} - ${
+            event.customerName || "Customer"
+          }`,
+          start: startDate,
+          end: endDate,
+          status: event.status,
+          tenantId: event.tenantId, // Include tenantId for reference
+        };
+      });
+
+      setCalendarEvents(transformedEvents);
+      setCurrentDate(date);
+      setError(null);
+    } catch (error) {
+      console.error("Calendar view error:", error);
+      toast.error(error.response?.data?.message || "Failed to load calendar");
+    } finally {
+      setLoading(false);
     }
-  }, [isLoading, userData, fetchAppointments, handleCalendarView]);
-  const loadMoreAppointments = async () => {
-    if (pagination.hasMore) {
-      await fetchAppointments(pagination.page + 1, pagination.limit);
-    }
-  };
-
-  const renderLoadMore = () => {
-    if (!pagination.hasMore) return null;
-
-    return (
-      <div className="mt-4 text-center">
-        <Button
-          onClick={loadMoreAppointments}
-          disabled={loading}
-          variant="outline"
-        >
-          {loading ? "Loading..." : "Load More"}
-        </Button>
-      </div>
-    );
-  };
+  },
+  [API_URL, getAuthHeaders, userData, tenant, viewType]
+);
 
   const fetchServices = useCallback(async () => {
     try {
@@ -1582,7 +1549,14 @@ const AppointmentsPage = () => {
         throw new Error("No authorization token available");
       }
 
-      const servicesRes = await axios.get(`${API_URL}/services`, { headers });
+      // Add tenantId parameter if user is a tenant admin
+      const url = `${API_URL}/services${
+        userData?.role === "tenantAdmin" && tenant?.id
+          ? `?tenantId=${tenant.id}`
+          : ""
+      }`;
+
+      const servicesRes = await axios.get(url, { headers });
 
       if (!servicesRes.data.success) {
         throw new Error(servicesRes.data.message || "Failed to fetch services");
@@ -1604,7 +1578,16 @@ const AppointmentsPage = () => {
         err.response?.data?.message || err.message || "Failed to load services"
       );
     }
-  }, [API_URL, getAuthHeaders]);
+  }, [API_URL, getAuthHeaders, userData, tenant]);
+
+  useEffect(() => {
+    if (!isUserLoading && !isTenantLoading && userData?.token) {
+      fetchAppointments();
+      fetchServices();
+      const today = new Date();
+      handleCalendarView(today, "month");
+    }
+  }, [isUserLoading, isTenantLoading, userData, fetchAppointments, fetchServices, handleCalendarView]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -1619,8 +1602,15 @@ const AppointmentsPage = () => {
     }
   };
 
-  const filteredAppointments = [...appointments]
+   const filteredAppointments = [...appointments]
     .filter((appointment) => {
+      // Add tenant filter for tenant admins
+      if (userData?.role === "tenantAdmin" && tenant?.id) {
+        if (appointment.tenantId !== tenant.id) {
+          return false;
+        }
+      }
+
       const searchMatches =
         (appointment.customerName?.toLowerCase() || "").includes(
           searchTerm.toLowerCase()
@@ -1781,7 +1771,7 @@ const AppointmentsPage = () => {
     setActiveModal(null);
   };
 
-  if (isLoading || loading) {
+  if (isUserLoading || isTenantLoading || loading) {
     return (
       <AdminLayout>
         <div className="text-center p-8">

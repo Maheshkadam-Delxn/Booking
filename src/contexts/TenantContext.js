@@ -54,6 +54,7 @@ export const TenantProvider = ({ children }) => {
       
       // Mock tenant data for now
       const mockTenantData = {
+         _id: "mock-tenant-id-123",
         name: `${subdomain.charAt(0).toUpperCase() + subdomain.slice(1)} Landscaping`,
         subdomain: subdomain,
         settings: {

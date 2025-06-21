@@ -1,3 +1,66 @@
+// 'use client';
+
+// import React, { useState, useEffect } from 'react';
+// import Link from 'next/link';
+// import AdminLayout from '@/components/admin/AdminLayout';
+// import Button from '@/components/ui/Button';
+// import { serviceApi } from '@/lib/api/services';
+// import { useDashboard } from '@/contexts/DashboardContext';
+// import axios from 'axios';
+
+// const ServicesPage = () => {
+//   const [services, setServices] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [selectedCategory, setSelectedCategory] = useState('all');
+//   const [sortField, setSortField] = useState('createdAt'); // Default sort by creation date
+//   const [sortDirection, setSortDirection] = useState('desc'); // Default newest first
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [totalPages, setTotalPages] = useState(1);
+//   const [deleteLoading, setDeleteLoading] = useState(false);
+//   const { userData, isLoading } = useDashboard();
+//   const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
+
+//   const CATEGORIES = [
+//     'all',
+//     'Lawn Maintenance',
+//     'Gardening',
+//     'Tree Service',
+//     'Landscaping Design',
+//     'Irrigation',
+//     'Seasonal',
+//     'Other'
+//   ];
+
+//   useEffect(() => {
+//     fetchServices();
+//   }, [currentPage, selectedCategory, sortField, sortDirection, searchTerm]);
+
+//   const fetchServices = async () => {
+//     try {
+//       setLoading(true);
+//       const params = {
+//         page: currentPage,
+//         limit: 10,
+//         category: selectedCategory !== 'all' ? selectedCategory : undefined,
+//         sort: `${sortDirection === 'desc' ? '-' : ''}${sortField}`,
+//         search: searchTerm || undefined
+//       };
+
+//       const response = await serviceApi.getAllServices(params);
+//       setServices(response.data);
+//       setTotalPages(Math.ceil(response.total / 10));
+//     } catch (err) {
+//       setError(err.response?.data?.message || 'Failed to fetch services');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+
+
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,6 +69,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import Button from '@/components/ui/Button';
 import { serviceApi } from '@/lib/api/services';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useTenant } from '@/contexts/TenantContext';
 import axios from 'axios';
 
 const ServicesPage = () => {
@@ -14,13 +78,15 @@ const ServicesPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortField, setSortField] = useState('createdAt'); // Default sort by creation date
-  const [sortDirection, setSortDirection] = useState('desc'); // Default newest first
+  const [sortField, setSortField] = useState('createdAt');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  
   const { userData, isLoading } = useDashboard();
-  const API_URL=process.env.NEXT_PUBLIC_API_BASE_URL;
+  const { tenant } = useTenant();
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const CATEGORIES = [
     'all',
@@ -30,34 +96,57 @@ const ServicesPage = () => {
     'Landscaping Design',
     'Irrigation',
     'Seasonal',
+    'Residential',
     'Other'
   ];
 
   useEffect(() => {
-    fetchServices();
-  }, [currentPage, selectedCategory, sortField, sortDirection, searchTerm]);
-
-  const fetchServices = async () => {
-    try {
-      setLoading(true);
-      const params = {
-        page: currentPage,
-        limit: 10,
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        sort: `${sortDirection === 'desc' ? '-' : ''}${sortField}`,
-        search: searchTerm || undefined
-      };
-
-      const response = await serviceApi.getAllServices(params);
-      setServices(response.data);
-      setTotalPages(Math.ceil(response.total / 10));
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch services');
-    } finally {
-      setLoading(false);
+    if (userData && !isLoading && tenant) {
+      fetchServices();
     }
-  };
+  }, [currentPage, selectedCategory, sortField, sortDirection, searchTerm, userData, isLoading, tenant]);
 
+ // Modify the fetchServices function to ensure it's using the correct tenant ID
+const fetchServices = async () => {
+  try {
+    setLoading(true);
+    
+    // Ensure we have the tenant ID in the correct format
+    const tenantId = userData?.tenantId?._id || userData?.tenantId;
+    if (!tenantId) {
+      throw new Error('No tenant associated with this user');
+    }
+
+    const params = {
+      tenantId, // Simplified
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      search: searchTerm || undefined,
+      sort: `${sortField}:${sortDirection}`
+    };
+
+    // Clean up params to remove undefined values
+    const cleanedParams = Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v !== undefined)
+    );
+
+    const response = await axios.get(`${API_URL}/services`, {
+      params: cleanedParams,
+      headers: {
+        Authorization: `Bearer ${userData.token}`,
+      },
+    });
+    
+    setServices(response.data?.data || []);
+    setError(null);
+    
+  } catch (err) {
+    console.error('Error fetching services:', err);
+    setError(err.response?.data?.message || err.message || 'Failed to fetch services');
+    setServices([]);
+  } finally {
+    setLoading(false);
+  }
+};
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this service?')) return;
 

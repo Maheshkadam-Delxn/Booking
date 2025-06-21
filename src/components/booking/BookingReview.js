@@ -7,20 +7,20 @@ import useStore from "../../lib/store";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useDashboard } from "../../contexts/DashboardContext";
+import { useTenant } from "../../contexts/TenantContext";
 
 const BookingReview = ({ onBack }) => {
   const router = useRouter();
-  const { userData, isLoading } = useDashboard();
+  const { userData } = useDashboard();
+  const { tenant } = useTenant();
   const { currentBooking, resetCurrentBooking } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  if (!userData || isLoading) {
+  if (!userData) {
     return null;
   }
-
-  const selectedService = currentBooking.selectedService;
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -40,7 +40,7 @@ const BookingReview = ({ onBack }) => {
         }
       );
 
-      // Create appointment
+      // Create appointment with tenant context
       const appointmentData = {
         service: currentBooking.serviceId,
         date: currentBooking.appointmentDate,
@@ -50,13 +50,18 @@ const BookingReview = ({ onBack }) => {
         },
         notes: currentBooking.notes,
         frequency: currentBooking.frequency,
+        // Tenant ID will be automatically set from the service on backend
       };
 
       const response = await axios.post(
         `${API_URL}/appointments`,
         appointmentData,
         {
-          headers: { Authorization: `Bearer ${userData.token}` },
+          headers: { 
+            Authorization: `Bearer ${userData.token}`,
+            // Include tenant subdomain if in tenant context
+            ...(tenant?.subdomain && { 'X-Tenant-Subdomain': tenant.subdomain })
+          },
         }
       );
 
@@ -70,7 +75,6 @@ const BookingReview = ({ onBack }) => {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="py-8 bg-emerald-50 min-h-screen px-4 md:px-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold text-emerald-800 mb-6">Review Your Booking</h2>

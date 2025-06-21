@@ -53,26 +53,52 @@ const ServiceForm = () => {
   });
 
   // Fetch existing service names on component mount
-  useEffect(() => {
-    const fetchServices = async () => {
-      if (userData?.token) {
-        try {
-          const response = await axios.get(`${API_URL}/services`, {
-            headers: {
-              Authorization: `Bearer ${userData.token}`,
-            }
-          });
-          // Extract service names for duplicate checking
-          const serviceNames = response.data.data.map(service => service.name);
-          setExistingServices(serviceNames);
-        } catch (error) {
-          console.error("Error fetching services:", error);
-        }
-      }
-    };
+  // useEffect(() => {
+  //   const fetchServices = async () => {
+  //     if (userData?.token) {
+  //       try {
+  //         const response = await axios.get(`${API_URL}/services`, {
+  //           headers: {
+  //             Authorization: `Bearer ${userData.token}`,
+  //           }
+  //         });
+  //         // Extract service names for duplicate checking
+  //         const serviceNames = response.data.data.map(service => service.name);
+  //         setExistingServices(serviceNames);
+  //       } catch (error) {
+  //         console.error("Error fetching services:", error);
+  //       }
+  //     }
+  //   };
     
-    fetchServices();
-  }, [userData]);
+  //   fetchServices();
+  // }, [userData]);
+
+
+
+  // Update the useEffect for fetching services
+// useEffect(() => {
+//   const fetchServices = async () => {
+//     if (!userData?.token || !userData?.tenantId?._id) return;
+
+//     try {
+//       const response = await axios.get(`${API_URL}/services`, {
+//         headers: { Authorization: `Bearer ${userData.token}` },
+//         params: {
+//           tenantId: userData.tenantId._id,
+//           // Add other params as needed
+//         }
+//       });
+      
+//       const services = response.data?.data || [];
+//       setExistingServices(services.map(service => service.name));
+//     } catch (error) {
+//       console.error("Error fetching services:", error);
+//     }
+//   };
+  
+//   fetchServices();
+// }, [userData, API_URL]);
 
   // Handle file selection and preview
   const handleFileChange = (e) => {
@@ -351,120 +377,87 @@ const ServiceForm = () => {
   };
 
   // Form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    setIsSubmitting(true);
-    setSuccessMessage("");
-    setFormErrors({});
-
-    try {
-      // First create the service
-      const res = await axios.post(
-        `${API_URL}/services`,
-        {
-          ...formData,
-          duration: parseInt(formData.duration) || 60,
-          basePrice: parseFloat(formData.basePrice),
-          packages: formData.packages.map(pkg => ({
-            ...pkg,
-            priceMultiplier: parseFloat(pkg.priceMultiplier) || 1,
-            additionalFeatures: pkg.additionalFeatures.filter(feature => feature.trim() !== "")
-          }))
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${userData?.token}`,
-          },
-        }
-      );
-
-// Modified ID handling
-// const serviceId = res.data?.data?._id; // Access through data.data
-const serviceId = res.data?._id || res.data?.data?._id; // Handle both response structures
-if (!serviceId) {
-  throw new Error("Service ID not found in response");
-}
-
- // Upload photo if selected
- if (selectedFile) {
-  const formData = new FormData();
-  formData.append('file', selectedFile);
+ const handleSubmit = async (e) => {
+  e.preventDefault();
   
-  await axios.put(
-    `${API_URL}/services/${serviceId}/photo`,
-    formData,
-    {
-      headers: {
-        Authorization: `Bearer ${userData?.token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-  setSuccessMessage("Service created successfully!");
-  router.push('/admin/services'); // Redirect to services page
-}
-// If no file was selected, but service creation was successful, also redirect
-else if (!selectedFile && serviceId) {
-    setSuccessMessage("Service created successfully (no image uploaded)!");
-    router.push('/admin/services'); // Redirect to services page
-}
-    } catch (err) {
-      console.error("Error creating service:", err);
-      
-      // Handle specific error cases
-  //     if (err.response?.data?.error === 'Duplicate field value entered') {
-  //       setFormErrors({
-  //         ...formErrors,
-  //         name: "A service with this name already exists",
-  //       });
-  //     } else if (err.response?.status === 400) {
-  //       setFormErrors({
-  //         ...formErrors,
-  //         submit: err.response?.data?.message || "Invalid input data",
-  //       });
-  //     } else {
-  //       setFormErrors({
-  //         ...formErrors,
-  //         submit: err.response?.data?.message || "Failed to create service",
-  //       });
-  //     }
-  //   } finally {
-  //     setIsSubmitting(false);
-        // Enhanced error handling
-        const errorMessage = err.response?.data?.error || 
-        err.response?.data?.message || 
-        err.message || 
-        "Failed to create service";
+  if (!validateForm()) return;
+  
+  if (!userData?.tenantId?._id) {
+    setFormErrors({ submit: "You must be associated with a tenant to create services" });
+    return;
+  }
 
-setFormErrors(prev => ({
-...prev,
-submit: errorMessage,
-// Handle duplicate error from server
-...(errorMessage.toLowerCase().includes('duplicate') && {
-name: "A service with this name already exists"
-})
-}));
-} finally {
-setIsSubmitting(false);
-}
-// }
-    // }
-  };
+  setIsSubmitting(true);
+  setSuccessMessage("");
+  setFormErrors({});
+
+   try {
+    const serviceData = {
+      ...formData,
+      tenantId: userData.tenantId._id, // Add tenantId to the service
+      duration: parseInt(formData.duration),
+      basePrice: parseFloat(formData.basePrice),
+      packages: formData.packages.map(pkg => ({
+        ...pkg,
+        priceMultiplier: parseFloat(pkg.priceMultiplier)
+      }))
+    };
+
+    const res = await axios.post(`${API_URL}/services`, serviceData, {
+      headers: {
+        Authorization: `Bearer ${userData.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const serviceId = res.data?.data?._id || res.data?._id;
+    if (!serviceId) throw new Error("Service ID not found");
+
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      await axios.put(`${API_URL}/services/${serviceId}/photo`, formData, {
+        headers: {
+          Authorization: `Bearer ${userData.token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    }
+
+    setSuccessMessage("Service created successfully!");
+    router.push('/admin/services');
+  } catch (err) {
+    const errorMessage = err.response?.data?.error || 
+                       err.response?.data?.message || 
+                       err.message || 
+                       "Failed to create service";
+
+    setFormErrors(prev => ({
+      ...prev,
+      submit: errorMessage,
+      ...(errorMessage.toLowerCase().includes('duplicate') && {
+        name: "A service with this name already exists"
+      }
+    )}));
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (isLoading) {
     return <div className="text-center mt-10">Loading...</div>;
   }
 
-  if (userData?.role !== "admin") {
-    return (
-      <div className="text-center mt-10 text-red-600 text-lg font-semibold">
-        Access Denied. Admins only.
-      </div>
-    );
-  }
+ if (userData?.role !== "tenantAdmin" || !userData?.tenantId) {
+  return (
+    <div className="text-center mt-10 text-red-600 text-lg font-semibold">
+      {!userData?.tenantId
+        ? "You must be associated with a tenant to create services"
+        : "Access Denied. Tenant Admins only."}
+    </div>
+  );
+}
 
   return (
     <div className="max-w-4xl mx-auto p-6">

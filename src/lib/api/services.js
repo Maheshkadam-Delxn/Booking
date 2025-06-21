@@ -2,10 +2,27 @@ import apiClient from './apiClient';
 
 export const serviceApi = {
   // Get all services with optional filters
-  getAllServices: async (params = {}) => {
-    const response = await apiClient.get('/services', { params });
-    return response.data;
+  // getAllServices: async (params = {}) => {
+  //   const response = await apiClient.get('/services', { params });
+  //   return response.data;
+  // },
+
+
+  
+  getAllServices: async (params) => {
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/services`, {
+      params,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data; // Just return the direct response
   },
+
+
+  
+  
+  
 
   // Get a single service by ID
   getService: async (id) => {
@@ -14,8 +31,19 @@ export const serviceApi = {
   },
 
   // Create a new service
-  createService: async (serviceData) => {
-    const response = await apiClient.post('/services', serviceData);
+  // createService: async (serviceData) => {
+  //   const response = await apiClient.post('/services', serviceData);
+  //   return response.data;
+  // },
+
+
+
+   createService: async (data) => {
+    const response = await axios.post(`${API_URL}/services`, data, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
     return response.data;
   },
 
