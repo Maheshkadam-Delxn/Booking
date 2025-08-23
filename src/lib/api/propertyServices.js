@@ -77,3 +77,7 @@ export const propertyApi = {
     return response.data;
   }
 };
+
+
+
+fgfgfg
