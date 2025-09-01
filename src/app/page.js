@@ -6,6 +6,7 @@ import Portfolio from '../components/home/Gallery';
 import ContactForm from '../components/home/ContactForm';
 import Footer from '@/components/layout/Footer';
 import { useEffect, useState } from 'react';
+// import GoogleTranslate from '@/components/GoogleTranslate';
 
 function isMainDomain() {
   if (typeof window === 'undefined') return false;
@@ -41,6 +42,7 @@ export default function Home() {
 
   return (
     <>
+    {/* <GoogleTranslate /> */}
       <Hero />
       {/* {showTenantContent && <ServicesGrid />}
       {showTenantContent && <Portfolio />} */}

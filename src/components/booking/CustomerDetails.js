@@ -603,11 +603,12 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Button from '../ui/Button';
 import useStore from '../../lib/store';
 import { useDashboard } from '../../contexts/DashboardContext';
 import axios from 'axios';
+// import GoogleTranslate from '../GoogleTranslate';
 
 const CustomerDetails = ({ onNext, onBack }) => {
   const { currentBooking, updateCurrentBooking } = useStore();
@@ -686,7 +687,44 @@ const CustomerDetails = ({ onNext, onBack }) => {
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
 
+  // Refs for Google Translate compatibility
+  const formRef = useRef(null);
+  const isGoogleTranslateActive = useRef(false);
+
+  // Check if Google Translate is active
   useEffect(() => {
+    const checkGoogleTranslate = () => {
+      const body = document.body;
+      const isTranslated = body.classList.contains('translated-ltr') ||
+                          body.classList.contains('translated-rtl') ||
+                          document.querySelector('.goog-te-combo')?.value !== 'en';
+      isGoogleTranslateActive.current = isTranslated;
+    };
+
+    // Initial check
+    checkGoogleTranslate();
+
+    // Monitor for Google Translate changes
+    const observer = new MutationObserver(() => {
+      checkGoogleTranslate();
+    });
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    // Also check periodically
+    const interval = setInterval(checkGoogleTranslate, 1000);
+
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    // <GoogleTranslate />
     if (isLoading || !userData?.token) return;
 
     const fetchCustomerDetails = async () => {
@@ -975,89 +1013,99 @@ const CustomerDetails = ({ onNext, onBack }) => {
     }
   };
 
-  const handleInputChange = (path, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [path]: value
-    }));
-  };
+  const handleInputChange = useCallback((path, value) => {
+    // Use setTimeout to ensure state updates happen after Google Translate DOM changes
+    setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        [path]: value
+      }));
+    }, 0);
+  }, []);
 
-  const handleNestedChange = (parent, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [parent]: {
-        ...prev[parent],
-        [field]: value
-      }
-    }));
-
-    if (['address', 'notificationPreferences'].includes(parent)) {
-      const error = validateField(field, value);
-      setErrors(prev => ({
+  // Google Translate-safe event handlers
+  const handleNestedChange = useCallback((parent, field, value) => {
+    // Use setTimeout to ensure state updates happen after Google Translate DOM changes
+    setTimeout(() => {
+      setFormData(prev => ({
         ...prev,
         [parent]: {
           ...prev[parent],
-          [field]: error
+          [field]: value
         }
       }));
-    }
-  };
 
-  const handlePropertyChange = (index, field, value) => {
-    const processedValue = field === 'size.value' ? 
-      (value === '' ? '' : Number(value)) : 
+      if (['address', 'notificationPreferences'].includes(parent)) {
+        const error = validateField(field, value);
+        setErrors(prev => ({
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [field]: error
+          }
+        }));
+      }
+    }, 0);
+  }, []);
+
+  const handlePropertyChange = useCallback((index, field, value) => {
+    const processedValue = field === 'size.value' ?
+      (value === '' ? '' : Number(value)) :
       value;
 
-    setFormData(prev => {
-      const updatedProperties = [...prev.properties];
-      if (field.includes('.')) {
-        const [parent, child] = field.split('.');
-        if (!updatedProperties[index][parent]) {
-          updatedProperties[index][parent] = {};
+    // Use setTimeout to ensure state updates happen after Google Translate DOM changes
+    setTimeout(() => {
+      setFormData(prev => {
+        const updatedProperties = [...prev.properties];
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.');
+          if (!updatedProperties[index][parent]) {
+            updatedProperties[index][parent] = {};
+          }
+          updatedProperties[index][parent][child] = processedValue;
+        } else {
+          updatedProperties[index][field] = processedValue;
         }
-        updatedProperties[index][parent][child] = processedValue;
-      } else {
-        updatedProperties[index][field] = processedValue;
-      }
-      return { ...prev, properties: updatedProperties };
-    });
+        return { ...prev, properties: updatedProperties };
+      });
 
-    let error = '';
-    if (field.startsWith('address.')) {
-      const addressField = field.split('.')[1];
-      error = validateField(addressField, processedValue, true);
-      setErrors(prev => {
-        const newErrors = {...prev};
-        if (!newErrors.properties[index]) {
-          newErrors.properties[index] = {
-            name: '',
-            address: { street: '', city: '', state: '', zipCode: '' },
-            size: '',
-            accessInstructions: '',
-            specialRequirements: ''
-          };
-        }
-        newErrors.properties[index].address[addressField] = error;
-        return newErrors;
-      });
-    } else {
-      error = validateField(field, processedValue);
-      setErrors(prev => {
-        const newErrors = {...prev};
-        if (!newErrors.properties[index]) {
-          newErrors.properties[index] = {
-            name: '',
-            address: { street: '', city: '', state: '', zipCode: '' },
-            size: '',
-            accessInstructions: '',
-            specialRequirements: ''
-          };
-        }
-        newErrors.properties[index][field] = error;
-        return newErrors;
-      });
-    }
-  };
+      let error = '';
+      if (field.startsWith('address.')) {
+        const addressField = field.split('.')[1];
+        error = validateField(addressField, processedValue, true);
+        setErrors(prev => {
+          const newErrors = {...prev};
+          if (!newErrors.properties[index]) {
+            newErrors.properties[index] = {
+              name: '',
+              address: { street: '', city: '', state: '', zipCode: '' },
+              size: '',
+              accessInstructions: '',
+              specialRequirements: ''
+            };
+          }
+          newErrors.properties[index].address[addressField] = error;
+          return newErrors;
+        });
+      } else {
+        error = validateField(field, processedValue);
+        setErrors(prev => {
+          const newErrors = {...prev};
+          if (!newErrors.properties[index]) {
+            newErrors.properties[index] = {
+              name: '',
+              address: { street: '', city: '', state: '', zipCode: '' },
+              size: '',
+              accessInstructions: '',
+              specialRequirements: ''
+            };
+          }
+          newErrors.properties[index][field] = error;
+          return newErrors;
+        });
+      }
+    }, 0);
+  }, []);
 
   const addNewProperty = () => {
     setFormData(prev => ({
@@ -1268,9 +1316,15 @@ const CustomerDetails = ({ onNext, onBack }) => {
     return isValid;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    
+
+    // Prevent form submission if Google Translate is actively modifying the DOM
+    if (isGoogleTranslateActive.current) {
+      // Wait a bit for Google Translate to finish DOM modifications
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
     if (!validateForm()) {
       showErrorPopup('Please fix all validation errors before submitting');
       return;
@@ -1300,13 +1354,13 @@ const CustomerDetails = ({ onNext, onBack }) => {
         properties: formData.properties,
         notes: formData.notes
       });
-      
+
       onNext();
     } catch (error) {
       console.error('Failed to save details:', error);
       showErrorPopup('Failed to save details. Please try again.');
     }
-  };
+  }, [formData, currentBooking, userData, onNext, updateCurrentBooking]);
 
   if (!customerData) return <div>Loading...</div>;
 
@@ -1321,6 +1375,25 @@ const CustomerDetails = ({ onNext, onBack }) => {
 
   return (
     <div className="py-8 relative">
+      {/* Add CSS to protect form from Google Translate interference */}
+      <style jsx>{`
+        .google-translate-protected {
+          isolation: isolate;
+          contain: layout style;
+        }
+        .google-translate-protected input,
+        .google-translate-protected textarea,
+        .google-translate-protected select {
+          font-family: inherit !important;
+          font-size: inherit !important;
+        }
+        /* Prevent Google Translate from modifying form structure */
+        .notranslate {
+          -webkit-transform: translateZ(0);
+          transform: translateZ(0);
+        }
+      `}</style>
+
       {showValidationPopup && (
         <div className="fixed top-4 right-4 z-50">
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg max-w-xs md:max-w-md flex items-start">
@@ -1347,7 +1420,10 @@ const CustomerDetails = ({ onNext, onBack }) => {
       )}
 
       <h2 className="text-2xl font-bold mb-6">Customer Details</h2>
-      <form onSubmit={handleSubmit}>
+      {/* Add Google Translate protection class to prevent translation of form structure */}
+      <form ref={formRef} onSubmit={handleSubmit}
+            className="notranslate google-translate-protected"
+            style={{ isolation: 'isolate' }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Personal Information</h3>
@@ -1393,7 +1469,25 @@ const CustomerDetails = ({ onNext, onBack }) => {
                     errors.address[field] ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={formData.address[field] || ''}
-                  onChange={(e) => handleNestedChange('address', field, e.target.value)}
+                  onChange={(e) => {
+                    try {
+                      handleNestedChange('address', field, e.target.value);
+                    } catch (error) {
+                      console.warn('Input change error (Google Translate conflict):', error);
+                      // Fallback: direct state update
+                      setTimeout(() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          address: {
+                            ...prev.address,
+                            [field]: e.target.value
+                          }
+                        }));
+                      }, 100);
+                    }
+                  }}
+                  translate="no"
+                  data-translate="no"
                 />
                 {errors.address[field] && (
                   <p className="mt-1 text-sm text-red-600">{errors.address[field]}</p>
@@ -1466,11 +1560,19 @@ const CustomerDetails = ({ onNext, onBack }) => {
                     currentErrors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={currentProperty?.name}
-                  onChange={(e) => handlePropertyChange(
-                    activePropertyIndex,
-                    'name',
-                    e.target.value
-                  )}
+                  onChange={(e) => {
+                    try {
+                      handlePropertyChange(
+                        activePropertyIndex,
+                        'name',
+                        e.target.value
+                      );
+                    } catch (error) {
+                      console.warn('Property name change error (Google Translate conflict):', error);
+                    }
+                  }}
+                  translate="no"
+                  data-translate="no"
                 />
                 {currentErrors.name && (
                   <p className="mt-1 text-sm text-red-600">{currentErrors.name}</p>
@@ -1507,11 +1609,19 @@ const CustomerDetails = ({ onNext, onBack }) => {
                       currentErrors.address[field] ? 'border-red-500' : 'border-gray-300'
                     }`}
                     value={currentProperty?.address?.[field] || ''}
-                    onChange={(e) => handlePropertyChange(
-                      activePropertyIndex,
-                      `address.${field}`,
-                      e.target.value
-                    )}
+                    onChange={(e) => {
+                      try {
+                        handlePropertyChange(
+                          activePropertyIndex,
+                          `address.${field}`,
+                          e.target.value
+                        );
+                      } catch (error) {
+                        console.warn(`Property ${field} change error (Google Translate conflict):`, error);
+                      }
+                    }}
+                    translate="no"
+                    data-translate="no"
                   />
                   {currentErrors.address[field] && (
                     <p className="mt-1 text-sm text-red-600">
@@ -1532,11 +1642,19 @@ const CustomerDetails = ({ onNext, onBack }) => {
                       currentErrors.size ? 'border-red-500' : 'border-gray-300'
                     }`}
                     value={currentProperty?.size?.value || ''}
-                    onChange={(e) => handlePropertyChange(
-                      activePropertyIndex,
-                      'size.value',
-                      e.target.value
-                    )}
+                    onChange={(e) => {
+                      try {
+                        handlePropertyChange(
+                          activePropertyIndex,
+                          'size.value',
+                          e.target.value
+                        );
+                      } catch (error) {
+                        console.warn('Property size change error (Google Translate conflict):', error);
+                      }
+                    }}
+                    translate="no"
+                    data-translate="no"
                   />
                   {currentErrors.size && (
                     <p className="mt-1 text-sm text-red-600">
@@ -1639,12 +1757,20 @@ const CustomerDetails = ({ onNext, onBack }) => {
                     currentErrors.accessInstructions ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={currentProperty?.accessInstructions || ''}
-                  onChange={(e) => handlePropertyChange(
-                    activePropertyIndex,
-                    'accessInstructions',
-                    e.target.value
-                  )}
+                  onChange={(e) => {
+                    try {
+                      handlePropertyChange(
+                        activePropertyIndex,
+                        'accessInstructions',
+                        e.target.value
+                      );
+                    } catch (error) {
+                      console.warn('Access instructions change error (Google Translate conflict):', error);
+                    }
+                  }}
                   maxLength={500}
+                  translate="no"
+                  data-translate="no"
                 />
                 <p className="text-xs text-gray-500 text-right">
                   {(currentProperty?.accessInstructions || '').length}/500 characters
@@ -1663,12 +1789,20 @@ const CustomerDetails = ({ onNext, onBack }) => {
                     currentErrors.specialRequirements ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={currentProperty?.specialRequirements || ''}
-                  onChange={(e) => handlePropertyChange(
-                    activePropertyIndex,
-                    'specialRequirements',
-                    e.target.value
-                  )}
+                  onChange={(e) => {
+                    try {
+                      handlePropertyChange(
+                        activePropertyIndex,
+                        'specialRequirements',
+                        e.target.value
+                      );
+                    } catch (error) {
+                      console.warn('Special requirements change error (Google Translate conflict):', error);
+                    }
+                  }}
                   maxLength={1000}
+                  translate="no"
+                  data-translate="no"
                 />
                 <p className="text-xs text-gray-500 text-right">
                   {(currentProperty?.specialRequirements || '').length}/1000 characters
@@ -1729,8 +1863,16 @@ const CustomerDetails = ({ onNext, onBack }) => {
             <textarea
               className="w-full px-4 py-2 border rounded-md"
               value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={(e) => {
+                try {
+                  handleInputChange('notes', e.target.value);
+                } catch (error) {
+                  console.warn('Notes change error (Google Translate conflict):', error);
+                }
+              }}
               maxLength={1000}
+              translate="no"
+              data-translate="no"
             />
             <p className="text-xs text-gray-500 text-right">
               {formData.notes.length}/1000 characters

@@ -7,3 +7,228 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide Google Translate top banner globally */
+iframe.goog-te-banner-frame { display: none !important; }
+.goog-te-banner-frame.skiptranslate { display: none !important; }
+#goog-gt-tt { display: none !important; visibility: hidden !important; }
+body { top: 0 !important; }
+/* Hide the post-translation balloon/tooltip ("Show original" etc.) */
+.goog-te-balloon-frame { display: none !important; visibility: hidden !important; }
+.goog-tooltip { display: none !important; }
+.goog-tooltip:hover { display: none !important; }
+/* Hide Google Translate's newer floating UI ("Show original/Translate" chip) */
+.VIpgJd-ZVi9od-ORHb,
+.VIpgJd-ZVi9od-l4eHX-hSRGPd,
+.VIpgJd-ZVi9od-xl07Ob-XxIAqe,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Scope navbar translate styles so they don't affect layout */
+.gt-nav #google_translate_element { display: inline-flex; align-items: center; }
+.gt-nav .goog-te-gadget { 
+  display: inline-flex !important; 
+  align-items: center; 
+  margin: 0 !important; 
+  padding: 0 !important; 
+  line-height: 1 !important;
+}
+.gt-nav .goog-te-gadget img { display: none !important; }
+.gt-nav .goog-te-gadget > span { display: none !important; }
+.gt-nav .goog-te-gadget .goog-te-combo {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #ffffff;
+  color: #374151; /* gray-700 */
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 0.5rem;
+  height: 2.25rem; /* h-9 */
+  padding: 0 0.75rem; /* px-3 */
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.25rem;
+  margin: 0 !important;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.gt-nav .goog-te-gadget .goog-te-combo:hover { 
+  background-color: #f0fdf4; /* green-50 */
+  border-color: #86efac; /* green-300 */
+  color: #16a34a; /* green-600 */
+}
+.gt-nav .goog-te-gadget .goog-te-combo:focus { 
+  outline: none; 
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.25);
+  border-color: #34d399; /* green-400 */
+}
+
+/* Ensure the inline tooltip does not overlay the navbar */
+.gt-nav #goog-gt-tt { display: none !important; }
+
+/* Enhanced Language Dropdown Button Styles */
+.language-dropdown-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.language-dropdown-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.language-dropdown-button:hover::before {
+  left: 100%;
+}
+
+/* Custom Google Translate Dropdown Styling */
+#header_google_translate_element .goog-te-gadget,
+#mobile_google_translate_element .goog-te-gadget,
+#tenant_header_google_translate_element .goog-te-gadget {
+  display: inline-flex !important;
+  align-items: center;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  width: 100%;
+}
+
+#header_google_translate_element .goog-te-gadget img,
+#mobile_google_translate_element .goog-te-gadget img,
+#tenant_header_google_translate_element .goog-te-gadget img {
+  display: none !important;
+}
+
+#header_google_translate_element .goog-te-gadget > span,
+#mobile_google_translate_element .goog-te-gadget > span,
+#tenant_header_google_translate_element .goog-te-gadget > span {
+  display: none !important;
+}
+
+#header_google_translate_element .goog-te-gadget .goog-te-combo,
+#mobile_google_translate_element .goog-te-gadget .goog-te-combo,
+#tenant_header_google_translate_element .goog-te-gadget .goog-te-combo {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: transparent;
+  color: #374151;
+  border: none;
+  border-radius: 0;
+  height: auto;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  margin: 0 !important;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-width: 120px;
+  text-align: left;
+  width: 100%;
+}
+
+#header_google_translate_element .goog-te-gadget .goog-te-combo:focus,
+#mobile_google_translate_element .goog-te-gadget .goog-te-combo:focus,
+#tenant_header_google_translate_element .goog-te-gadget .goog-te-combo:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Ensure the dropdown is visible and functional */
+.goog-te-combo {
+  background-color: transparent !important;
+  border: none !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  min-width: 120px !important;
+}
+
+/* Style the dropdown options */
+.goog-te-combo option {
+  background-color: white;
+  color: #374151;
+  padding: 8px 12px;
+}
+
+/* Mobile dropdown specific styling */
+#mobile_google_translate_element .goog-te-gadget .goog-te-combo {
+  width: 100%;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Ensure Google Translate elements are properly sized */
+.goog-te-gadget {
+  width: 100% !important;
+  min-width: 120px !important;
+}
+
+/* Fix for Google Translate dropdown positioning */
+.goog-te-menu-frame {
+  z-index: 9999 !important;
+}
+
+/* Ensure the language dropdown button is clickable */
+.language-dropdown-button {
+  position: relative;
+  overflow: visible;
+  z-index: 10;
+}
+
+/* Make sure the Google Translate element is clickable */
+#header_google_translate_element,
+#mobile_google_translate_element,
+#tenant_header_google_translate_element {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Dropdown arrow animation */
+.language-dropdown-button .dropdown-arrow {
+  transition: transform 0.2s ease-in-out;
+}
+
+.language-dropdown-button:hover .dropdown-arrow {
+  transform: rotate(45deg) scale(1.1);
+}
+
+
+
+/* Hide Google Translate top bar */
+.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide the language selector that appears at the very top */
+.goog-te-gadget {
+  font-size: 0 !important;
+  color: transparent !important;
+}
+
+/* Optional: Hide the "Powered by Google" text */
+.goog-logo-link {
+  display: none !important;
+}
+
+.goog-te-gadget .goog-te-combo {
+  margin: 0 !important;
+}
