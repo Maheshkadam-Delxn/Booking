@@ -900,6 +900,69 @@ export default function TenantHeader() {
   const [translateInitialized, setTranslateInitialized] = useState(false);
   const [translateLoadAttempts, setTranslateLoadAttempts] = useState(0);
 
+  // Add Google Translate CSS styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .goog-te-banner-frame {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+      }
+      
+      .goog-te-menu-frame {
+        z-index: 1000 !important;
+      }
+      
+      body {
+        top: 0 !important;
+        position: static !important;
+      }
+      
+      .goog-tooltip {
+        display: none !important;
+      }
+      
+      .goog-tooltip:hover {
+        display: none !important;
+      }
+      
+      .goog-text-highlight {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      
+      #google_translate_element {
+        display: none;
+      }
+      
+      .goog-te-gadget {
+        display: none !important;
+      }
+      
+      .goog-te-combo {
+        display: none !important;
+      }
+      
+      .skiptranslate {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      if (style && document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+  }, []);
+
   // Handle clicks outside dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -918,7 +981,7 @@ export default function TenantHeader() {
   }, []);
 
   // Load Google Translate script
-   useEffect(() => {
+  useEffect(() => {
     // Only try to load if not already loaded
     if (!window.google || !window.google.translate) {
       const scriptId = 'google-translate-script';
@@ -1027,86 +1090,86 @@ export default function TenantHeader() {
 
   // Enhanced Google Translate language change with error handling
   // CORRECT language change function
-const changeLanguage = (langCode) => {
-  try {
-    // Method 1: Use the Google Translate select element directly
-    const selectField = document.querySelector('.goog-te-combo');
-    if (selectField) {
-      selectField.value = langCode;
-      
-      // Create and dispatch the change event properly
-      const event = new Event('change', { 
-        bubbles: true,
-        cancelable: true 
-      });
-      
-      // Set the value first, then dispatch event
-      selectField.value = langCode;
-      selectField.dispatchEvent(event);
-      
-      // Also try to trigger Google's internal change handler
-      if (selectField.onchange) {
-        selectField.onchange(event);
-      }
-      
-      setCurrentLanguage(langCode);
-      setShowLanguageDropdown(false);
-      return;
-    }
-    
-    // Method 2: Use iframe approach (Google Translate uses iframes)
-    const iframe = document.querySelector('.goog-te-menu-frame');
-    if (iframe && iframe.contentWindow) {
-      try {
-        const select = iframe.contentWindow.document.querySelector('.goog-te-combo');
-        if (select) {
-          select.value = langCode;
-          const event = new Event('change', { bubbles: true });
-          select.dispatchEvent(event);
-          setCurrentLanguage(langCode);
-          setShowLanguageDropdown(false);
-          return;
+  const changeLanguage = (langCode) => {
+    try {
+      // Method 1: Use the Google Translate select element directly
+      const selectField = document.querySelector('.goog-te-combo');
+      if (selectField) {
+        selectField.value = langCode;
+        
+        // Create and dispatch the change event properly
+        const event = new Event('change', { 
+          bubbles: true,
+          cancelable: true 
+        });
+        
+        // Set the value first, then dispatch event
+        selectField.value = langCode;
+        selectField.dispatchEvent(event);
+        
+        // Also try to trigger Google's internal change handler
+        if (selectField.onchange) {
+          selectField.onchange(event);
         }
-      } catch (e) {
-        console.log('Could not access iframe content:', e);
+        
+        setCurrentLanguage(langCode);
+        setShowLanguageDropdown(false);
+        return;
       }
-    }
-    
-    // Method 3: Use Google's API correctly
-    if (window.google && window.google.translate && window.google.translate.TranslateElement) {
-      try {
-        // Get the instance properly
-        const translateElement = document.getElementById('google_translate_element');
-        if (translateElement) {
-          // This is the correct way to trigger translation
-          const frame = document.querySelector('.goog-te-banner-frame');
-          if (frame && frame.contentWindow) {
-            frame.contentWindow.postMessage({
-              command: 'translate',
-              lang: langCode
-            }, '*');
+      
+      // Method 2: Use iframe approach (Google Translate uses iframes)
+      const iframe = document.querySelector('.goog-te-menu-frame');
+      if (iframe && iframe.contentWindow) {
+        try {
+          const select = iframe.contentWindow.document.querySelector('.goog-te-combo');
+          if (select) {
+            select.value = langCode;
+            const event = new Event('change', { bubbles: true });
+            select.dispatchEvent(event);
+            setCurrentLanguage(langCode);
+            setShowLanguageDropdown(false);
+            return;
           }
-          
-          setCurrentLanguage(langCode);
-          setShowLanguageDropdown(false);
-          return;
+        } catch (e) {
+          console.log('Could not access iframe content:', e);
         }
-      } catch (e) {
-        console.log('Google API method failed:', e);
       }
+      
+      // Method 3: Use Google's API correctly
+      if (window.google && window.google.translate && window.google.translate.TranslateElement) {
+        try {
+          // Get the instance properly
+          const translateElement = document.getElementById('google_translate_element');
+          if (translateElement) {
+            // This is the correct way to trigger translation
+            const frame = document.querySelector('.goog-te-banner-frame');
+            if (frame && frame.contentWindow) {
+              frame.contentWindow.postMessage({
+                command: 'translate',
+                lang: langCode
+              }, '*');
+            }
+            
+            setCurrentLanguage(langCode);
+            setShowLanguageDropdown(false);
+            return;
+          }
+        } catch (e) {
+          console.log('Google API method failed:', e);
+        }
+      }
+      
+      // Method 4: Fallback - use cookie approach (Google Translate respects this)
+      document.cookie = `googtrans=/en/${langCode}; path=/; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}`;
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Language change error:', error);
+      
+      // Ultimate fallback - redirect with language parameter
+      window.location.href = `${window.location.pathname}?hl=${langCode}`;
     }
-    
-    // Method 4: Fallback - use cookie approach (Google Translate respects this)
-    document.cookie = `googtrans=/en/${langCode}; path=/; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}`;
-    window.location.reload();
-    
-  } catch (error) {
-    console.error('Language change error:', error);
-    
-    // Ultimate fallback - redirect with language parameter
-    window.location.href = `${window.location.pathname}?hl=${langCode}`;
-  }
-};
+  };
 
   const getLanguageName = (code) => {
     const languages = {
@@ -1370,11 +1433,11 @@ const changeLanguage = (langCode) => {
               </div>
             )}
             
-            {!translateInitialized && (
+            {/* {!translateInitialized && (
               <div className="text-xs text-gray-400">
                 Translation loading...
               </div>
-            )}
+            )} */}
             
             {userData ? (
               <div className="relative" ref={dropdownRef}>
@@ -1447,7 +1510,6 @@ const changeLanguage = (langCode) => {
     </header>
   );
 }
-
 
 
 
