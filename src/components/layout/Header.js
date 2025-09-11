@@ -1243,10 +1243,10 @@ const Header = () => {
               ))}
             </nav>
 
-            {/* Right Side - CTA and Profile */}
+           
             <div className="flex items-center space-x-4">
-              {/* Language Selector - Desktop */}
-              <div
+             
+              {/* <div
                 className="hidden md:block relative"
                 ref={languageDropdownRef}
               >
@@ -1254,7 +1254,7 @@ const Header = () => {
                   onClick={toggleLanguageDropdown}
                   className="flex items-center space-x-1 text-sm font-medium px-3 py-2 rounded-md transition-all duration-300 text-gray-700 hover:bg-gray-100"
                 >
-                  {/* <Languages className="w-4 h-4" /> */}
+                 
                   <span>{currentLanguage}</span>
                   <ChevronDown className="w-4 h-4" />
                 </button>
@@ -1287,7 +1287,7 @@ const Header = () => {
                     </button>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* User Profile */}
               {!isLoading && userData && (
@@ -1457,7 +1457,7 @@ const Header = () => {
               ))}
 
               {/* Language Selector - Mobile */}
-              <div className="px-4 py-2 mt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {/* <div className="px-4 py-2 mt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Language
               </div>
               <button
@@ -1483,7 +1483,7 @@ const Header = () => {
                 }`}
               >
                 हिंदी
-              </button>
+              </button> */}
 
               {userData && (
                 <>
