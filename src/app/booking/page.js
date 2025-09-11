@@ -101,6 +101,7 @@ import ServiceSelection from '../../components/booking/ServiceSelection';
 import DateTimeSelection from '../../components/booking/DateTimeSelection';
 import CustomerDetails from '../../components/booking/CustomerDetails';
 import BookingReview from '../../components/booking/BookingReview';
+import BookingPayment from '../../components/booking/BookingPayment';
 
 const BookingPage = () => {
   const [step, setStep] = useState(1);
@@ -110,7 +111,8 @@ const BookingPage = () => {
     { id: 1, label: 'Service' },
     { id: 2, label: 'Schedule' },
     { id: 3, label: 'Details' },
-    { id: 4, label: 'Review' }
+    { id: 4, label: 'Review' },
+    { id: 5, label: 'Payment' }
   ];
 
   const nextStep = () => setStep(current => Math.min(current + 1, steps.length));
@@ -192,9 +194,16 @@ const BookingPage = () => {
               </Suspense>
             )}
             {step === 4 && (
-              <Suspense fallback={<div>Loading...</div>}>
-                <BookingReview onBack={prevStep} />
-              </Suspense>
+              <BookingReview 
+                onNext={() => {
+                  console.log('nextStep called from BookingReview');
+                  nextStep();
+                }} 
+                onBack={prevStep} 
+              />
+            )}
+            {step === 5 && (
+              <BookingPayment onBack={prevStep} />
             )}
           </div>
         </div>

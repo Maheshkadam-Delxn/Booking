@@ -7,6 +7,7 @@ import useStore  from "@/lib/store";
 import DateTime from "@/components/booking/DateTimeSelection";
 import CustomerDetails from "@/components/booking/CustomerDetails";
 import ReviewBooking from "@/components/booking/BookingReview";
+import BookingPayment from "@/components/booking/BookingPayment";
 
 const BookNowContent = () => {
   const [step, setStep] = useState(1);
@@ -27,7 +28,8 @@ const BookNowContent = () => {
     <div className="max-w-4xl mx-auto px-4 py-10">
       {step === 1 && <DateTime onNext={() => setStep(2)} onBack={() => router.back()} />}
       {step === 2 && <CustomerDetails onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-      {step === 3 && <ReviewBooking onBack={() => setStep(2)} />}
+      {step === 3 && <ReviewBooking onNext={() => setStep(4)} onBack={() => setStep(2)} />}
+      {step === 4 && <BookingPayment onBack={() => setStep(3)} />}
     </div>
   );
 };
