@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import moment from 'moment';
 import { ArrowLeft, Calendar, Clock, MapPin, User, Phone, Mail } from 'lucide-react';
 import PaymentModal from '@/components/admin/PaymentModal';
+import CrewAssignmentModal from '@/components/admin/CrewAssignmentModal';
 
 const AppointmentDetailPage = () => {
   const params = useParams();
@@ -17,6 +18,7 @@ const AppointmentDetailPage = () => {
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCrewModal, setShowCrewModal] = useState(false);
 
   useEffect(() => {
     if (params.id && userData?.token) {
@@ -329,12 +331,26 @@ const AppointmentDetailPage = () => {
             <div className="mt-8">
               <div className="flex flex-wrap gap-4 mb-4">
                 {appointment.status === 'Pending' && (
-                  <button
-                    onClick={() => handleApprove()}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                  >
-                    Approve Appointment
-                  </button>
+                  <>
+                    {!appointment.crew?.leadProfessional && (!appointment.crew?.assignedTo || appointment.crew.assignedTo.length === 0) ? (
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => setShowCrewModal(true)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          Assign Crew First
+                        </button>
+                        <p className="text-sm text-gray-500">Crew must be assigned before approval</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleApprove()}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        Approve Appointment
+                      </button>
+                    )}
+                  </>
                 )}
                 {appointment.status === 'Confirmed' && (
                   <button
@@ -394,6 +410,17 @@ const AppointmentDetailPage = () => {
         onClose={() => setShowPaymentModal(false)}
         appointment={appointment}
         onSuccess={handlePaymentSuccess}
+      />
+
+      {/* Crew Assignment Modal */}
+      <CrewAssignmentModal
+        isOpen={showCrewModal}
+        onClose={() => setShowCrewModal(false)}
+        appointment={appointment}
+        onUpdate={(updatedAppointment) => {
+          setAppointment(updatedAppointment);
+          setShowCrewModal(false);
+        }}
       />
     </AdminLayout>
   );
