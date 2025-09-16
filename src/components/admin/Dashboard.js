@@ -296,6 +296,153 @@ const MonthlyTrendChart = ({ data }) => {
   );
 };
 
+const RevenueWidget = () => {
+  const { userData } = useDashboard();
+  const [revenueData, setRevenueData] = useState({
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    pendingPayments: 0,
+    recentPayments: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRevenueData = async () => {
+      try {
+        const endpoint = userData?.role === 'customer' ? '/payments/my-payments' : '/payments';
+        const response = await apiClient.get(endpoint);
+        const payments = response.data.data || [];
+        
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
+        const totalRevenue = payments
+          .filter(p => p.status === 'Completed')
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        const monthlyRevenue = payments
+          .filter(p => {
+            const paymentDate = new Date(p.createdAt);
+            return p.status === 'Completed' && 
+                   paymentDate.getMonth() === currentMonth && 
+                   paymentDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        const pendingPayments = payments
+          .filter(p => p.status === 'Pending')
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        const recentPayments = payments
+          .filter(p => p.status === 'Completed')
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 5);
+        
+        setRevenueData({
+          totalRevenue,
+          monthlyRevenue,
+          pendingPayments,
+          recentPayments
+        });
+      } catch (error) {
+        console.error('Error fetching revenue data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userData?.token) {
+      fetchRevenueData();
+    }
+  }, [userData]);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="h-20 bg-gray-200 rounded"></div>
+            <div className="h-20 bg-gray-200 rounded"></div>
+            <div className="h-20 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-r from-green-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold">Revenue Management</h3>
+        <Link href="/admin/payments" className="text-white/80 hover:text-white text-sm">
+          View All →
+        </Link>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+          <div className="flex items-center">
+            <div className="bg-white/20 p-2 rounded-full mr-3">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-white/80 text-sm">Total Revenue</p>
+              <p className="text-2xl font-bold">${revenueData.totalRevenue.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+          <div className="flex items-center">
+            <div className="bg-white/20 p-2 rounded-full mr-3">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-white/80 text-sm">This Month</p>
+              <p className="text-2xl font-bold">${revenueData.monthlyRevenue.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+          <div className="flex items-center">
+            <div className="bg-white/20 p-2 rounded-full mr-3">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-white/80 text-sm">Pending</p>
+              <p className="text-2xl font-bold">${revenueData.pendingPayments.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {revenueData.recentPayments.length > 0 && (
+        <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+          <h4 className="font-semibold mb-3">Recent Payments</h4>
+          <div className="space-y-2">
+            {revenueData.recentPayments.map((payment, index) => (
+              <div key={index} className="flex justify-between items-center text-sm">
+                <span className="text-white/90">
+                  {payment.paymentType} - {new Date(payment.createdAt).toLocaleDateString()}
+                </span>
+                <span className="font-semibold">${payment.amount.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const { appointments, estimates, services } = useStore();
   const [timeRange, setTimeRange] = useState('month'); // Default to month
@@ -527,6 +674,11 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+
+        {/* Revenue Management Widget */}
+        <div className="mb-8">
+          <RevenueWidget />
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

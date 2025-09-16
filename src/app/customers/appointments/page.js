@@ -612,6 +612,11 @@ const Appointments = () => {
   }, [userData, isLoading]);
 
   const canRescheduleAppointment = (appointment) => {
+    // Disable reschedule/cancel for completed appointments
+    if (appointment.status?.toLowerCase() === 'completed') {
+      return { canReschedule: false, reason: "Completed appointments cannot be rescheduled or cancelled" };
+    }
+    
     const now = new Date();
     const appointmentDateStr = new Date(appointment.date).toISOString().split('T')[0];
     const appointmentDateTime = new Date(`${appointmentDateStr}T${appointment.timeSlot.startTime}:00Z`);
@@ -1124,47 +1129,72 @@ const Appointments = () => {
                     </div>
                     
                     <div className="flex space-x-4">
-                      <button
-                        onClick={() => {
-                          const { canReschedule, reason } = canRescheduleAppointment(appointment);
-                          if (!canReschedule) {
-                            setDeleteError(reason);
-                            return;
-                          }
-                          setSelectedAppointment(appointment);
-                          setShowRescheduleModal(true);
-                          setSelectedDate("");
-                          setAvailableSlots([]);
-                          setSelectedSlot(null);
-                        }}
-                        className={`flex items-center text-sm focus:outline-none ${
-                          canRescheduleAppointment(appointment).canReschedule 
-                            ? 'text-blue-600 hover:underline' 
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        disabled={!canRescheduleAppointment(appointment).canReschedule}
-                      >
-                        <span>Reschedule</span>
-                      </button>
+                      {appointment.status?.toLowerCase() === 'completed' && appointment.payment?.status === 'paid' ? (
+                        <span className="flex items-center text-sm text-green-600">
+                          <Check className="h-4 w-4 mr-1" />
+                          <span>Paid</span>
+                        </span>
+                      ) : appointment.status?.toLowerCase() === 'completed' && appointment.payment?.status !== 'paid' ? (
+                        <button
+                          onClick={() => router.push(`/customers/payment?appointmentId=${appointment._id}`)}
+                          className="flex items-center text-sm text-green-600 hover:underline focus:outline-none"
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          <span>Pay Now</span>
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              const { canReschedule, reason } = canRescheduleAppointment(appointment);
+                              if (!canReschedule) {
+                                setDeleteError(reason);
+                                return;
+                              }
+                              setSelectedAppointment(appointment);
+                              setShowRescheduleModal(true);
+                              setSelectedDate("");
+                              setAvailableSlots([]);
+                              setSelectedSlot(null);
+                            }}
+                            className={`flex items-center text-sm focus:outline-none ${
+                              canRescheduleAppointment(appointment).canReschedule 
+                                ? 'text-blue-600 hover:underline' 
+                                : 'text-gray-400 cursor-not-allowed'
+                            }`}
+                            disabled={!canRescheduleAppointment(appointment).canReschedule}
+                          >
+                            <span>Reschedule</span>
+                          </button>
 
+                          <button
+                            onClick={() => {
+                              const { canReschedule, reason } = canRescheduleAppointment(appointment);
+                              if (!canReschedule) {
+                                setDeleteError(reason);
+                                return;
+                              }
+                              setAppointmentToCancel(appointment);
+                              setShowCancelConfirmation(true);
+                            }}
+                            className={`flex items-center text-sm focus:outline-none ${
+                              canRescheduleAppointment(appointment).canReschedule 
+                                ? 'text-red-600 hover:underline' 
+                                : 'text-gray-400 cursor-not-allowed'
+                            }`}
+                            disabled={!canRescheduleAppointment(appointment).canReschedule || deleteLoading}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      
                       <button
-                        onClick={() => {
-                          const { canReschedule, reason } = canRescheduleAppointment(appointment);
-                          if (!canReschedule) {
-                            setDeleteError(reason);
-                            return;
-                          }
-                          setAppointmentToCancel(appointment);
-                          setShowCancelConfirmation(true);
-                        }}
-                        className={`flex items-center text-sm focus:outline-none ${
-                          canRescheduleAppointment(appointment).canReschedule 
-                            ? 'text-red-600 hover:underline' 
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        disabled={!canRescheduleAppointment(appointment).canReschedule || deleteLoading}
+                        onClick={() => router.push(`/customers/appointments/${appointment._id}`)}
+                        className="flex items-center text-sm text-gray-600 hover:underline focus:outline-none"
                       >
-                        Cancel
+                        <span>View Details</span>
+                        <ChevronRight className="h-4 w-4 ml-1" />
                       </button>
                     </div>
                   </div>

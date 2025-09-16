@@ -1,185 +1,245 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useParams, useRouter } from "next/navigation";
-import CustomerLayout from "../../../../components/customer/CustomerLayout";
-import {
-  Calendar,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  CreditCard,
-  Package,
-  HardHat,
-  User,
-  ArrowLeft,
-} from "lucide-react";
-import { useDashboard } from "@/contexts/DashboardContext";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import CustomerLayout from '@/components/customer/CustomerLayout';
+import { useDashboard } from '@/contexts/DashboardContext';
+import axios from 'axios';
+import moment from 'moment';
+import { ArrowLeft, Calendar, Clock, MapPin, User, Phone, Mail, CreditCard, Check } from 'lucide-react';
 
-const AppointmentDetails = () => {
-  const { id } = useParams();
+const CustomerAppointmentDetailPage = () => {
+  const params = useParams();
   const router = useRouter();
+  const { userData } = useDashboard();
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const { userData } = useDashboard();
 
-  const fetchDetails = async () => {
+  useEffect(() => {
+    if (params.id && userData?.token) {
+      fetchAppointment();
+    }
+  }, [params.id, userData]);
+
+  const fetchAppointment = async () => {
     try {
-      setLoading(true);
-      setError("");
-      
-      if (!userData?.token) {
-        throw new Error("Authentication required");
-      }
-
-      const response = await axios.get(`${API_URL}/appointments/${id}`, {
-        headers: {
-          Authorization: `Bearer ${userData.token}`,
-        },
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments/${params.id}`, {
+        headers: { Authorization: `Bearer ${userData.token}` }
       });
-
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.error || "Appointment not found");
-      }
-
       setAppointment(response.data.data);
-    } catch (err) {
-      setError(err.message || "Error fetching appointment details");
+    } catch (error) {
+      console.error('Error fetching appointment:', error);
+      router.push('/customers/appointments');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (userData?.token) {
-      fetchDetails();
-    }
-  }, [userData, id]);
-
   if (loading) {
     return (
       <CustomerLayout>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
         </div>
       </CustomerLayout>
     );
   }
 
-  if (error) {
+  if (!appointment) {
     return (
       <CustomerLayout>
-        <div className="p-4">
-          <div className="bg-red-100 border-l-4 border-red-500 p-4 rounded-lg flex items-center gap-2 text-red-700">
-            <AlertCircle className="h-5 w-5" />
-            {error}
-          </div>
+        <div className="text-center py-8">
+          <p className="text-gray-500">Appointment not found</p>
         </div>
       </CustomerLayout>
     );
   }
+
+  const StatusBadge = ({ status }) => {
+    const getStatusColor = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'completed': return 'bg-green-100 text-green-800';
+        case 'confirmed': return 'bg-blue-100 text-blue-800';
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        case 'in progress': return 'bg-orange-100 text-orange-800';
+        case 'cancelled': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+      }
+    };
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+        {status}
+      </span>
+    );
+  };
 
   return (
     <CustomerLayout>
-      <div className="max-w-4xl mx-auto px-4 py-10">
-        {/* Back link */}
-        <button
-          onClick={() => router.push("/customers/appointments")}
-          className="mb-8 inline-flex items-center text-emerald-700 font-semibold hover:text-emerald-900 transition"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Appointments
-        </button>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() => router.push('/customers/appointments')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back to Appointments
+          </button>
+        </div>
 
-        {appointment && (
-          <>
-            {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-600 to-green-500 text-white p-6 rounded-2xl shadow-md">
-              <h2 className="text-3xl font-bold mb-2">Appointment Details</h2>
-              <p className="text-green-100 text-lg">
-                {appointment.service?.name || "Service"}
-              </p>
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 text-white">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold">Appointment Details</h1>
+                <p className="text-green-100 mt-1">ID: {appointment._id}</p>
+              </div>
+              <StatusBadge status={appointment.status} />
             </div>
+          </div>
 
-            {/* Detail Card */}
-            <div className="mt-6 bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
-              {/* Category */}
-              <div className="flex items-center text-gray-700 text-base font-medium">
-                <HardHat className="h-5 w-5 text-green-600 mr-3" />
-                {appointment.service?.category || "No category"}
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Service</label>
+                      <p className="text-gray-900">{appointment.service?.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Category</label>
+                      <p className="text-gray-900">{appointment.service?.category || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Duration</label>
+                      <p className="text-gray-900">{appointment.service?.duration || 'N/A'} minutes</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Schedule
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Date</label>
+                      <p className="text-gray-900">{moment(appointment.date).format('dddd, MMMM D, YYYY')}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Time</label>
+                      <p className="text-gray-900 flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        {appointment.timeSlot?.startTime} - {appointment.timeSlot?.endTime}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Grid Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InfoItem 
-                  icon={Calendar} 
-                  label="Date" 
-                  value={
-                    appointment?.date 
-                      ? new Date(appointment.date).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })
-                      : "Not available"
-                  } 
-                />
+              <div className="space-y-6">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Crew Assignment</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Lead Professional</label>
+                      <p className="text-gray-900">
+                        {appointment.crew?.leadProfessional?.name || 'Not assigned'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Team Members</label>
+                      <div className="text-gray-900">
+                        {appointment.crew?.assignedTo?.length > 0 ? (
+                          <ul className="list-disc list-inside">
+                            {appointment.crew.assignedTo.map((member, index) => (
+                              <li key={index}>{member.name}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          'No team members assigned'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                <InfoItem 
-                  icon={Clock} 
-                  label="Time" 
-                  value={
-                    appointment?.timeSlot 
-                      ? `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}`
-                      : "Not available"
-                  } 
-                />
-
-                <InfoItem 
-                  icon={Package} 
-                  label="Package" 
-                  value={appointment.packageType || "Standard"} 
-                />
-                
-                <InfoItem 
-                  icon={CreditCard} 
-                  label="Payment Status" 
-                  value={appointment.payment?.status || "Pending"} 
-                />
-                
-                <InfoItem 
-                  icon={User} 
-                  label="Attendee" 
-                  value={appointment.attendee?.name || "Not assigned"} 
-                />
-                
-                <InfoItem 
-                  icon={CheckCircle} 
-                  label="Status" 
-                  value={appointment.status || "Unknown"} 
-                />
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Payment Information
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Status</label>
+                      <p className="text-gray-900">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          appointment.payment?.status === 'paid' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {appointment.payment?.status === 'paid' ? (
+                            <>
+                              <Check className="w-3 h-3 mr-1" />
+                              Paid
+                            </>
+                          ) : (
+                            appointment.payment?.status || 'Pending'
+                          )}
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Amount</label>
+                      <p className="text-gray-900">${appointment.service?.basePrice || appointment.payment?.amount || '50.00'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Method</label>
+                      <p className="text-gray-900">{appointment.payment?.paymentMethod || 'N/A'}</p>
+                    </div>
+                    {appointment.payment?.transactionId && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Transaction ID</label>
+                        <p className="text-gray-900 text-xs">{appointment.payment.transactionId}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </>
-        )}
+
+            {appointment.notes?.customer && (
+              <div className="mt-8 bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+                <p className="text-gray-900 whitespace-pre-wrap">{appointment.notes.customer}</p>
+              </div>
+            )}
+
+            <div className="mt-8 flex gap-4">
+              {appointment.status?.toLowerCase() === 'completed' && appointment.payment?.status !== 'paid' && (
+                <button
+                  onClick={() => router.push(`/customers/payment?appointmentId=${appointment._id}`)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Pay Now
+                </button>
+              )}
+              <button
+                onClick={() => router.push('/customers/appointments')}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                Back to Appointments
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </CustomerLayout>
   );
 };
 
-// Reusable info item component
-const InfoItem = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center text-gray-700 text-base">
-    <Icon className="h-5 w-5 text-green-600 mr-3" />
-    <div>
-      <p className="font-semibold">{label}</p>
-      <p className="text-sm text-gray-600">{value}</p>
-    </div>
-  </div>
-);
-
-export default AppointmentDetails;
+export default CustomerAppointmentDetailPage;

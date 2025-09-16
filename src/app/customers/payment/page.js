@@ -1,98 +1,111 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
+import { useRouter, useSearchParams } from 'next/navigation';
 import getStripe from '../../../lib/stripe';
 import StripePaymentForm from '../../../components/payment/StripePaymentForm';
 import { toast } from 'react-hot-toast';
+import { useDashboard } from '@/contexts/DashboardContext';
+import axios from 'axios';
 
 const PaymentPage = () => {
-  const [formData, setFormData] = useState({
-    serviceType: 'lawn-mowing',
-    frequency: 'weekly',
-    acceptTerms: false
-  });
-
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const appointmentId = searchParams.get('appointmentId');
+  const { userData } = useDashboard();
+  
+  const [appointment, setAppointment] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const stripePromise = getStripe();
 
-  const serviceOptions = [
-    { id: 'lawn-mowing', name: 'Lawn Mowing', price: 35 },
-    { id: 'hedge-trimming', name: 'Hedge Trimming', price: 45 },
-    { id: 'garden-cleanup', name: 'Garden Cleanup', price: 60 },
-    { id: 'planting', name: 'Planting Services', price: 75 },
-    { id: 'full-maintenance', name: 'Full Maintenance', price: 120 }
-  ];
-
-  const frequencyOptions = [
-    { id: 'weekly', name: 'Weekly', discount: 0 },
-    { id: 'bi-weekly', name: 'Bi-Weekly', discount: 0 },
-    { id: 'monthly', name: 'Monthly', discount: 5 },
-    { id: 'one-time', name: 'One-Time', discount: 0 }
-  ];
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const calculateTotal = () => {
-    const selectedService = serviceOptions.find(s => s.id === formData.serviceType);
-    const selectedFrequency = frequencyOptions.find(f => f.id === formData.frequency);
-    
-    let total = selectedService.price;
-    if (selectedFrequency.discount > 0) {
-      total = total - (total * selectedFrequency.discount / 100);
+  useEffect(() => {
+    if (appointmentId && userData?.token) {
+      fetchAppointment();
+    } else if (!appointmentId) {
+      setLoading(false);
     }
-    
-    return total.toFixed(2);
+  }, [appointmentId, userData]);
+
+  const fetchAppointment = async () => {
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments/${appointmentId}`, {
+        headers: { Authorization: `Bearer ${userData.token}` }
+      });
+      setAppointment(response.data.data);
+    } catch (error) {
+      toast.error('Failed to load appointment details');
+      router.push('/customers/appointments');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePaymentSuccess = (payment) => {
     setPaymentData(payment);
     setPaymentSuccess(true);
+    setTimeout(() => {
+      router.push('/customers/appointments');
+    }, 3000);
   };
 
   const handlePaymentError = (error) => {
     console.error('Payment failed:', error);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-green-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
   if (paymentSuccess) {
     return (
       <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h2>
-          <p className="text-gray-600 mb-6">Thank you for choosing our gardening services. Your booking is confirmed.</p>
+          <p className="text-gray-600 mb-6">Your payment has been processed successfully.</p>
           <div className="bg-green-50 p-4 rounded-md mb-6">
             <p className="text-green-800 font-medium">Payment Details</p>
             <div className="flex justify-between mt-2">
-              <span className="text-gray-600">{serviceOptions.find(s => s.id === formData.serviceType).name}</span>
-              <span className="font-medium">${calculateTotal()}</span>
+              <span className="text-gray-600">Service:</span>
+              <span className="font-medium">{appointment?.service?.name}</span>
             </div>
             <div className="flex justify-between mt-1">
-              <span className="text-gray-600">Frequency:</span>
-              <span className="font-medium">{frequencyOptions.find(f => f.id === formData.frequency).name}</span>
+              <span className="text-gray-600">Amount:</span>
+              <span className="font-medium">${appointment?.payment?.amount}</span>
             </div>
-            {paymentData && (
-              <div className="flex justify-between mt-1">
-                <span className="text-gray-600">Receipt:</span>
-                <span className="font-medium">{paymentData.receiptNumber}</span>
-              </div>
-            )}
           </div>
+          <p className="text-sm text-gray-500 mb-4">Redirecting to appointments...</p>
           <button 
-            onClick={() => setPaymentSuccess(false)}
+            onClick={() => router.push('/customers/appointments')}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
           >
-            Back to Services
+            Back to Appointments
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (appointmentId && !appointment) {
+    return (
+      <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-gray-600">Appointment not found</p>
+          <button 
+            onClick={() => router.push('/customers/appointments')}
+            className="mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
+          >
+            Back to Appointments
           </button>
         </div>
       </div>
@@ -104,10 +117,10 @@ const PaymentPage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Complete Your Gardening Service Booking
+            Complete Payment
           </h1>
           <p className="mt-3 text-lg text-gray-600">
-            Fill in your details to schedule your gardening service
+            Pay for your completed gardening service
           </p>
         </div>
 
@@ -116,53 +129,34 @@ const PaymentPage = () => {
             <div className="md:w-1/2 md:pr-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Service Details</h2>
               
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select Service</label>
-                <select
-                  name="serviceType"
-                  value={formData.serviceType}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                >
-                  {serviceOptions.map(service => (
-                    <option key={service.id} value={service.id}>
-                      {service.name} (${service.price})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Service Frequency</label>
-                <select
-                  name="frequency"
-                  value={formData.frequency}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                >
-                  {frequencyOptions.map(freq => (
-                    <option key={freq.id} value={freq.id}>
-                      {freq.name} {freq.discount > 0 ? `(${freq.discount}% discount)` : ''}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Service</label>
+                  <p className="text-gray-900">{appointment.service?.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Date</label>
+                  <p className="text-gray-900">{new Date(appointment.date).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Time</label>
+                  <p className="text-gray-900">{appointment.timeSlot?.startTime} - {appointment.timeSlot?.endTime}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <p className="text-gray-900">{appointment.status}</p>
+                </div>
               </div>
 
               <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Order Summary</h3>
+                <h3 className="text-lg font-medium text-gray-800 mb-2">Payment Summary</h3>
                 <div className="flex justify-between mb-1">
-                  <span className="text-gray-600">{serviceOptions.find(s => s.id === formData.serviceType).name}</span>
-                  <span className="font-medium">${serviceOptions.find(s => s.id === formData.serviceType).price}</span>
+                  <span className="text-gray-600">{appointment.service?.name}</span>
+                  <span className="font-medium">${appointment.payment?.amount}</span>
                 </div>
-                {frequencyOptions.find(f => f.id === formData.frequency).discount > 0 && (
-                  <div className="flex justify-between mb-1 text-green-600">
-                    <span>Frequency Discount ({frequencyOptions.find(f => f.id === formData.frequency).discount}%)</span>
-                    <span>-${(serviceOptions.find(s => s.id === formData.serviceType).price * frequencyOptions.find(f => f.id === formData.frequency).discount / 100).toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>${calculateTotal()}</span>
+                  <span>${appointment.payment?.amount}</span>
                 </div>
               </div>
             </div>
@@ -170,31 +164,16 @@ const PaymentPage = () => {
             <div className="md:w-1/2 md:pl-8 mt-8 md:mt-0">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Payment Information</h2>
               
-              <div className="flex items-center mb-6">
-                <input
-                  id="acceptTerms"
-                  name="acceptTerms"
-                  type="checkbox"
-                  checked={formData.acceptTerms}
-                  onChange={handleChange}
-                  required
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              <Elements stripe={stripePromise}>
+                <StripePaymentForm
+                  amount={parseFloat(appointment.service?.basePrice || appointment.payment?.amount || 50)}
+                  paymentType="Full Payment"
+                  customerId={appointment.customer?._id}
+                  appointmentId={appointment._id}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
                 />
-                <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-700">
-                  I agree to the <a href="#" className="text-green-600 hover:text-green-700">terms and conditions</a>
-                </label>
-              </div>
-
-              {formData.acceptTerms && (
-                <Elements stripe={stripePromise}>
-                  <StripePaymentForm
-                    amount={parseFloat(calculateTotal())}
-                    paymentType="Full Payment"
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                </Elements>
-              )}
+              </Elements>
             </div>
           </div>
         </div>

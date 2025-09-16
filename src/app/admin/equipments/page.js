@@ -2,6 +2,7 @@
 
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useState, useEffect } from 'react';
+import apiClient from '@/lib/api/apiClient';
 import {
     FiPlus,
     FiSearch,
@@ -31,60 +32,10 @@ const EquipmentManagementSystem = () => {
     const [scannedId, setScannedId] = useState('');
     const [editingEquipment, setEditingEquipment] = useState(null);
 
-    // Mock data initialization
+    // Fetch equipment data
     useEffect(() => {
-        const mockEquipment = [
-            {
-                id: 1,
-                name: 'Lawn Mower Pro 2000',
-                type: 'Mower',
-                status: 'available',
-                nextMaintenance: '2025-07-15',
-                assignedTo: 'Crew A',
-                purchaseDate: '2024-01-15',
-                maintenanceInterval: 30,
-                lastMaintenance: '2025-05-15',
-                serialNumber: 'LM2000-001',
-                location: 'Warehouse A',
-                quantity: 5,
-                minQuantity: 2,
-                imageUrl: 'https://images.unsplash.com/photo-1618254488700-8c50836e90bb?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8Z2FyZGVuaW5nJTIwZXF1aXBtcm50fGVufDB8fDB8fHww'
-            },
-            {
-                id: 2,
-                name: 'Professional Chainsaw',
-                type: 'Tree Care',
-                status: 'in-use',
-                nextMaintenance: '2025-06-20',
-                assignedTo: 'Crew B',
-                purchaseDate: '2024-03-20',
-                maintenanceInterval: 45,
-                lastMaintenance: '2025-04-20',
-                serialNumber: 'CS-PRO-002',
-                location: 'Field Site 1',
-                quantity: 3,
-                minQuantity: 1,
-                imageUrl: 'https://plus.unsplash.com/premium_photo-1678382345841-eac58a12414e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fGdhcmRlbmluZyUyMGVxdWlwbXJudHxlbnwwfHwwfHx8MA%3D%3D'
-            },
-            {
-                id: 3,
-                name: 'Heavy Duty Leaf Blower',
-                type: 'Cleanup',
-                status: 'maintenance',
-                nextMaintenance: '2025-06-10',
-                assignedTo: '-',
-                purchaseDate: '2024-02-10',
-                maintenanceInterval: 60,
-                lastMaintenance: '2025-04-10',
-                serialNumber: 'LB-HD-003',
-                location: 'Maintenance Shop',
-                quantity: 1,
-                minQuantity: 2,
-                imageUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=150&h=150&fit=crop&crop=center'
-            },
-        ];
-        setEquipment(mockEquipment);
-
+        fetchEquipment();
+        
         const mockAppointment = {
             id: 101,
             date: '2025-06-25',
@@ -94,6 +45,31 @@ const EquipmentManagementSystem = () => {
         };
         setCurrentAppointment(mockAppointment);
     }, []);
+
+    const fetchEquipment = async () => {
+        try {
+            const response = await apiClient.get('/equipment');
+            const transformedEquipment = response.data.data.map(item => ({
+                id: item._id,
+                name: item.name,
+                type: item.type,
+                status: item.status,
+                nextMaintenance: item.nextMaintenance?.split('T')[0],
+                assignedTo: item.assignedTo || '-',
+                purchaseDate: item.purchaseDate?.split('T')[0],
+                maintenanceInterval: item.maintenanceInterval,
+                lastMaintenance: item.lastMaintenance?.split('T')[0],
+                serialNumber: item.serialNumber,
+                location: item.location,
+                quantity: item.quantity,
+                minQuantity: item.minQuantity,
+                imageUrl: item.imageUrl
+            }));
+            setEquipment(transformedEquipment);
+        } catch (error) {
+            console.error('Error fetching equipment:', error);
+        }
+    };
 
     // Filter equipment based on search and status
     const filteredEquipment = equipment.filter(item => {
@@ -105,39 +81,40 @@ const EquipmentManagementSystem = () => {
     });
 
     // Add new equipment
-    const handleAddEquipment = (newEquipment) => {
-        const newId = Math.max(...equipment.map(e => e.id), 0) + 1;
-        const nextMaintenance = new Date();
-        nextMaintenance.setDate(nextMaintenance.getDate() + parseInt(newEquipment.maintenanceInterval));
-
-        setEquipment([...equipment, {
-            id: newId,
-            status: 'available',
-            assignedTo: '-',
-            nextMaintenance: nextMaintenance.toISOString().split('T')[0],
-            lastMaintenance: newEquipment.purchaseDate || new Date().toISOString().split('T')[0],
-            serialNumber: `${newEquipment.type.substring(0, 2).toUpperCase()}-${newId.toString().padStart(3, '0')}`,
-            location: 'Warehouse A',
-            quantity: parseInt(newEquipment.quantity) || 1,
-            minQuantity: parseInt(newEquipment.minQuantity) || 1,
-            ...newEquipment
-        }]);
-        setShowAddModal(false);
+    const handleAddEquipment = async (newEquipment) => {
+        try {
+            await apiClient.post('/equipment', newEquipment);
+            fetchEquipment();
+            setShowAddModal(false);
+        } catch (error) {
+            console.error('Error adding equipment:', error);
+            alert('Error adding equipment');
+        }
     };
 
     // Update equipment
-    const handleUpdateEquipment = (updatedEquipment) => {
-        setEquipment(equipment.map(item =>
-            item.id === updatedEquipment.id ? updatedEquipment : item
-        ));
-        setView('dashboard');
-        setEditingEquipment(null);
+    const handleUpdateEquipment = async (updatedEquipment) => {
+        try {
+            await apiClient.put(`/equipment/${updatedEquipment.id}`, updatedEquipment);
+            fetchEquipment();
+            setView('dashboard');
+            setEditingEquipment(null);
+        } catch (error) {
+            console.error('Error updating equipment:', error);
+            alert('Error updating equipment');
+        }
     };
 
     // Delete equipment
-    const handleDeleteEquipment = (id) => {
+    const handleDeleteEquipment = async (id) => {
         if (window.confirm('Are you sure you want to delete this equipment?')) {
-            setEquipment(equipment.filter(item => item.id !== id));
+            try {
+                await apiClient.delete(`/equipment/${id}`);
+                fetchEquipment();
+            } catch (error) {
+                console.error('Error deleting equipment:', error);
+                alert('Error deleting equipment');
+            }
         }
     };
 

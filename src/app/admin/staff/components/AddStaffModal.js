@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import { FaTimes } from 'react-icons/fa';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { useRouter } from 'next/navigation';
-
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import apiClient from '@/lib/api/apiClient';
 
 
 export default function AddStaffModal({ onClose, onSuccess }) {
@@ -19,7 +17,7 @@ export default function AddStaffModal({ onClose, onSuccess }) {
     if (!isLoading) {
       if (!userData?.role) {
         router.push('/login');
-      } else if (userData.role !== 'admin') {
+      } else if (userData.role !== 'admin' && userData.role !== 'tenantAdmin') {
         router.push('/login');
       }
     }
@@ -27,13 +25,13 @@ export default function AddStaffModal({ onClose, onSuccess }) {
 
   if (isLoading) return <p>Loading...</p>;
 
-  if (userData?.role !== 'admin') return null;
+  if (userData?.role !== 'admin' && userData?.role !== 'tenantAdmin') return null;
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    role: 'professional'
+    role: 'staff'
   });
   const [loading, setLoading] = useState(false);
 
@@ -51,11 +49,12 @@ export default function AddStaffModal({ onClose, onSuccess }) {
 
     try {
       const token = userData.token;
-      await axios.post(`${API_URL}/professionals`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const staffData = {
+        ...formData,
+        tenantId: userData.tenantId._id
+      };
+      
+      await apiClient.post('/auth/register', staffData);
 
       toast.success('Staff member added successfully');
       onSuccess();
@@ -137,8 +136,8 @@ export default function AddStaffModal({ onClose, onSuccess }) {
               onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="professional">Professional</option>
-              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+              <option value="tenantAdmin">Tenant Admin</option>
             </select>
           </div>
 

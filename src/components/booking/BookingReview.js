@@ -204,8 +204,7 @@ import axios from "axios";
 import { useDashboard } from "../../contexts/DashboardContext";
 import { useTenant } from "../../contexts/TenantContext";
 
-const BookingReview = ({ onNext, onBack }) => {
-  console.log('BookingReview props:', { onNext: typeof onNext, onBack: typeof onBack });
+const BookingReview = ({ onBack }) => {
   const router = useRouter();
   const { userData } = useDashboard();
   const { tenant } = useTenant();
@@ -240,13 +239,7 @@ const BookingReview = ({ onNext, onBack }) => {
     fetchServiceDetails();
   }, [currentBooking, API_URL, updateCurrentBooking]);
 
-  const handleContinueToPayment = async () => {
-    if (!onNext) {
-      console.error('onNext function not provided');
-      setError('Navigation function not available');
-      return;
-    }
-
+  const handleSubmitBooking = async () => {
     setIsSubmitting(true);
     setError(null);
 
@@ -257,7 +250,7 @@ const BookingReview = ({ onNext, onBack }) => {
         throw new Error("Missing required booking information");
       }
 
-      // Update customer details before proceeding to payment
+      // Update customer details
       await axios.put(
         `${API_URL}/customers/me`,
         {
@@ -270,11 +263,36 @@ const BookingReview = ({ onNext, onBack }) => {
         }
       );
 
-      // Proceed to payment step
-      onNext();
+      // Create appointment
+      const appointmentData = {
+        service: currentBooking.serviceId,
+        date: currentBooking.appointmentDate,
+        timeSlot: {
+          startTime: currentBooking.startTime,
+          endTime: currentBooking.endTime,
+        },
+        notes: currentBooking.notes,
+        frequency: currentBooking.frequency,
+      };
+
+      const response = await axios.post(
+        `${API_URL}/appointments`,
+        appointmentData,
+        {
+          headers: { 
+            Authorization: `Bearer ${userData.token}`,
+            ...(tenant?.subdomain && { 'X-Tenant-Subdomain': tenant.subdomain })
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        router.push(`/booking/confirmation`);
+        resetCurrentBooking();
+      }
     } catch (error) {
-      console.error("Error updating customer details:", error);
-      setError(error.response?.data?.error || error.message || "Failed to update customer details");
+      console.error("Error submitting booking:", error);
+      setError(error.response?.data?.error || error.message || "Failed to create appointment");
     } finally {
       setIsSubmitting(false);
     }
@@ -369,7 +387,7 @@ const BookingReview = ({ onNext, onBack }) => {
 
       <div className="bg-emerald-100 border border-emerald-300 rounded-lg p-5 mb-6">
         <p className="text-emerald-800">
-          <strong>What happens next?</strong> Our team will review your request and get back to you with a detailed estimate within 24–48 hours.
+          <strong>What happens next?</strong> Your appointment will be submitted for admin approval. Once approved, you'll receive a confirmation email. Payment will be collected after the service is completed.
         </p>
       </div>
 
@@ -384,13 +402,13 @@ const BookingReview = ({ onNext, onBack }) => {
           Back to Details
         </Button>
         <Button
-          onClick={handleContinueToPayment}
+          onClick={handleSubmitBooking}
           disabled={isSubmitting || isLoading}
           className={`bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg transition ${
             isSubmitting || isLoading ? "opacity-60 cursor-not-allowed" : ""
           }`}
         >
-          Continue to Payment
+          {isSubmitting ? "Submitting..." : "Submit Booking"}
         </Button>
       </div>
     </div>

@@ -54,8 +54,7 @@ const StatusBadge = ({ status }) => {
     default:
       break;
   }
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+
 
   // Format the status for display
   const formatStatus = (status) => {
@@ -1150,43 +1149,26 @@ const CustomToolbar = ({
 };
 
 const CustomEvent = ({ event }) => {
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "completed":
-        return "bg-gradient-to-r from-green-400 to-green-500";
-      case "cancelled":
-      case "canceled":
-        return "bg-gradient-to-r from-red-400 to-red-500";
-      case "scheduled":
-        return "bg-gradient-to-r from-blue-400 to-blue-500";
-      default:
-        return "bg-gradient-to-r from-yellow-400 to-yellow-500";
-    }
-  };
-
+  const isPaid = event.payment?.status?.toLowerCase() === 'paid';
+  const isToday = moment(event.start).isSame(moment(), 'day');
+  
   return (
-    <div className="p-2 h-full">
-      <div className="flex items-start space-x-2 h-full">
-        <div
-          className={`w-1.5 rounded-full ${getStatusColor(event.status)} mt-1`}
-        />
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm truncate text-white">
-            {event.title}
-          </div>
-          <div className="text-xs text-white/90 mt-1">
-            {moment(event.start).format("h:mm A")} -{" "}
-            {moment(event.end).format("h:mm A")}
-          </div>
-          {event.customer?.address && (
-            <div className="text-xs text-white/80 truncate mt-1">
-              {`${event.customer.address?.street || ""}, ${
-                event.customer.address?.city || ""
-              }, ${event.customer.address?.state || ""}, ${
-                event.customer.address?.zipCode || ""
-              }`.trim()}
-            </div>
-          )}
+    <div className="p-1 h-full relative">
+      {isPaid && (
+        <div className="absolute top-0 right-0 w-2 h-2 bg-green-400 rounded-full border border-white"></div>
+      )}
+      {isToday && (
+        <div className="absolute top-0 left-0 w-2 h-2 bg-blue-400 rounded-full border border-white"></div>
+      )}
+      <div className="flex flex-col h-full">
+        <div className="font-medium text-xs truncate text-white leading-tight">
+          {event.customerName || 'Customer'}
+        </div>
+        <div className="text-xs text-white/90 truncate">
+          {event.serviceName || 'Service'}
+        </div>
+        <div className="text-xs text-white/80 mt-auto">
+          {moment(event.start).format("h:mm A")}
         </div>
       </div>
     </div>
@@ -1279,8 +1261,7 @@ const DateAppointmentsModal = ({
                     <div className="flex space-x-4">
                       <button
                         onClick={() => {
-                          onEdit(appointment);
-                          onClose();
+                          window.location.href = `/admin/appointments/${appointment.id}`;
                         }}
                         className="text-green-600 hover:text-green-900"
                       >
@@ -1362,6 +1343,28 @@ const AppointmentsPage = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [dateRange, setDateRange] = useState({
+    start: moment().startOf('month').format('YYYY-MM-DD'),
+    end: moment().endOf('month').format('YYYY-MM-DD')
+  });
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  // Handle edit query parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    if (editId && appointments.length > 0) {
+      const appointmentToEdit = appointments.find(apt => apt.id === editId);
+      if (appointmentToEdit) {
+        setSelectedAppointment(appointmentToEdit);
+        setActiveModal('details');
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [appointments]);
 
   const getAuthHeaders = useCallback(() => {
     if (!userData?.token) {
@@ -1594,6 +1597,11 @@ const AppointmentsPage = () => {
     }
   }, [isUserLoading, isTenantLoading, userData, fetchAppointments, fetchServices, handleCalendarView]);
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, serviceFilter, paymentFilter, dateRange]);
+
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
@@ -1631,8 +1639,17 @@ const AppointmentsPage = () => {
         statusFilter === "all" || appointment.status === statusFilter;
       const serviceMatches =
         serviceFilter === "all" || appointment.serviceId === serviceFilter;
+      
+      // Payment filter
+      const paymentMatches = paymentFilter === 'all' || 
+        (paymentFilter === 'paid' && appointment.payment?.status?.toLowerCase() === 'paid') ||
+        (paymentFilter === 'pending' && appointment.payment?.status?.toLowerCase() !== 'paid');
+      
+      // Date range filter
+      const appointmentDate = moment(appointment.date);
+      const dateMatches = appointmentDate.isBetween(dateRange.start, dateRange.end, 'day', '[]');
 
-      return searchMatches && statusMatches && serviceMatches;
+      return searchMatches && statusMatches && serviceMatches && paymentMatches && dateMatches;
     })
     .sort((a, b) => {
       const aValue =
@@ -1694,80 +1711,109 @@ const AppointmentsPage = () => {
   }
 };
   const renderCalendar = () => (
-    <div className="h-[800px] bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-      <Calendar
-        localizer={localizer}
-        events={calendarEvents}
-        startAccessor={(event) => new Date(event.start)}
-        endAccessor={(event) => new Date(event.end)}
-        defaultDate={currentDate}
-        onNavigate={(newDate, view) => {
-          setCurrentDate(newDate);
-          handleCalendarView(newDate, view);
-        }}
-        onView={(view) => {
-          setViewType(view);
-          handleCalendarView(currentDate, view);
-        }}
-        style={{ height: "100%" }}
-        eventPropGetter={(event) => ({
-          style: {
-            backgroundColor: "transparent",
-            borderRadius: "4px",
-            opacity: event.status === "Completed" ? 0.7 : 1,
-            border: "none",
-            color: "#fff",
-            padding: "2px 4px",
-            display: "block",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-            background: `linear-gradient(135deg, 
-            ${
-              event.status === "Completed"
-                ? "#34D399"
-                : event.status === "Cancelled"
-                ? "#F87171"
-                : event.status === "Scheduled"
-                ? "#60A5FA"
-                : "#FBBF24"
-            } 0%, 
-            ${
-              event.status === "Completed"
-                ? "#10B981"
-                : event.status === "Cancelled"
-                ? "#EF4444"
-                : event.status === "Scheduled"
-                ? "#3B82F6"
-                : "#F59E0B"
-            } 100%)`,
-          },
-        })}
-        onSelectEvent={(event) => {
-          const appointment = appointments.find((apt) => apt.id === event.id);
-          if (appointment) {
-            setSelectedAppointment(appointment);
-            setActiveModal("details");
-          }
-        }}
-        onSelectSlot={(slotInfo) => {
-          const selectedDate = moment(slotInfo.start).toDate();
-          setSelectedDate(selectedDate);
-        }}
-        selectable={true}
-        components={{
-          toolbar: (props) => (
-            <CustomToolbar {...props} handleCalendarView={handleCalendarView} />
-          ),
-          event: CustomEvent,
-        }}
-        views={["month", "week", "day", "agenda"]}
-        defaultView="month"
-        popup
-        step={30}
-        timeslots={2}
-        min={new Date(0, 0, 0, 8, 0, 0)}
-        max={new Date(0, 0, 0, 18, 0, 0)}
-        dayLayoutAlgorithm="no-overlap"
-      />
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100">
+      {/* Calendar Legend */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Status Legend:</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-gradient-to-r from-yellow-400 to-yellow-500"></div>
+            <span className="text-xs text-gray-600">Pending</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-400 to-blue-500"></div>
+            <span className="text-xs text-gray-600">Scheduled</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-gradient-to-r from-green-400 to-green-500"></div>
+            <span className="text-xs text-gray-600">Completed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-gradient-to-r from-red-400 to-red-500"></div>
+            <span className="text-xs text-gray-600">Cancelled</span>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-gray-600">Total Events: {calendarEvents.length}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="h-[800px] p-6">
+        <Calendar
+          localizer={localizer}
+          events={calendarEvents}
+          startAccessor={(event) => new Date(event.start)}
+          endAccessor={(event) => new Date(event.end)}
+          defaultDate={currentDate}
+          onNavigate={(newDate, view) => {
+            setCurrentDate(newDate);
+            handleCalendarView(newDate, view);
+          }}
+          onView={(view) => {
+            setViewType(view);
+            handleCalendarView(currentDate, view);
+          }}
+          style={{ height: "100%" }}
+          eventPropGetter={(event) => {
+            const isPaid = event.payment?.status?.toLowerCase() === 'paid';
+            return {
+              style: {
+                backgroundColor: "transparent",
+                borderRadius: "6px",
+                opacity: event.status === "Completed" ? 0.8 : 1,
+                border: isPaid ? "2px solid #10B981" : "1px solid rgba(255,255,255,0.3)",
+                color: "#fff",
+                padding: "4px 6px",
+                display: "block",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                fontSize: "12px",
+                fontWeight: "500",
+                background: `linear-gradient(135deg, 
+                ${
+                  event.status === "Completed"
+                    ? "#34D399"
+                    : event.status === "Cancelled"
+                    ? "#F87171"
+                    : event.status === "Scheduled"
+                    ? "#60A5FA"
+                    : "#FBBF24"
+                } 0%, 
+                ${
+                  event.status === "Completed"
+                    ? "#10B981"
+                    : event.status === "Cancelled"
+                    ? "#EF4444"
+                    : event.status === "Scheduled"
+                    ? "#3B82F6"
+                    : "#F59E0B"
+                } 100%)`,
+              },
+            };
+          }}
+          onSelectEvent={(event) => {
+            router.push(`/admin/appointments/${event.id}`);
+          }}
+          onSelectSlot={(slotInfo) => {
+            const selectedDate = moment(slotInfo.start).toDate();
+            setSelectedDate(selectedDate);
+          }}
+          selectable={true}
+          components={{
+            toolbar: (props) => (
+              <CustomToolbar {...props} handleCalendarView={handleCalendarView} />
+            ),
+            event: CustomEvent,
+          }}
+          views={["month", "week", "day", "agenda"]}
+          defaultView="month"
+          popup
+          step={30}
+          timeslots={2}
+          min={new Date(0, 0, 0, 8, 0, 0)}
+          max={new Date(0, 0, 0, 18, 0, 0)}
+          dayLayoutAlgorithm="no-overlap"
+        />
+      </div>
     </div>
   );
 
@@ -1801,302 +1847,423 @@ const AppointmentsPage = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Appointments</h1>
-          <div className="space-x-2">
-            {/* <button
-              onClick={() => router.push('/admin/appointments/new')}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              New Appointment
-            </button> */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Appointments</h1>
+            <p className="text-gray-600 mt-1">Manage and track all your appointments</p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setViewType("calendar")}
-              className={`px-4 py-2 rounded-md ${
+              className={`inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
                 viewType === "calendar"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "bg-green-600 text-white shadow-sm"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
               }`}
             >
-              Calendar View
+              <CalendarIcon className="w-4 h-4 mr-2" />
+              Calendar
             </button>
             <button
               onClick={() => setViewType("list")}
-              className={`px-4 py-2 rounded-md ${
+              className={`inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
                 viewType === "list"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "bg-green-600 text-white shadow-sm"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
               }`}
             >
-              List View
+              <List className="w-4 h-4 mr-2" />
+              List
             </button>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative flex-1">
+        {/* Enhanced Filters and Stats */}
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-lg text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm">Completed</p>
+                  <p className="text-2xl font-bold">
+                    {appointments.filter(a => a.status === 'Completed').length}
+                  </p>
+                </div>
+                <div className="bg-green-400 p-2 rounded-full">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm">Scheduled</p>
+                  <p className="text-2xl font-bold">
+                    {appointments.filter(a => a.status === 'Scheduled').length}
+                  </p>
+                </div>
+                <div className="bg-blue-400 p-2 rounded-full">
+                  <CalendarIcon className="w-6 h-6" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 p-4 rounded-lg text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-yellow-100 text-sm">Pending</p>
+                  <p className="text-2xl font-bold">
+                    {appointments.filter(a => a.status === 'Pending').length}
+                  </p>
+                </div>
+                <div className="bg-yellow-400 p-2 rounded-full">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-lg text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm">Paid</p>
+                  <p className="text-2xl font-bold">
+                    {appointments.filter(a => a.payment?.status?.toLowerCase() === 'paid').length}
+                  </p>
+                </div>
+                <div className="bg-purple-400 p-2 rounded-full">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Filters */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                    clipRule="evenodd"
-                  />
+                <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                 </svg>
               </div>
               <input
                 type="text"
-                name="search"
-                id="search"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Search appointments..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                placeholder="Search by customer, address, or service..."
                 value={searchTerm}
                 onChange={handleSearch}
               />
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div>
-                <label
-                  htmlFor="status-filter"
-                  className="block text-sm font-medium text-gray-700 sr-only"
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Quick Status Filters */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Quick filters:</span>
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    statusFilter === 'all' 
+                      ? 'bg-gray-800 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
                 >
-                  Status
-                </label>
-                <select
-                  id="status-filter"
-                  name="status-filter"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  All
+                </button>
+                <button
+                  onClick={() => setStatusFilter('Pending')}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    statusFilter === 'Pending' 
+                      ? 'bg-yellow-500 text-white' 
+                      : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                  }`}
                 >
-                  {statuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status === "all"
-                        ? "All Statuses"
-                        : status
-                            .split("-")
-                            .map(
-                              (word) =>
-                                word.charAt(0).toUpperCase() + word.slice(1)
-                            )
-                            .join(" ")}
-                    </option>
-                  ))}
-                </select>
+                  Pending
+                </button>
+                <button
+                  onClick={() => setStatusFilter('Scheduled')}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    statusFilter === 'Scheduled' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                  }`}
+                >
+                  Scheduled
+                </button>
+                <button
+                  onClick={() => setStatusFilter('Completed')}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    statusFilter === 'Completed' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-green-100 text-green-600 hover:bg-green-200'
+                  }`}
+                >
+                  Completed
+                </button>
               </div>
 
-              <div>
-                <label
-                  htmlFor="service-filter"
-                  className="block text-sm font-medium text-gray-700 sr-only"
-                >
-                  Service
-                </label>
-                <select
-                  id="service-filter"
-                  name="service-filter"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
-                  value={serviceFilter}
-                  onChange={(e) => setServiceFilter(e.target.value)}
-                >
-                  <option value="all">All Services</option>
-                  {services &&
-                    services.map((service) => (
-                      <option key={service._id} value={service._id}>
-                        {service.name}
-                      </option>
-                    ))}
-                </select>
+              {/* Dropdown Filters */}
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                {statuses.filter(s => s !== 'all').map((status) => (
+                  <option key={status} value={status}>
+                    {status.split('-').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+              >
+                <option value="all">All Services</option>
+                {services.map((service) => (
+                  <option key={service._id} value={service._id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+              >
+                <option value="all">All Payments</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending Payment</option>
+              </select>
+
+              {/* Date Range Filters */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                />
+                <span className="text-gray-500">to</span>
+                <input
+                  type="date"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                />
               </div>
             </div>
           </div>
         </div>
 
         {viewType === "list" ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                {/* Table headers */}
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Sr.No.
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Customer
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Service
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Date & Time
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Payment
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Crew
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAppointments.map((appointment, index) => (
-                    <tr key={appointment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{index + 1}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {appointment.customerName}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate max-w-[200px]">
-                          {appointment.address}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {appointment.serviceName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.frequency}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(appointment.date).toLocaleDateString()}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.startTime} - {appointment.endTime}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={appointment.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {appointment.payment.status}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ${appointment.payment.amount}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedAppointment(appointment);
-                              setActiveModal("details");
-                            }}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            View
-                          </button>
-                          {(appointment.status === "Scheduled" ||
-                            appointment.status === "Rescheduled") && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setSelectedAppointment(appointment);
-                                  setActiveModal("crew");
-                                }}
-                                className={`${
-                                  appointment.crew?.leadProfessional ||
-                                  appointment.crew?.assignedTo?.length > 0
-                                    ? "text-blue-600 hover:text-blue-800"
-                                    : "text-green-600 hover:text-green-800"
-                                }`}
-                              >
-                                {appointment.crew?.leadProfessional ||
-                                appointment.crew?.assignedTo?.length > 0
-                                  ? "View Crew"
-                                  : "Assign Crew"}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedAppointment(appointment);
-                                  setActiveModal("payment");
-                                }}
-                                className="text-purple-600 hover:text-purple-900"
-                              >
-                                Payment
-                              </button>
-                              {appointment.recurringType === "One-time" && (
+          <div className="space-y-4">
+            {/* Results Summary */}
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Showing {filteredAppointments.length} of {appointments.length} appointments
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Sort by:</span>
+                  <select
+                    className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    value={sortField}
+                    onChange={(e) => setSortField(e.target.value)}
+                  >
+                    <option value="date">Date</option>
+                    <option value="customerName">Customer</option>
+                    <option value="status">Status</option>
+                    <option value="serviceName">Service</option>
+                  </select>
+                  <button
+                    onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                    className="p-1 text-gray-400 hover:text-gray-600"
+                  >
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced List View */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              {filteredAppointments.length === 0 ? (
+                <div className="text-center py-12">
+                  <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No appointments found</h3>
+                  <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredAppointments
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((appointment, index) => {
+                    const isUpcoming = moment(appointment.date).isAfter(moment());
+                    const isToday = moment(appointment.date).isSame(moment(), 'day');
+                    const isPastDue = moment(appointment.date).isBefore(moment()) && appointment.status !== 'Completed';
+                    
+                    return (
+                      <div key={appointment.id} className={`p-6 hover:bg-gray-50 transition-colors ${
+                        isToday ? 'bg-blue-50 border-l-4 border-blue-500' : 
+                        isPastDue ? 'bg-red-50 border-l-4 border-red-500' : ''
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                                {appointment.customerName}
+                              </h3>
+                              <StatusBadge status={appointment.status} />
+                              {appointment.payment?.status?.toLowerCase() === 'paid' && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
+                                  </svg>
+                                  Paid
+                                </span>
+                              )}
+                              {isToday && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  Today
+                                </span>
+                              )}
+                              {isPastDue && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  Overdue
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                              <div>
+                                <p className="font-medium text-gray-900">{appointment.serviceName}</p>
+                                <p className="truncate">{appointment.address}</p>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {moment(appointment.date).format('MMM DD, YYYY')}
+                                </p>
+                                <p>{appointment.startTime} - {appointment.endTime}</p>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  Payment: ${appointment.payment?.amount || 0}
+                                </p>
+                                <p>Crew: {appointment.crew?.assignedTo?.length || 0} members</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 ml-4">
+                            <button
+                              onClick={() => router.push(`/admin/appointments/${appointment.id}`)}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            >
+                              View
+                            </button>
+                            
+                            {(appointment.status === "Scheduled" || appointment.status === "Pending") && (
+                              <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => {
                                     setSelectedAppointment(appointment);
-                                    setActiveModal("recurring");
+                                    setActiveModal("crew");
                                   }}
-                                  className="text-orange-600 hover:text-orange-900"
+                                  className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded ${
+                                    appointment.crew?.assignedTo?.length > 0
+                                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                      : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                  }`}
                                 >
-                                  Recurring
+                                  {appointment.crew?.assignedTo?.length > 0 ? "Crew" : "Assign"}
                                 </button>
-                              )}
-                            </>
-                          )}
+                                
+                                <button
+                                  onClick={() => {
+                                    setSelectedAppointment(appointment);
+                                    setActiveModal("payment");
+                                  }}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800 hover:bg-purple-200"
+                                >
+                                  Payment
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {/* <div className="text-sm text-gray-900">
-    {appointment.crew?.leadProfessional?.name || 'No lead'}
-  </div> */}
-                        <div className="text-sm text-gray-500">
-                          {appointment.crew?.assignedTo?.length || 0} team
-                          members
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+            
+            {/* Pagination */}
+            {filteredAppointments.length > itemsPerPage && (
+              <div className="bg-white px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAppointments.length)} of {filteredAppointments.length} results
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-3 py-1 text-sm">
+                      Page {currentPage} of {Math.ceil(filteredAppointments.length / itemsPerPage)}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredAppointments.length / itemsPerPage)))}
+                      disabled={currentPage >= Math.ceil(filteredAppointments.length / itemsPerPage)}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-4">
+          <div>
             {loading ? (
-              <div className="flex items-center justify-center h-[800px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center justify-center h-[800px]">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading calendar...</p>
+                  </div>
+                </div>
               </div>
             ) : error ? (
-              <div className="flex items-center justify-center h-[800px]">
-                <div className="text-red-600">{error}</div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center justify-center h-[800px]">
+                  <div className="text-center">
+                    <div className="text-red-600 text-lg font-medium">{error}</div>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               renderCalendar()

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { FaPlus, FaEdit, FaTrash, FaCalendarAlt, FaChartBar } from 'react-icons/fa';
 import AddStaffModal from './components/AddStaffModal';
@@ -10,8 +9,7 @@ import EditStaffModal from './components/EditStaffModal';
 import WorkloadModal from './components/WorkloadModal';
 import { useDashboard } from '@/contexts/DashboardContext';
 import AdminLayout from '@/components/admin/AdminLayout';
-
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import apiClient from '@/lib/api/apiClient';
 
 export default function StaffPage() {
   const router = useRouter();
@@ -33,10 +31,10 @@ export default function StaffPage() {
       return;
     }
 
-    // Check if user is admin
-    if (userData.role !== 'admin') {
+    // Check if user is admin or tenantAdmin
+    if (userData.role !== 'admin' && userData.role !== 'tenantAdmin') {
       toast.error('You do not have permission to access this page');
-      router.push('/dashboard');
+      router.push('/admin');
       return;
     }
 
@@ -45,11 +43,7 @@ export default function StaffPage() {
 
   const fetchStaff = async () => {
     try {
-      const response = await axios.get(`${API_URL}/professionals`, {
-        headers: {
-          Authorization: `Bearer ${userData.token}`
-        }
-      });
+      const response = await apiClient.get('/users/staff');
       setStaff(response.data.data);
       setLoading(false);
     } catch (error) {
@@ -69,11 +63,7 @@ export default function StaffPage() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this staff member?')) {
       try {
-        await axios.delete(`${API_URL}/professionals/${id}`, {
-          headers: {
-            Authorization: `Bearer ${userData.token}`
-          }
-        });
+        await apiClient.delete(`/users/${id}`);
         toast.success('Staff member deleted successfully');
         fetchStaff();
       } catch (error) {
@@ -91,11 +81,7 @@ export default function StaffPage() {
 
   const handleViewWorkload = async (staff) => {
     try {
-      const response = await axios.get(`${API_URL}/professionals/${staff._id}/workload`, {
-        headers: {
-          Authorization: `Bearer ${userData.token}`
-        }
-      });
+      const response = await apiClient.get(`/users/${staff._id}/workload`);
       setSelectedStaff({ ...staff, workload: response.data.data });
       setShowWorkloadModal(true);
     } catch (error) {
@@ -153,8 +139,8 @@ export default function StaffPage() {
             className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Roles</option>
-            <option value="professional">Professional</option>
-            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+            <option value="tenantAdmin">Tenant Admin</option>
           </select>
         </div>
 

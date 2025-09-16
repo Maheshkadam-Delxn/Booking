@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useDashboard } from '@/contexts/DashboardContext';
+import apiClient from '@/lib/api/apiClient';
 
 const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
   const { userData, fetchAppointments } = useDashboard();
@@ -18,10 +18,7 @@ const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
 
   const appointmentId = appointment?._id || appointment?.id;
 
-  const getAuthHeaders = () => ({
-    'Authorization': `Bearer ${userData.token}`,
-    'Content-Type': 'application/json'
-  });
+
 
   useEffect(() => {
     if (!appointment) return;
@@ -38,13 +35,9 @@ const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
       try {
         setLoading(true);
         
-        // Get all professionals first
-        const professionalsResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals`,
-          { headers: getAuthHeaders() }
-        );
-
-        setProfessionals(professionalsResponse.data.data);
+        // Get all staff members
+        const staffResponse = await apiClient.get('/users/staff');
+        setProfessionals(staffResponse.data.data);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error(error.response?.data?.error || 'Failed to fetch professionals');
@@ -61,10 +54,9 @@ const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
       setSubmitting(true);
       setConflictError(null);
 
-      const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professionals/${appointmentId}/crew`,
-        updatedCrew,
-        { headers: getAuthHeaders() }
+      const response = await apiClient.put(
+        `/appointments/${appointmentId}/crew`,
+        updatedCrew
       );
 
       if (!response.data.success) {
@@ -199,7 +191,7 @@ const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
                     key={professional._id} 
                     value={professional._id}
                   >
-                    {professional.name} - {professional.specialization || 'General'}
+                    {professional.name} - {professional.role || 'Staff'}
                   </option>
                 ))}
               </select>
@@ -230,7 +222,7 @@ const CrewAssignmentModal = ({ appointment, onClose, onUpdate }) => {
                         htmlFor={`member-${professional._id}`} 
                         className="ml-2 block text-sm text-gray-700"
                       >
-                        {professional.name} ({professional.specialization || 'General'})
+                        {professional.name} ({professional.role || 'Staff'})
                         {professional._id === crewAssignment.leadProfessional && ' (lead)'}
                       </label>
                     </div>
